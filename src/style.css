@@ -271,8 +271,12 @@ body,
   border-top: 1px solid var(--border-subtle);
 }
 
-/* All ribbon buttons stack the icon above the label, as in Inventor's ribbon;
-   only the icon size and padding differ between large and small. */
+/*
+ * Ribbon button tiers. Two sizes only, clearly different, so the hierarchy
+ * reads at a glance: large = primary commands (create, dimension),
+ * small = secondary (constraints, modify, format, edit, view).
+ * All buttons stack the icon above the label, as in Inventor's ribbon.
+ */
 .ribbon-button {
   display: flex;
   flex-direction: column;
@@ -287,10 +291,10 @@ body,
 }
 
 .ribbon-button.large {
-  gap: var(--sp-1);
-  min-width: 58px;
-  max-width: 84px;
-  padding: var(--sp-1) 6px;
+  gap: 5px;
+  min-width: 60px;
+  max-width: 86px;
+  padding: 7px 6px 5px;
 }
 
 .ribbon-button.large .icon {
@@ -298,10 +302,15 @@ body,
   height: 24px;
 }
 
+.ribbon-button.large .label {
+  font-size: var(--fs-ui);
+  line-height: 1.25;
+}
+
 .ribbon-button.small {
   gap: 2px;
-  min-width: 46px;
-  padding: 3px 5px;
+  min-width: 44px;
+  padding: 4px 5px 3px;
 }
 
 .ribbon-button.small .icon {
@@ -309,9 +318,12 @@ body,
   height: 16px;
 }
 
+.ribbon-button.small .label {
+  font-size: var(--fs-caption);
+  line-height: 1.2;
+}
+
 .ribbon-button .label {
-  font-size: var(--fs-ui);
-  line-height: 1.25;
   text-align: center;
   overflow-wrap: break-word;
 }
