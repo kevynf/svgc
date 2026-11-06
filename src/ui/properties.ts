@@ -66,34 +66,6 @@ export class PropertiesPanel {
 
     this.model = this.buildModel();
     this.update();
-
-    // TEMPORARY: ?select=e5 opens the panel on a selection, for screenshots.
-    const query = new URLSearchParams(location.search);
-    const pick = query.get('select');
-    if (pick !== null) for (const id of pick.split(',')) editor.select([id], 'add');
-    if (query.get('collapsed') === '1') this.setCollapsed(true);
-    const edit = query.get('edit');
-    if (edit !== null) {
-      requestAnimationFrame(() => {
-        const input = this.body.querySelector<HTMLInputElement>('.properties-input');
-        if (input === null) return;
-        input.value = edit;
-        input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true, cancelable: true }));
-      });
-    }
-    if (query.get('check') === '1') {
-      requestAnimationFrame(() => {
-        this.body.querySelector<HTMLInputElement>('.properties-checkbox')?.click();
-      });
-    }
-    if (query.get('lang') !== null) {
-      requestAnimationFrame(() => {
-        const select = document.querySelector<HTMLSelectElement>('.locale select');
-        if (select === null) return;
-        select.value = query.get('lang')!;
-        select.dispatchEvent(new Event('change', { bubbles: true }));
-      });
-    }
   }
 
   /** Refreshes the panel for the current selection, sketch and hover state. */
@@ -393,12 +365,15 @@ export class PropertiesPanel {
     this.clearError(input, key);
   }
 
-  private apply(target: EditTarget, value: number): boolean {
+  private apply(target: EditTarget, value: number): void {
     const editor = this.editor;
-    if (target.kind === 'radius') return editor.setCircleRadius(target.curve, value);
+    if (target.kind === 'radius') {
+      editor.setCircleRadius(target.curve, value);
+      return;
+    }
     const point = editor.sketch.entities.find((e) => e.id === target.point);
-    if (point?.kind !== 'point') return false;
-    return editor.setPointPosition(target.point, target.axis === 'x' ? value : point.x, target.axis === 'y' ? value : point.y);
+    if (point?.kind !== 'point') return;
+    editor.setPointPosition(target.point, target.axis === 'x' ? value : point.x, target.axis === 'y' ? value : point.y);
   }
 
   private showError(input: HTMLInputElement, key: string, detail: string): void {

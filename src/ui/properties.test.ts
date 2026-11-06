@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { SketchBuilder } from '../core/builder';
 import { indexEntities } from '../core/sketch';
-import type { Entity, Sketch } from '../core/sketch';
+import type { Entity } from '../core/model';
+import type { Sketch } from '../core/sketch';
 import { Translator } from '../i18n/i18n';
 import { Names } from './names';
 import {
@@ -169,7 +170,9 @@ describe('buildModel', () => {
     const [summary, params] = model.sections;
     expect(summary).toMatchObject({ kind: 'rows', title: 'Sketch' });
     expect(params).toMatchObject({ kind: 'rows', title: 'Parameters' });
-    expect(summary!.kind === 'rows' && summary.rows.map((r) => [r.label, r.text])).toEqual([
+    const rows = (section: (typeof model.sections)[number] | undefined, kind: string) =>
+      section?.kind === kind && section.kind === 'rows' ? section.rows.map((r) => [r.label, r.text]) : undefined;
+    expect(rows(summary, 'rows')).toEqual([
       ['Point', '6'],
       ['Line', '1'],
       ['Circle', '1'],
@@ -177,7 +180,7 @@ describe('buildModel', () => {
       ['Constraints', '3'],
       ['State', '2 dimensions needed'],
     ]);
-    expect(params!.kind === 'rows' && params.rows.map((r) => [r.label, r.text])).toEqual([
+    expect(rows(params, 'rows')).toEqual([
       ['w', '50.00'],
       ['gap', '25.00'],
     ]);
@@ -191,8 +194,8 @@ describe('buildModel', () => {
     expect(fields).toMatchObject({ kind: 'fields', title: 'Line1' });
     expect(construction).toEqual({ kind: 'construction', title: 'Construction', curves: [line.id], state: 'off' });
     expect(items).toMatchObject({ kind: 'items', title: 'Constraints' });
-    expect(items!.kind === 'items' && items.items.map((i) => i.name)).toEqual(['Horizontal (Line1)']);
-    expect(items!.kind === 'items' && items.items[0]!.glyph).toBe('horizontal');
+    expect(items?.kind === 'items' && items.items.map((i) => i.name)).toEqual(['Horizontal (Line1)']);
+    expect(items?.kind === 'items' && items.items[0]?.glyph).toBe('horizontal');
   });
 
   it('reports a fully constrained entity and offers the construction toggle', () => {
@@ -212,8 +215,8 @@ describe('buildModel', () => {
     expect(model.title).toBe('2 objects selected');
     const [construction, bounds] = model.sections;
     expect(construction).toMatchObject({ kind: 'construction', state: 'mixed' });
-    expect(construction!.kind === 'construction' && construction.curves).toEqual([line.id, circle.id]);
-    expect(bounds!.kind === 'rows' && bounds.rows.map((r) => [r.label, r.text])).toEqual([
+    expect(construction?.kind === 'construction' && construction.curves).toEqual([line.id, circle.id]);
+    expect(bounds?.kind === 'rows' && bounds.rows.map((r) => [r.label, r.text])).toEqual([
       ['X', '0.00'],
       ['Y', '-100.00'],
       ['Width', '230.00'],
@@ -224,7 +227,7 @@ describe('buildModel', () => {
   it('lists every constraint that references the selected entity', () => {
     const model = buildModel(context([origin.id]));
     const items = model.sections.find((s) => s.kind === 'items');
-    expect(items!.kind === 'items' && items.items.map((i) => i.name)).toEqual(['Fix (Point1)']);
+    expect(items?.kind === 'items' && items.items.map((i) => i.name)).toEqual(['Fix (Point1)']);
   });
 });
 

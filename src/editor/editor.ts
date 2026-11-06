@@ -169,32 +169,32 @@ export class Editor {
   }
 
   /** Moves a point to an exact position; the solver keeps its constraints. */
-  setPointPosition(point: Id, x: number, y: number): boolean {
+  setPointPosition(point: Id, x: number, y: number): void {
     const current = this.sketch.entities.find((e) => e.id === point);
-    if (current?.kind !== 'point' || (current.x === x && current.y === y)) return false;
+    if (current?.kind !== 'point' || (current.x === x && current.y === y)) return;
     const entities = this.sketch.entities.map((e): Entity => (e.kind === 'point' && e.id === point ? { ...e, x, y } : e));
-    return this.commit({ ...this.sketch, entities });
+    this.commit({ ...this.sketch, entities });
   }
 
   /** Sets a circle's radius; arcs derive theirs from their three points. */
-  setCircleRadius(curve: Id, radius: number): boolean {
+  setCircleRadius(curve: Id, radius: number): void {
     const current = this.sketch.entities.find((e) => e.id === curve);
-    if (current?.kind !== 'circle' || current.radius === radius || !Number.isFinite(radius)) return false;
+    if (current?.kind !== 'circle' || current.radius === radius || !Number.isFinite(radius)) return;
     const entities = this.sketch.entities.map((e): Entity => (e.kind === 'circle' && e.id === curve ? { ...e, radius } : e));
-    return this.commit({ ...this.sketch, entities });
+    this.commit({ ...this.sketch, entities });
   }
 
   /** Sets the construction flag of the given curves, for the properties panel. */
-  setConstruction(ids: Iterable<Id>, construction: boolean): boolean {
+  setConstruction(ids: Iterable<Id>, construction: boolean): void {
     const targets = new Set(ids);
-    if (!this.sketch.entities.some((e) => targets.has(e.id) && e.kind !== 'point')) return false;
+    if (!this.sketch.entities.some((e) => targets.has(e.id) && e.kind !== 'point')) return;
     const entities = this.sketch.entities.map((e): Entity => {
       if (e.kind === 'point' || !targets.has(e.id)) return e;
       if (construction) return { ...e, construction: true };
       const { construction: _, ...rest } = e;
       return rest as Entity;
     });
-    return this.commit({ ...this.sketch, entities });
+    this.commit({ ...this.sketch, entities });
   }
 
   // ── Selection and hover ────────────────────────────────────────────────
