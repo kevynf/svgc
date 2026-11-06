@@ -1,0 +1,49 @@
+/* Constraint symbols on the canvas. New tokens are prefixed --constraint-. */
+:root {
+  /* A raised surface, so the glyph reads against the grid. */
+  --constraint-chip: var(--bg-chrome-raised);
+  --constraint-chip-opacity: 0.9;
+  --constraint-chip-border: var(--border-subtle);
+  --constraint-ink: var(--text);
+  --constraint-ink-hover: var(--geom-hover);
+  --constraint-ink-selected: var(--geom-selected);
+}
+
+/* Symbols never take pointer events: the editor picks in world space, like the
+   rest of the canvas, and asks `hitConstraint` which symbol is under the
+   cursor. */
+.constraint-symbol {
+  pointer-events: none;
+}
+
+.constraint-chip {
+  fill: var(--constraint-chip);
+  fill-opacity: var(--constraint-chip-opacity);
+  stroke: var(--constraint-chip-border);
+  stroke-width: 1;
+}
+
+.constraint-symbol .icon {
+  color: var(--constraint-ink);
+}
+
+.constraint-symbol.hover .constraint-chip {
+  stroke: var(--constraint-ink-hover);
+}
+
+.constraint-symbol.hover .icon {
+  color: var(--constraint-ink-hover);
+}
+
+.constraint-symbol.selected .constraint-chip {
+  stroke: var(--constraint-ink-selected);
+}
+
+.constraint-symbol.selected .icon {
+  color: var(--constraint-ink-selected);
+}
+
+/* Zoomed far out the chips would swamp the drawing, so only the glyph is drawn. */
+.constraint-symbol[data-density='dense'] .constraint-chip {
+  display: none;
+}

@@ -1,0 +1,184 @@
+/* Constraint-inference settings dialog (Inventor's 约束设置): a modal card over
+   a dimmed backdrop. Imported by constraint-settings.ts; every rule is scoped
+   under .settings / .settings-backdrop so it cannot leak into the shell. */
+
+:root {
+  --settings-width: 320px;
+  --settings-backdrop: rgb(0 0 0 / 0.5);
+  --settings-shadow: 0 16px 40px rgb(0 0 0 / 0.55);
+  --settings-radius: 6px;
+}
+
+.settings-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: grid;
+  place-items: center;
+  padding: var(--sp-4);
+  background: var(--settings-backdrop);
+}
+
+.settings {
+  display: flex;
+  flex-direction: column;
+  width: var(--settings-width);
+  max-width: 100%;
+  max-height: 100%;
+  overflow: auto;
+  color: var(--text);
+  background: var(--bg-chrome-raised);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--settings-radius);
+  box-shadow: var(--settings-shadow);
+}
+
+/* The card is focused programmatically; the ring is for keyboard users only. */
+.settings:focus {
+  outline: none;
+}
+
+.settings:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+}
+
+.settings-header {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  padding: var(--sp-3) var(--sp-3) var(--sp-2);
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.settings-title {
+  flex: 1;
+  min-width: 0;
+  margin: 0;
+  font-size: var(--fs-ui);
+  font-weight: 600;
+}
+
+.settings-close {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  font: inherit;
+  font-size: 13px;
+  line-height: 1;
+  color: var(--text-muted);
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 3px;
+  cursor: pointer;
+}
+
+.settings-close:hover {
+  color: var(--text);
+  background: var(--bg-hover);
+  border-color: var(--border-subtle);
+}
+
+.settings-help {
+  margin: 0;
+  padding: var(--sp-2) var(--sp-3);
+  font-size: var(--fs-caption);
+  line-height: 1.45;
+  color: var(--text-muted);
+}
+
+.settings-rows {
+  list-style: none;
+  margin: 0;
+  padding: var(--sp-1) 0;
+}
+
+.settings-row {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  padding: 4px var(--sp-3);
+}
+
+.settings-row:hover {
+  background: var(--bg-hover);
+}
+
+.settings-checkbox {
+  flex: none;
+  width: 14px;
+  height: 14px;
+  margin: 0;
+  accent-color: var(--accent);
+}
+
+.settings-row-label {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  flex: 1;
+  min-width: 0;
+  font-size: var(--fs-ui);
+  cursor: pointer;
+}
+
+.settings-row-label .icon {
+  flex: none;
+  width: 16px;
+  height: 16px;
+  color: var(--text-muted);
+}
+
+.settings-summary,
+.settings-none {
+  margin: 0;
+  padding: var(--sp-1) var(--sp-3);
+  font-size: var(--fs-caption);
+  color: var(--text-muted);
+}
+
+.settings-none {
+  color: var(--pending);
+}
+
+.settings-none[hidden] {
+  display: none;
+}
+
+.settings-actions {
+  display: flex;
+  gap: var(--sp-2);
+  padding: var(--sp-2) var(--sp-3) var(--sp-3);
+  border-top: 1px solid var(--border-subtle);
+}
+
+.settings-action {
+  flex: 1;
+  font: inherit;
+  font-size: var(--fs-ui);
+  color: var(--text);
+  background: var(--bg-chrome);
+  border: 1px solid var(--border-subtle);
+  border-radius: 3px;
+  padding: 5px var(--sp-2);
+  cursor: pointer;
+}
+
+.settings-action:hover {
+  background: var(--bg-hover);
+  border-color: var(--text-disabled);
+}
+
+.settings-action:active {
+  background: var(--bg-pressed);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .settings-close,
+  .settings-action {
+    transition: background-color 80ms linear, border-color 80ms linear, color 80ms linear;
+  }
+}

@@ -5,6 +5,7 @@ import type { Sketch } from '../core/sketch';
 import type { OverlayShape } from '../editor/command';
 import type { InferredConstraint } from '../editor/inference';
 import { artboardElements, artboardHandles } from './artboard';
+import { constraintElements, constraintPlacements, hitConstraint } from './constraints';
 import { constraintIcon } from '../ui/constraint-icons';
 import type { ConstraintGlyph } from '../ui/constraint-icons';
 import { pointLookup } from '../editor/hit';
@@ -40,6 +41,10 @@ export interface ViewState {
   /** Entities whose own geometry is fully constrained. */
   readonly constrained: ReadonlySet<Id>;
   readonly overlay: readonly OverlayShape[];
+  /** Cursor in world coordinates, for hovering constraint symbols. */
+  readonly cursor: Vec2 | undefined;
+  /** F8/F9: draw the constraint symbols. */
+  readonly showConstraints: boolean;
 }
 
 /** Point radius on screen, by role. */
@@ -55,10 +60,11 @@ export class SketchView {
   private readonly artboard = svgElement('g', { class: 'artboard', 'aria-hidden': 'true' });
   private readonly curves = svgElement('g', { class: 'curves' });
   private readonly points = svgElement('g', { class: 'points' });
+  private readonly constraints = svgElement('g', { class: 'constraints' });
   private readonly overlay = svgElement('g', { class: 'overlay', 'aria-hidden': 'true' });
 
   constructor(readonly root: SVGSVGElement) {
-    root.append(this.grid, this.artboard, this.curves, this.points, this.overlay);
+    root.append(this.grid, this.artboard, this.curves, this.points, this.constraints, this.overlay);
   }
 
   render(state: ViewState): void {
@@ -68,6 +74,7 @@ export class SketchView {
 
     this.renderGrid(vp);
     this.artboard.replaceChildren(...artboardElements(sketch.artboard, vp));
+    this.renderConstraints(state, s);
 
     const classes = (e: Entity, base: string) => {
       const list = [base];
@@ -105,6 +112,22 @@ export class SketchView {
     );
 
     this.overlay.replaceChildren(...state.overlay.flatMap((shape) => overlayElements(shape, sketch, s, vp.scale, vp)));
+  }
+
+  private renderConstraints(state: ViewState, s: (p: Vec2) => Vec2): void {
+    if (!state.showConstraints) {
+      this.constraints.replaceChildren();
+      return;
+    }
+    const { sketch, viewport: vp } = state;
+    const placements = constraintPlacements(sketch, vp.scale);
+    const hovered = state.cursor === undefined ? undefined : hitConstraint(placements, state.cursor, 12 / vp.scale);
+    this.constraints.replaceChildren(
+      ...constraintElements(placements, s, vp.scale, {
+        hovered,
+        selected: new Set([...state.selection].filter((id) => sketch.constraints.some((c) => c.id === id))),
+      }),
+    );
   }
 
   private renderGrid(vp: Viewport): void {

@@ -1,4 +1,5 @@
 import { constraintRefs } from '../core/edit';
+import type { Vec2 } from '../core/geometry';
 import type { Id } from '../core/model';
 import type { MenuItem, PointerInput } from '../editor/command';
 import type { Editor } from '../editor/editor';
@@ -10,8 +11,12 @@ import { Browser } from './browser';
 import { icon } from './icons';
 import { MarkingMenu } from './marking-menu';
 import { PropertiesPanel } from './properties';
+import { settings } from '../editor/settings';
+import { constraintPlacements, hitConstraint } from '../render/constraints';
+import { ConstraintSettingsDialog } from './constraint-settings';
 import { Ribbon } from './ribbon';
 import type { RibbonButton, RibbonPanel } from './ribbon';
+import type { ConstraintGlyph } from './constraint-icons';
 import { StatusBar } from './statusbar';
 
 /**
@@ -33,6 +38,12 @@ export const COMMAND_ALIASES: readonly (readonly [alias: string, command: string
   ['=', 'equal'],
   ['-', 'horizontal'],
   ['I', 'vertical'],
+  ['CO', 'coincident'],
+  ['FI', 'fix'],
+  ['PA', 'parallel'],
+  ['PN', 'perpendicular'],
+  ['TA', 'tangent'],
+  ['MI', 'midpoint'],
 ];
 
 const WHEEL_ZOOM = 1.0015;
@@ -58,15 +69,18 @@ export class App {
   private readonly view: SketchView;
   private readonly aliases: AliasMatcher;
   private readonly unsubscribe: () => void;
+  private readonly settingsUnsubscribe: () => void;
   private frame: number | undefined;
   private pendingMove: PointerInput | undefined;
   private pan: { pointer: number; x: number; y: number } | undefined;
   private menuGesture: { pointer: number; x: number; y: number } | undefined;
+  private readonly settingsDialog: ConstraintSettingsDialog;
 
   constructor({ editor, t, onLocaleChange }: AppOptions) {
     this.editor = editor;
     this.t = t;
     this.element.className = 'app';
+    this.settingsDialog = new ConstraintSettingsDialog(t);
 
     this.ribbon = new Ribbon(t, this.panels());
     this.browser = new Browser(editor, t);
@@ -95,7 +109,7 @@ export class App {
     const head = document.createElement('header');
     head.className = 'titlebar';
     const title = document.createElement('h1');
-    title.textContent = `${this.t.t('app.title')} — ${this.t.t('app.sketchName')}`;
+    title.textContent = `${this.t.t('app.title')} —${this.t.t('app.sketchName')}`;
     const label = document.createElement('label');
     label.className = 'locale';
     label.title = this.t.t('app.language');
@@ -118,6 +132,8 @@ export class App {
     this.bindCanvas(stage);
     this.bindKeyboard();
     this.unsubscribe = editor.subscribe(() => this.schedule());
+    // F8/F9 and the inference settings change outside the editor; re-render too.
+    this.settingsUnsubscribe = settings.subscribe(() => this.schedule());
   }
 
   /** Call once the element is in the document so the canvas has a size. */
@@ -133,12 +149,14 @@ export class App {
   dispose(): void {
     this.abort.abort();
     this.unsubscribe();
+    this.settingsUnsubscribe();
+    this.settingsDialog.close();
     this.aliases.reset();
     if (this.frame !== undefined) cancelAnimationFrame(this.frame);
     this.element.remove();
   }
 
-  // ── Layout ──────────────────────────────────────────────────────────────
+  // 鈹€鈹€ Layout 鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€
 
   /**
    * The tab row carries the ribbon's controls, so the shell keeps Inventor's
@@ -162,7 +180,7 @@ export class App {
   private panels(): RibbonPanel[] {
     const e = this.editor;
     const shortcut = (command: string) => COMMAND_ALIASES.find(([, c]) => c === command)?.[0];
-    const cmd = (id: string, iconName: RibbonButton['icon'], size: 'large' | 'small' = 'large'): RibbonButton => {
+    const cmd = (id: string, iconName: RibbonButton['icon'], glyph?: ConstraintGlyph, size: 'large' | 'small' = 'large'): RibbonButton => {
       const keys = shortcut(id);
       return {
         id,
@@ -172,6 +190,7 @@ export class App {
         available: e.hasCommand(id),
         run: () => e.startCommand(id),
         active: () => e.activeCommand.id === id,
+        ...(glyph === undefined ? {} : { glyph }),
         ...(keys === undefined ? {} : { shortcut: keys }),
       };
     };
@@ -185,21 +204,28 @@ export class App {
       {
         label: 'ribbon.panels.modify',
         buttons: [
-          cmd('trim', 'trim', 'small'),
-          cmd('extend', 'extend', 'small'),
-          cmd('offset', 'offset', 'small'),
-          cmd('mirror', 'mirror', 'small'),
-          cmd('fillet', 'fillet', 'small'),
+          cmd('trim', 'trim', undefined, 'small'),
+          cmd('extend', 'extend', undefined, 'small'),
+          cmd('offset', 'offset', undefined, 'small'),
+          cmd('mirror', 'mirror', undefined, 'small'),
+          cmd('fillet', 'fillet', undefined, 'small'),
         ],
       },
       {
         label: 'ribbon.panels.constrain',
         buttons: [
           cmd('dimension', 'dimension'),
-          cmd('fix', 'fix', 'small'),
-          cmd('equal', 'equal', 'small'),
-          cmd('horizontal', 'horizontal', 'small'),
-          cmd('vertical', 'vertical', 'small'),
+          cmd('fix', 'fix', 'fix', 'small'),
+          cmd('equal', 'equal', 'equal', 'small'),
+          cmd('horizontal', 'horizontal', 'horizontal', 'small'),
+          cmd('vertical', 'vertical', 'vertical', 'small'),
+          cmd('coincident', 'construction', 'coincident', 'small'),
+          cmd('parallel', 'construction', 'parallel', 'small'),
+          cmd('perpendicular', 'construction', 'perpendicular', 'small'),
+          cmd('tangent', 'construction', 'tangent', 'small'),
+          cmd('midpoint', 'construction', 'midpoint', 'small'),
+          cmd('pointOnLine', 'construction', 'pointOnLine', 'small'),
+          cmd('pointOnCurve', 'construction', 'pointOnCurve', 'small'),
         ],
       },
       {
@@ -214,8 +240,18 @@ export class App {
             enabled: hasCurveSelected,
             run: () => e.toggleConstruction(),
           },
-          cmd('driven', 'driven', 'small'),
-          cmd('artboard', 'artboard', 'small'),
+          cmd('driven', 'driven', undefined, 'small'),
+          cmd('artboard', 'artboard', undefined, 'small'),
+          {
+            id: 'showConstraints',
+            icon: 'construction',
+            label: 'commands.showConstraints',
+            size: 'small',
+            shortcut: 'F8',
+            available: true,
+            run: () => settings.toggleShow(),
+            active: () => settings.value.showConstraints,
+          },
         ],
       },
       {
@@ -233,7 +269,7 @@ export class App {
     ];
   }
 
-  // ── Rendering ───────────────────────────────────────────────────────────
+  // 鈹€鈹€ Rendering 鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€
 
   private schedule(): void {
     if (this.frame !== undefined) return;
@@ -261,6 +297,8 @@ export class App {
       highlight,
       constrained: new Set([...e.status].filter(([, s]) => s === 'fully').map(([id]) => id)),
       overlay: e.activeCommand.overlay?.() ?? [],
+      cursor: e.cursorWorld,
+      showConstraints: settings.value.showConstraints,
     });
     this.canvas.dataset['command'] = e.activeCommand.id;
     this.canvas.classList.toggle('panning', this.pan !== undefined);
@@ -270,7 +308,7 @@ export class App {
     this.status.update();
   }
 
-  // ── Canvas input ────────────────────────────────────────────────────────
+  // 鈹€鈹€ Canvas input 鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€
 
   private input(event: PointerEvent | WheelEvent): PointerInput {
     const rect = this.canvas.getBoundingClientRect();
@@ -282,6 +320,13 @@ export class App {
       ctrl: event.ctrlKey || event.metaKey,
       alt: event.altKey,
     };
+  }
+
+  /** The constraint whose symbol is under a world point, if symbols are shown. */
+  private constraintAt(world: Vec2): Id | undefined {
+    if (!settings.value.showConstraints) return undefined;
+    const vp = this.editor.viewport;
+    return hitConstraint(constraintPlacements(this.editor.sketch, vp.scale), world, 12 / vp.scale);
   }
 
   /** Pointer moves are coalesced to one per frame; a press or release flushes the pending one first. */
@@ -330,6 +375,12 @@ export class App {
         c.focus();
         c.setPointerCapture(event.pointerId);
         this.flushMove();
+        // A constraint symbol under the cursor is picked before the geometry.
+        const symbol = this.constraintAt(input.world);
+        if (symbol !== undefined) {
+          this.editor.select([symbol], event.shiftKey || event.ctrlKey ? 'toggle' : 'replace');
+          return;
+        }
         this.editor.activeCommand.pointerDown?.(input);
       },
       { signal },
@@ -424,11 +475,23 @@ export class App {
         enabled: e.sketch.entities.some((x) => x.kind !== 'point' && e.selection.has(x.id)),
         run: () => e.toggleConstruction(),
       },
+      {
+        label: { key: 'commands.showConstraints' },
+        icon: 'construction',
+        enabled: true,
+        run: () => settings.toggleShow(),
+      },
+      {
+        label: { key: 'settings.label' },
+        icon: 'fix',
+        enabled: true,
+        run: () => this.settingsDialog.open(document.activeElement instanceof HTMLElement ? document.activeElement : undefined),
+      },
     );
     return items;
   }
 
-  // ── Keyboard ────────────────────────────────────────────────────────────
+  // 鈹€鈹€ Keyboard 鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€
 
   private bindKeyboard(): void {
     document.addEventListener('keydown', (event) => this.onKey(event), { signal: this.abort.signal });
@@ -471,6 +534,13 @@ export class App {
     if (key === 'Delete') {
       event.preventDefault();
       e.deleteSelection();
+      return;
+    }
+    // Inventor: F8 shows all constraints, F9 hides them.
+    if (key === 'F8' || key === 'F9') {
+      event.preventDefault();
+      settings.setShow(key === 'F8');
+      this.canvas.focus();
       return;
     }
     if (key === 'Home') {

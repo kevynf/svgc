@@ -1,4 +1,4 @@
-import type { InferredConstraint } from './inference';
+﻿import type { InferredConstraint } from './inference';
 
 /** The constraint kinds inference can produce while drawing. */
 export type InferredKind = InferredConstraint['kind'];
@@ -6,7 +6,7 @@ export type InferredKind = InferredConstraint['kind'];
 export interface Settings {
   /** F8/F9: whether constraint glyphs are drawn on the canvas. */
   readonly showConstraints: boolean;
-  /** Constraint kinds inferred while drawing (Inventor's 约束设置). */
+  /** Constraint kinds inferred while drawing (Inventor's 绾︽潫璁剧疆). */
   readonly inferred: ReadonlySet<InferredKind>;
 }
 
@@ -14,15 +14,23 @@ const SHOW_KEY = 'svgc.showConstraints';
 const INFER_KEY = 'svgc.inferredConstraints';
 const ALL: readonly InferredKind[] = ['coincident', 'pointOnCurve', 'horizontal', 'vertical', 'parallel', 'perpendicular', 'tangent'];
 
+/** localStorage is absent under the Node test runner; settings then simply don't persist. */
+function storage(): Pick<Storage, 'getItem' | 'setItem'> | undefined {
+  try {
+    return typeof localStorage === 'undefined' ? undefined : localStorage;
+  } catch {
+    return undefined;
+  }
+}
+
 function loadShow(): boolean {
-  return localStorage.getItem(SHOW_KEY) !== '0';
+  return storage()?.getItem(SHOW_KEY) !== '0';
 }
 
 function loadInferred(): Set<InferredKind> {
-  const raw = localStorage.getItem(INFER_KEY);
-  if (raw === null) return new Set(ALL);
-  const saved = new Set(raw.split(',').filter((k): k is InferredKind => (ALL as string[]).includes(k)));
-  return saved;
+  const raw = storage()?.getItem(INFER_KEY);
+  if (raw === null || raw === undefined) return new Set(ALL);
+  return new Set(raw.split(',').filter((k): k is InferredKind => (ALL as string[]).includes(k)));
 }
 
 /**
@@ -42,7 +50,7 @@ class SettingsStore {
   setShow(show: boolean): void {
     if (show === this.show) return;
     this.show = show;
-    localStorage.setItem(SHOW_KEY, show ? '1' : '0');
+    storage()?.setItem(SHOW_KEY, show ? '1' : '0');
     this.changed();
   }
 
@@ -56,7 +64,7 @@ class SettingsStore {
     if (on) next.add(kind);
     else next.delete(kind);
     this.inferred = next;
-    localStorage.setItem(INFER_KEY, [...next].join(','));
+    storage()?.setItem(INFER_KEY, [...next].join(','));
     this.changed();
   }
 
@@ -64,7 +72,7 @@ class SettingsStore {
   resetInferred(): boolean {
     if (this.inferred.size === ALL.length) return false;
     this.inferred = new Set(ALL);
-    localStorage.setItem(INFER_KEY, [...ALL].join(','));
+    storage()?.setItem(INFER_KEY, [...ALL].join(','));
     this.changed();
     return true;
   }

@@ -1,4 +1,6 @@
 import type { Key, Translator } from '../i18n/i18n';
+import { constraintIcon } from './constraint-icons';
+import type { ConstraintGlyph } from './constraint-icons';
 import { icon } from './icons';
 import type { IconName } from './icons';
 
@@ -7,6 +9,8 @@ const COLLAPSE_KEY = 'svgc.ribbonCollapsed';
 export interface RibbonButton {
   readonly id: string;
   readonly icon: IconName;
+  /** Constraint commands use their CAD symbol instead of a Tabler icon. */
+  readonly glyph?: ConstraintGlyph;
   readonly label: Key;
   readonly shortcut?: string;
   readonly size?: 'large' | 'small';
@@ -107,7 +111,8 @@ export class Ribbon {
     const label = document.createElement('span');
     label.className = 'label';
     label.textContent = this.t.t(def.label);
-    el.append(icon(def.icon, def.size === 'small' ? 16 : 24), label);
+    const size = def.size === 'small' ? 16 : 24;
+    el.append(def.glyph === undefined ? icon(def.icon, size) : constraintIcon(def.glyph, size), label);
 
     const tips = [this.t.t(def.label)];
     if (def.shortcut !== undefined) tips.push(this.t.t('ribbon.shortcut', { keys: def.shortcut }));

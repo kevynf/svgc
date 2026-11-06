@@ -309,6 +309,12 @@ export class Editor {
     for (const listener of this.listeners) listener();
   }
 
+  /** Shows a transient status message (e.g. a rejected constraint) until the next change. */
+  setMessage(message: Message | undefined): void {
+    this.notice = message;
+    this.changed();
+  }
+
   /** Clears the transient message; called by the UI on user input. */
   clearMessage(): void {
     this.notice = undefined;

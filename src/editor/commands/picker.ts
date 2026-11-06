@@ -6,6 +6,7 @@ import type { Editor } from '../editor';
 import { hitTest } from '../hit';
 import { infer, materialize } from '../inference';
 import type { InferenceResult } from '../inference';
+import { settings } from '../settings';
 
 /** Snap distance in screen pixels; constant regardless of zoom. */
 export const SNAP_PX = 8;
@@ -57,6 +58,15 @@ export class Picker {
       ...(options.anchor === undefined ? {} : { anchor: options.anchor }),
       ...(this.reference === undefined ? {} : { reference: this.reference }),
     });
+    // Honor the inference settings (Inventor's 约束设置): drop every kind the
+    // user turned off. We post-filter `infer`'s RESULT rather than re-running
+    // it per kind — `InferenceOptions` has no per-kind filter and inference.ts
+    // is out of scope. Trade-off: the snapped POSITION stays as `infer`
+    // computed it (the cursor still lands on the geometry; a disabled direction
+    // constraint may leave it on a snapped spot no constraint pins). Only the
+    // constraints that get created change.
+    const enabled = settings.value.inferred;
+    result = { ...result, constraints: result.constraints.filter((c) => enabled.has(c.kind)) };
     if (options.pointsOnly === true && !result.constraints.some((c) => c.kind === 'coincident')) {
       result = { position: input.world, constraints: [], alignments: [] };
     }
