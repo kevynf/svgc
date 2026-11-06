@@ -97,6 +97,11 @@ export class Editor {
 
   // ── Sketch edits ────────────────────────────────────────────────────────
 
+  /** Solves a candidate sketch without committing; used for conflict checks. */
+  evaluate(next: Sketch): SolveResult {
+    return this.solver.solve(next);
+  }
+
   /** Solves `next` and records it as an undo step. Rejected (unchanged) when solving fails. */
   commit(next: Sketch): boolean {
     if (next === this.sketch) return true;

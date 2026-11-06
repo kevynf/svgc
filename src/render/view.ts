@@ -145,6 +145,8 @@ const GLYPH_PX = 16;
 
 function overlayElements(shape: OverlayShape, sketch: Sketch, s: (p: Vec2) => Vec2, scale: number, vp: Viewport): SVGElement[] {
   switch (shape.kind) {
+    case 'highlight':
+      return [];
     case 'selectionBox': {
       const { box } = shape;
       return [

@@ -1,4 +1,5 @@
 import type { Vec2 } from '../core/geometry';
+import type { Id } from '../core/model';
 import type { Artboard } from '../core/sketch';
 import type { Key, Params } from '../i18n/i18n';
 import type { IconName } from '../ui/icons';
@@ -23,6 +24,8 @@ export interface Message {
 export type OverlayShape =
   /** Screen-space selection rectangle. */
   | { readonly kind: 'selectionBox'; readonly box: Box; readonly mode: 'window' | 'crossing' }
+  /** Entities to pre-highlight, e.g. the operands a constraint command has picked. */
+  | { readonly kind: 'highlight'; readonly ids: readonly Id[] }
   /** World-space rubber-band geometry. */
   | { readonly kind: 'previewLine'; readonly from: Vec2; readonly to: Vec2 }
   | { readonly kind: 'previewCircle'; readonly center: Vec2; readonly radius: number }

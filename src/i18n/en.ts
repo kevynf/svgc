@@ -114,6 +114,9 @@ export const en: Catalog<Messages> = {
   menu: {
     label: 'Marking menu',
   },
+  settings: {
+    label: 'Settings',
+  },
   properties: {
     label: 'Properties',
     collapse: 'Collapse',

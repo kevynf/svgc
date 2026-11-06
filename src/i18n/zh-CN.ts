@@ -117,6 +117,9 @@ export const zhCN = {
   menu: {
     label: '标记菜单',
   },
+  settings: {
+    label: '设置',
+  },
   properties: {
     label: '特性',
     collapse: '折叠',
