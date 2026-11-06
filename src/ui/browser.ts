@@ -42,7 +42,8 @@ function twisty(): SVGSVGElement {
   const ns = 'http://www.w3.org/2000/svg';
   const svg = document.createElementNS(ns, 'svg');
   const attrs: Record<string, string> = {
-    class: 'icon',
+    // `browser-twisty` drives the rotation; `.icon` is the shared base.
+    class: 'icon browser-twisty',
     width: '16',
     height: '16',
     viewBox: '0 0 24 24',
@@ -230,7 +231,8 @@ export class Browser {
   // ── Interaction ────────────────────────────────────────────────────────
 
   private onClick(event: MouseEvent): void {
-    const target = event.target instanceof HTMLElement ? event.target : null;
+    // Icons are SVG elements, which are not HTMLElement — test against Element.
+    const target = event.target instanceof Element ? event.target : null;
     const itemEl = target?.closest<HTMLElement>('.browser-item');
     if (itemEl !== undefined && itemEl !== null) {
       this.editor.select([itemEl.dataset['id']!], event.shiftKey || event.ctrlKey ? 'toggle' : 'replace');
@@ -239,7 +241,12 @@ export class Browser {
       return;
     }
     const group = target?.closest('.browser-group-header')?.closest<HTMLElement>('.browser-group');
-    if (group !== undefined && group !== null) this.toggleGroup(group);
+    if (group !== undefined && group !== null) {
+      this.toggleGroup(group);
+      // Keep focus on the header so ArrowRight can re-open it from the keyboard.
+      this.setRoving(group);
+      group.focus();
+    }
   }
 
   private onKey(event: KeyboardEvent): void {
@@ -327,7 +334,7 @@ export class Browser {
   }
 
   private itemId(target: EventTarget | null): Id | undefined {
-    return target instanceof HTMLElement ? target.closest<HTMLElement>('[data-id]')?.dataset['id'] : undefined;
+    return target instanceof Element ? target.closest<HTMLElement>('[data-id]')?.dataset['id'] : undefined;
   }
 
   // ── Resizing ───────────────────────────────────────────────────────────
