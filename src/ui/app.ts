@@ -68,7 +68,7 @@ export class App {
     this.t = t;
     this.element.className = 'app';
 
-    this.ribbon = new Ribbon(t, 'ribbon.sketchTab', this.panels());
+    this.ribbon = new Ribbon(t, this.panels());
     this.browser = new Browser(editor, t);
     this.status = new StatusBar(editor, t);
     this.menu = new MarkingMenu(t);
@@ -91,7 +91,24 @@ export class App {
     this.properties = new PropertiesPanel(editor, t);
     workspace.append(this.properties.element);
 
-    this.element.append(this.titleBar(onLocaleChange), this.ribbon.element, workspace, this.status.element);
+    // Title bar and ribbon tabs share one row: app name left, language right.
+    const head = document.createElement('header');
+    head.className = 'titlebar';
+    const title = document.createElement('h1');
+    title.textContent = `${this.t.t('app.title')} — ${this.t.t('app.sketchName')}`;
+    const label = document.createElement('label');
+    label.className = 'locale';
+    label.title = this.t.t('app.language');
+    const select = document.createElement('select');
+    select.setAttribute('aria-label', this.t.t('app.language'));
+    for (const { id, name } of LOCALES) {
+      select.append(new Option(name, id, false, id === this.t.locale));
+    }
+    select.addEventListener('change', () => onLocaleChange(select.value as Locale));
+    label.append(icon('language', 14), select);
+    head.append(title, this.ribbonTabs(), label);
+
+    this.element.append(head, this.ribbon.element, workspace, this.status.element);
 
     this.aliases = new AliasMatcher(
       COMMAND_ALIASES.filter(([, command]) => editor.hasCommand(command)),
@@ -123,25 +140,38 @@ export class App {
 
   // ── Layout ──────────────────────────────────────────────────────────────
 
-  private titleBar(onLocaleChange: (locale: Locale) => void): HTMLElement {
-    const bar = document.createElement('header');
-    bar.className = 'titlebar';
-    const title = document.createElement('h1');
-    title.textContent = `${this.t.t('app.title')} — ${this.t.t('app.sketchName')}`;
+  /**
+   * The tab row carries the ribbon's controls, so the shell keeps Inventor's
+   * two-row header instead of a separate bar above the ribbon.
+   */
+  private ribbonTabs(): HTMLElement {
+    const row = document.createElement('div');
+    row.className = 'ribbon-tabs';
+    row.setAttribute('role', 'tablist');
+    const tabButton = document.createElement('button');
+    tabButton.className = 'ribbon-tab';
+    tabButton.setAttribute('role', 'tab');
+    tabButton.setAttribute('aria-selected', 'true');
+    tabButton.id = 'ribbon-tab-sketch';
+    tabButton.textContent = this.t.t('ribbon.sketchTab');
 
-    const label = document.createElement('label');
-    label.className = 'locale';
-    label.title = this.t.t('app.language');
-    const select = document.createElement('select');
-    select.setAttribute('aria-label', this.t.t('app.language'));
-    for (const { id, name } of LOCALES) {
-      select.append(new Option(name, id, false, id === this.t.locale));
-    }
-    select.addEventListener('change', () => onLocaleChange(select.value as Locale));
-    label.append(icon('language', 16), select);
+    const toggle = document.createElement('button');
+    toggle.type = 'button';
+    toggle.className = 'ribbon-collapse';
+    toggle.append(icon('select', 14));
+    toggle.title = this.t.t('ribbon.collapse');
+    toggle.setAttribute('aria-label', this.t.t('ribbon.collapse'));
+    toggle.setAttribute('aria-expanded', 'true');
+    toggle.setAttribute('aria-controls', 'ribbon-body');
+    toggle.addEventListener('click', () => {
+      const collapsed = document.body.dataset['ribbonCollapsed'] !== 'true';
+      document.body.dataset['ribbonCollapsed'] = String(collapsed);
+      toggle.setAttribute('aria-expanded', String(!collapsed));
+      localStorage.setItem('svgc.ribbonCollapsed', collapsed ? '1' : '0');
+    });
 
-    bar.append(title, label);
-    return bar;
+    row.append(tabButton, toggle);
+    return row;
   }
 
   private panels(): RibbonPanel[] {
