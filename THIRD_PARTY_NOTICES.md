@@ -12,3 +12,9 @@ WebAssembly build of the 2D geometric constraint solver from FreeCAD's Sketcher.
 The solver is loaded at runtime as a separate `planegcs.wasm` file and is not
 compiled into this application's own code. It can be replaced with a
 modified build of the library.
+
+## Tabler Icons (@tabler/icons 3.50.0)
+
+- Source: https://github.com/tabler/tabler-icons
+- License: MIT
+- Copyright (c) 2020-2026 Paweł Kuna
