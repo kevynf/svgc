@@ -1,0 +1,41 @@
+/* Artboard (the exported SVG page). New tokens are prefixed --artboard-. */
+:root {
+  --artboard-fill: #262c34;
+  --artboard-border: #4a5560;
+  --artboard-veil: rgb(12 15 19 / 0.55);
+  --artboard-handle-fill: #ffffff;
+  --artboard-handle-stroke: #3d9be9;
+}
+
+.artboard-page {
+  fill: var(--artboard-fill);
+  pointer-events: none;
+}
+
+.artboard-veil {
+  fill: var(--artboard-veil);
+  fill-rule: evenodd;
+  pointer-events: none;
+}
+
+.artboard-border {
+  fill: none;
+  stroke: var(--artboard-border);
+  stroke-width: 1;
+  shape-rendering: crispEdges;
+  pointer-events: none;
+}
+
+.artboard-label {
+  fill: var(--text-muted);
+  font-size: 11px;
+  pointer-events: none;
+  user-select: none;
+}
+
+.artboard-handle {
+  fill: var(--artboard-handle-fill);
+  stroke: var(--artboard-handle-stroke);
+  stroke-width: 1;
+  pointer-events: none;
+}

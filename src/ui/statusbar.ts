@@ -1,26 +1,44 @@
 import type { Editor } from '../editor/editor';
 import type { Translator } from '../i18n/i18n';
 
-/** Bottom status bar: command prompt, cursor coordinates, constraint state. */
+/** Bottom status bar: command prompt, cursor coordinates, zoom, selection and constraint state. */
 export class StatusBar {
   readonly element = document.createElement('footer');
   private readonly prompt = document.createElement('output');
   private readonly coords = document.createElement('span');
+  private readonly zoom = document.createElement('span');
   private readonly selection = document.createElement('span');
   private readonly state = document.createElement('output');
+  private readonly dot = document.createElement('span');
+  private readonly stateText = document.createElement('span');
 
   constructor(
     private readonly editor: Editor,
     private readonly t: Translator,
   ) {
     this.element.className = 'statusbar';
+
     this.prompt.className = 'status-prompt';
     this.prompt.setAttribute('aria-live', 'polite');
+
     this.coords.className = 'status-coords';
+    this.coords.setAttribute('aria-hidden', 'true');
+
+    this.zoom.className = 'status-zoom';
+    this.zoom.title = t.t('status.zoom');
+    this.zoom.setAttribute('aria-label', t.t('status.zoom'));
+    this.zoom.setAttribute('aria-hidden', 'true');
+
     this.selection.className = 'status-selection';
+    this.selection.setAttribute('aria-hidden', 'true');
+
+    this.dot.className = 'status-dot';
+    this.dot.setAttribute('aria-hidden', 'true');
     this.state.className = 'status-state';
     this.state.setAttribute('aria-live', 'polite');
-    this.element.append(this.prompt, this.selection, this.coords, this.state);
+    this.state.append(this.dot, this.stateText);
+
+    this.element.append(this.prompt, this.coords, this.zoom, this.selection, this.state);
   }
 
   update(): void {
@@ -31,6 +49,8 @@ export class StatusBar {
 
     const cursor = editor.cursorWorld;
     setText(this.coords, cursor === undefined ? '' : t.t('status.coordinates', { x: t.number(cursor.x), y: t.number(cursor.y) }));
+
+    setText(this.zoom, `${Math.round(editor.viewport.scale * 100)}%`);
 
     const count = editor.selection.size;
     setText(this.selection, count === 0 ? '' : t.t('status.selected', { count }));
@@ -51,7 +71,7 @@ export class StatusBar {
       text = t.t('status.dimensionsNeeded', { count: dof });
       tone = 'pending';
     }
-    setText(this.state, text);
+    setText(this.stateText, text);
     this.state.dataset['tone'] = tone;
   }
 }

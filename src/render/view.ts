@@ -4,7 +4,7 @@ import type { Entity, Id, Point } from '../core/model';
 import type { Sketch } from '../core/sketch';
 import type { OverlayShape } from '../editor/command';
 import type { InferredConstraint } from '../editor/inference';
-import { artboardElements } from './artboard';
+import { artboardElements, artboardHandles } from './artboard';
 import { constraintIcon } from '../ui/constraint-icons';
 import type { ConstraintGlyph } from '../ui/constraint-icons';
 import { pointLookup } from '../editor/hit';
@@ -104,7 +104,7 @@ export class SketchView {
       }),
     );
 
-    this.overlay.replaceChildren(...state.overlay.flatMap((shape) => overlayElements(shape, sketch, s, vp.scale)));
+    this.overlay.replaceChildren(...state.overlay.flatMap((shape) => overlayElements(shape, sketch, s, vp.scale, vp)));
   }
 
   private renderGrid(vp: Viewport): void {
@@ -143,7 +143,7 @@ const INFERRED_GLYPH: Record<InferredConstraint['kind'], ConstraintGlyph> = {
 };
 const GLYPH_PX = 16;
 
-function overlayElements(shape: OverlayShape, sketch: Sketch, s: (p: Vec2) => Vec2, scale: number): SVGElement[] {
+function overlayElements(shape: OverlayShape, sketch: Sketch, s: (p: Vec2) => Vec2, scale: number, vp: Viewport): SVGElement[] {
   switch (shape.kind) {
     case 'selectionBox': {
       const { box } = shape;
@@ -186,6 +186,8 @@ function overlayElements(shape: OverlayShape, sketch: Sketch, s: (p: Vec2) => Ve
         return g;
       });
     }
+    case 'artboardHandles':
+      return artboardHandles(shape.artboard, vp);
   }
 }
 

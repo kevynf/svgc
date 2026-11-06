@@ -48,6 +48,7 @@ export class MarkingMenu {
     this.element.style.top = `${at.y}px`;
     this.element.replaceChildren(
       Object.assign(document.createElement('div'), { className: 'marking-menu-hub' }),
+      ...this.items.map((_, i) => this.spoke(SLOTS[i]!)),
       ...this.items.map((item, i) => this.itemElement(item, SLOTS[i]!)),
     );
     this.element.hidden = false;
@@ -83,8 +84,16 @@ export class MarkingMenu {
     this.restoreFocus?.focus();
   }
 
-  private itemElement(item: MenuItem, degrees: number): HTMLButtonElement {
-    const el = document.createElement('button');
+  /** A thin connector line from just outside the hub toward the item chip. */
+  private spoke(degrees: number): HTMLElement {
+    const el = document.createElement('div');
+    el.className = 'marking-menu-spoke';
+    el.style.width = `${RADIUS_PX - 40 - 15}px`;
+    el.style.transform = `rotate(${degrees}deg) translateX(15px)`;
+    return el;
+  }
+
+  private itemElement(item: MenuItem, degrees: number): HTMLButtonElement {    const el = document.createElement('button');
     el.type = 'button';
     el.className = 'marking-menu-item';
     el.setAttribute('role', 'menuitem');

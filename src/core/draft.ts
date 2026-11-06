@@ -43,6 +43,13 @@ export class Draft {
     return id;
   }
 
+  /** Runs clockwise on screen from `start` to `end`. */
+  arc(center: Id, start: Id, end: Id): Id {
+    const id = this.id();
+    this.entities.push({ kind: 'arc', id, center, start, end });
+    return id;
+  }
+
   constrain(constraint: ConstraintInput): Id {
     const id = this.id();
     this.constraints.push({ ...constraint, id } as Constraint);

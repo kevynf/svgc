@@ -2,6 +2,8 @@ import type { Key, Translator } from '../i18n/i18n';
 import { icon } from './icons';
 import type { IconName } from './icons';
 
+const COLLAPSE_KEY = 'svgc.ribbonCollapsed';
+
 export interface RibbonButton {
   readonly id: string;
   readonly icon: IconName;
@@ -20,10 +22,35 @@ export interface RibbonPanel {
   readonly buttons: readonly RibbonButton[];
 }
 
+/** An up-pointing chevron, rotated 180° in CSS when the ribbon is collapsed. */
+function chevron(): SVGSVGElement {
+  const ns = 'http://www.w3.org/2000/svg';
+  const svg = document.createElementNS(ns, 'svg');
+  const attrs: Record<string, string> = {
+    class: 'icon',
+    width: '16',
+    height: '16',
+    viewBox: '0 0 24 24',
+    fill: 'none',
+    stroke: 'currentColor',
+    'stroke-width': '2',
+    'stroke-linecap': 'round',
+    'stroke-linejoin': 'round',
+    'aria-hidden': 'true',
+    focusable: 'false',
+  };
+  for (const [name, value] of Object.entries(attrs)) svg.setAttribute(name, value);
+  const path = document.createElementNS(ns, 'path');
+  path.setAttribute('d', 'm6 9 6 6 6-6');
+  svg.append(path);
+  return svg;
+}
+
 /** Inventor-style ribbon: one tab, labeled panels of large and small buttons. */
 export class Ribbon {
   readonly element = document.createElement('div');
   private readonly buttons = new Map<string, { def: RibbonButton; el: HTMLButtonElement }>();
+  private readonly toggle: HTMLButtonElement;
 
   constructor(
     private readonly t: Translator,
@@ -41,15 +68,44 @@ export class Ribbon {
     tabButton.setAttribute('aria-selected', 'true');
     tabButton.id = 'ribbon-tab-sketch';
     tabButton.textContent = t.t(tab);
-    tabs.append(tabButton);
+    // Double-clicking the tab collapses or restores the ribbon body.
+    tabButton.addEventListener('dblclick', () => this.setCollapsed(!this.collapsed));
+
+    const spacer = document.createElement('div');
+    spacer.className = 'ribbon-tabs-spacer';
+
+    this.toggle = document.createElement('button');
+    this.toggle.type = 'button';
+    this.toggle.className = 'ribbon-collapse';
+    this.toggle.append(chevron());
+    this.toggle.title = t.t('ribbon.collapse');
+    this.toggle.setAttribute('aria-label', t.t('ribbon.collapse'));
+    this.toggle.addEventListener('click', () => this.setCollapsed(!this.collapsed));
+
+    tabs.append(tabButton, spacer, this.toggle);
 
     const body = document.createElement('div');
     body.className = 'ribbon-body';
+    body.id = 'ribbon-body';
     body.setAttribute('role', 'tabpanel');
     body.setAttribute('aria-labelledby', tabButton.id);
     body.append(...panels.map((p) => this.panel(p)));
+    this.toggle.setAttribute('aria-controls', body.id);
 
     this.element.append(tabs, body);
+
+    const stored = localStorage.getItem(COLLAPSE_KEY) === '1';
+    this.setCollapsed(stored);
+  }
+
+  private get collapsed(): boolean {
+    return this.element.dataset['collapsed'] === 'true';
+  }
+
+  private setCollapsed(collapsed: boolean): void {
+    this.element.dataset['collapsed'] = String(collapsed);
+    this.toggle.setAttribute('aria-expanded', String(!collapsed));
+    localStorage.setItem(COLLAPSE_KEY, collapsed ? '1' : '0');
   }
 
   /** Refreshes enabled/pressed states. */

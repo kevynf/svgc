@@ -1,4 +1,5 @@
 import type { Vec2 } from '../core/geometry';
+import type { Artboard } from '../core/sketch';
 import type { Key, Params } from '../i18n/i18n';
 import type { IconName } from '../ui/icons';
 import type { Alignment, InferredConstraint } from './inference';
@@ -30,7 +31,9 @@ export type OverlayShape =
   /** Glyphs for the constraints that will be created, next to a world point. */
   | { readonly kind: 'inferred'; readonly at: Vec2; readonly constraints: readonly InferredConstraint[] }
   /** Marker on the point or curve position the cursor snapped to. */
-  | { readonly kind: 'snap'; readonly at: Vec2 };
+  | { readonly kind: 'snap'; readonly at: Vec2 }
+  /** The eight resize grips of an artboard, drawn while it is being edited. */
+  | { readonly kind: 'artboardHandles'; readonly artboard: Artboard };
 
 export interface MenuItem {
   readonly label: Message;

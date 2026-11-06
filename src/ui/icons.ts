@@ -1,4 +1,5 @@
 // Tabler Icons (MIT), outline style: 24×24 grid, 2px round strokes, currentColor.
+import artboard from '@tabler/icons/outline/artboard.svg?raw';
 import arrowBackUp from '@tabler/icons/outline/arrow-back-up.svg?raw';
 import arrowBarToRight from '@tabler/icons/outline/arrow-bar-to-right.svg?raw';
 import arrowForwardUp from '@tabler/icons/outline/arrow-forward-up.svg?raw';
@@ -28,6 +29,7 @@ import zoomScan from '@tabler/icons/outline/zoom-scan.svg?raw';
 
 const sources = {
   arc: vectorBezierArc,
+  artboard,
   cancel: x,
   circle: circleDot,
   construction: lineDashed,

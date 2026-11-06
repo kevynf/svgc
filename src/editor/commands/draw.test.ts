@@ -7,7 +7,7 @@ import type { Solver } from '../../solver/solver';
 import type { PointerInput } from '../command';
 import { Editor } from '../editor';
 import type { CommandFactory } from '../editor';
-import { CircleCommand, LineCommand, PointCommand, RectangleCommand } from './draw';
+import { ArcCommand, CircleCommand, LineCommand, PointCommand, RectangleCommand } from './draw';
 import { SelectCommand } from './select';
 
 let solver: Solver;
@@ -26,6 +26,7 @@ const commands = new Map<string, CommandFactory>([
   ['circle', (e) => new CircleCommand(e)],
   ['rectangle', (e) => new RectangleCommand(e)],
   ['point', (e) => new PointCommand(e)],
+  ['arc', (e) => new ArcCommand(e)],
 ]);
 
 function editorWith(sketch: Sketch = emptySketch()): Editor {
@@ -138,6 +139,75 @@ describe('RectangleCommand', () => {
     expect(count(editor.sketch, 'line')).toBe(4);
     expect(kinds(editor.sketch)).toEqual(['horizontal', 'horizontal', 'vertical', 'vertical']);
     expect(editor.solve.dof).toBe(4);
+  });
+});
+
+describe('ArcCommand', () => {
+  it('creates an arc through a third point', () => {
+    const editor = editorWith();
+    editor.startCommand('arc');
+    click(editor, 100, 0);
+    click(editor, 0, 100);
+    click(editor, 0, 0);
+    const arc = editor.sketch.entities.find((e) => e.kind === 'arc');
+    expect(arc).toBeDefined();
+    // The three points lie on a circle of radius ~70.7 about (50, 50).
+    const center = editor.sketch.entities.find((e) => e.kind === 'point' && Math.abs(e.x - 50) < 1e-6);
+    expect(center).toBeDefined();
+  });
+
+  it('orients the arc clockwise from start to end', () => {
+    const editor = editorWith();
+    editor.startCommand('arc');
+    // Start right, end top, through the origin: sweeps through the origin, so
+    // the model stores it start→end the long way round.
+    click(editor, 100, 0);
+    click(editor, 0, 100);
+    click(editor, 0, 0);
+    const arc = editor.sketch.entities.find((e) => e.kind === 'arc');
+    const sketch = editor.sketch;
+    const pt = (id: string) => sketch.entities.find((e) => e.id === id);
+    const start = arc?.kind === 'arc' ? pt(arc.start) : undefined;
+    const end = arc?.kind === 'arc' ? pt(arc.end) : undefined;
+    expect(start?.kind).toBe('point');
+    expect(end?.kind).toBe('point');
+    // The stored start is the one at the origin: the arc sweeps clockwise from
+    // there to (100, 0).
+    expect(start?.kind === 'point' && start.x === 0).toBe(true);
+  });
+});
+
+describe('LineCommand tangent arc', () => {
+  it('drags a tangent arc out of the chain start point', () => {
+    const editor = editorWith();
+    editor.startCommand('line');
+    click(editor, 0, 0);
+    click(editor, 100, 0);
+    const command = editor.activeCommand as LineCommand;
+    // Grab the shared end point and drag downwards.
+    command.pointerDown(at(100, 0));
+    command.pointerMove(at(100, 60));
+    command.pointerMove(at(100, 61));
+    command.pointerUp(at(100, 60));
+    const s = editor.sketch;
+    expect(count(s, 'arc')).toBe(1);
+    expect(kinds(s)).toContain('tangent');
+  });
+
+  it('Esc during the drag keeps the chain and drops the arc', () => {
+    const editor = editorWith();
+    editor.startCommand('line');
+    click(editor, 0, 0);
+    click(editor, 100, 0);
+    const command = editor.activeCommand as LineCommand;
+    command.pointerDown(at(100, 0));
+    command.pointerMove(at(100, 61));
+    command.pointerMove(at(100, 62));
+    editor.escape();
+    expect(count(editor.sketch, 'arc')).toBe(0);
+    // Chain survives: one more segment still works.
+    click(editor, 200, 0);
+    expect(count(editor.sketch, 'line')).toBe(2);
   });
 });
 

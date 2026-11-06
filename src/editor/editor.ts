@@ -1,7 +1,7 @@
 import { deleteItems, toggleConstruction } from '../core/edit';
 import type { Vec2 } from '../core/geometry';
-import type { Id } from '../core/model';
-import type { Sketch } from '../core/sketch';
+import type { Entity, Id } from '../core/model';
+import type { Artboard, Sketch } from '../core/sketch';
 import type { Solver, SolveResult } from '../solver/solver';
 import { analyzeStatus } from '../solver/status';
 import type { EntityStatus } from '../solver/status';
@@ -161,6 +161,40 @@ export class Editor {
 
   toggleConstruction(): void {
     this.commit(toggleConstruction(this.sketch, this.selected));
+  }
+
+  /** Sets the exported page (the artboard), or clears it with `undefined`. One undo step. */
+  setArtboard(artboard: Artboard | undefined): boolean {
+    return this.commit({ ...this.sketch, artboard });
+  }
+
+  /** Moves a point to an exact position; the solver keeps its constraints. */
+  setPointPosition(point: Id, x: number, y: number): boolean {
+    const current = this.sketch.entities.find((e) => e.id === point);
+    if (current?.kind !== 'point' || (current.x === x && current.y === y)) return false;
+    const entities = this.sketch.entities.map((e): Entity => (e.kind === 'point' && e.id === point ? { ...e, x, y } : e));
+    return this.commit({ ...this.sketch, entities });
+  }
+
+  /** Sets a circle's radius; arcs derive theirs from their three points. */
+  setCircleRadius(curve: Id, radius: number): boolean {
+    const current = this.sketch.entities.find((e) => e.id === curve);
+    if (current?.kind !== 'circle' || current.radius === radius || !Number.isFinite(radius)) return false;
+    const entities = this.sketch.entities.map((e): Entity => (e.kind === 'circle' && e.id === curve ? { ...e, radius } : e));
+    return this.commit({ ...this.sketch, entities });
+  }
+
+  /** Sets the construction flag of the given curves, for the properties panel. */
+  setConstruction(ids: Iterable<Id>, construction: boolean): boolean {
+    const targets = new Set(ids);
+    if (!this.sketch.entities.some((e) => targets.has(e.id) && e.kind !== 'point')) return false;
+    const entities = this.sketch.entities.map((e): Entity => {
+      if (e.kind === 'point' || !targets.has(e.id)) return e;
+      if (construction) return { ...e, construction: true };
+      const { construction: _, ...rest } = e;
+      return rest as Entity;
+    });
+    return this.commit({ ...this.sketch, entities });
   }
 
   // ── Selection and hover ────────────────────────────────────────────────

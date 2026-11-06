@@ -1,6 +1,7 @@
 import wasmUrl from '@salusoft89/planegcs/dist/planegcs_dist/planegcs.wasm?url';
 import { demoSketch } from './demo';
-import { CircleCommand, LineCommand, PointCommand, RectangleCommand } from './editor/commands/draw';
+import { ArtboardCommand } from './editor/commands/artboard';
+import { ArcCommand, CircleCommand, LineCommand, PointCommand, RectangleCommand } from './editor/commands/draw';
 import { SelectCommand } from './editor/commands/select';
 import { Editor } from './editor/editor';
 import type { CommandFactory } from './editor/editor';
@@ -24,8 +25,10 @@ const commands = new Map<string, CommandFactory>([
   ['select', (editor) => new SelectCommand(editor)],
   ['line', (editor) => new LineCommand(editor)],
   ['circle', (editor) => new CircleCommand(editor)],
+  ['arc', (editor) => new ArcCommand(editor)],
   ['rectangle', (editor) => new RectangleCommand(editor)],
   ['point', (editor) => new PointCommand(editor)],
+  ['artboard', (editor) => new ArtboardCommand(editor)],
 ]);
 
 const solver = await createSolver(wasmUrl);

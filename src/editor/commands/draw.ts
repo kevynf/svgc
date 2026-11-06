@@ -1,9 +1,10 @@
 import { Draft } from '../../core/draft';
-import { distance } from '../../core/geometry';
+import { angleOf, arcParams, distance } from '../../core/geometry';
 import type { Vec2 } from '../../core/geometry';
 import type { Id } from '../../core/model';
 import type { Command, MenuItem, Message, OverlayShape, PointerInput } from '../command';
 import type { Editor } from '../editor';
+import { hitTest } from '../hit';
 import type { InferenceResult } from '../inference';
 import { applyInferred, Picker, placePoint, snappedPoint } from './picker';
 import type { Anchor } from './picker';
@@ -91,8 +92,11 @@ export class LineCommand extends DrawCommand {
   private start: Pick | undefined;
   /** Id of the previous segment's end point when continuing a chain. */
   private startId: Id | undefined;
+  /** Set while dragging an arc out of the chain's current start point. */
+  private arcDrag: { from: Vec2; tangent: Vec2 } | undefined;
 
   prompt(): Message {
+    if (this.arcDrag !== undefined) return { key: 'prompts.tangentArc' };
     return { key: this.start === undefined ? 'prompts.lineStart' : 'prompts.lineNext' };
   }
 
@@ -102,7 +106,72 @@ export class LineCommand extends DrawCommand {
     return id === undefined ? { position: this.start.position } : { position: this.start.position, id };
   }
 
+  /**
+   * Dragging out of the start point (or of the curve the start point ends)
+   * creates a tangent arc, as in Inventor; a plain drag draws a segment.
+   */
+  pointerDown(input: PointerInput): void {
+    const start = this.start;
+    this.arcDrag = undefined;
+    if (start === undefined) return;
+    const hit = hitTest(this.editor.sketch, input.world, { tolerance: this.picker.tolerance });
+    const startPointId = this.startId ?? snappedPoint(start.result);
+    const onStart =
+      (hit !== undefined && hit === startPointId) ||
+      distance(input.world, start.position) <= this.picker.tolerance;
+    if (!onStart) return;
+
+    const curveId = this.startCurveId;
+    const tangent = startPointId !== undefined && curveId !== undefined ? exitDirection(this.editor, curveId, startPointId) : undefined;
+    if (tangent === undefined) return;
+    this.arcDrag = { from: start.position, tangent };
+    this.editor.beginDrag();
+  }
+
+  override pointerMove(input: PointerInput): void {
+    const arc = this.arcDrag;
+    if (arc === undefined) {
+      super.pointerMove(input);
+      return;
+    }
+    this.picker.update(input, { anchor: { position: arc.from, id: this.startId }, exclude: this.arcExclude() });
+    this.editor.viewChanged();
+  }
+
+  override pointerUp(input: PointerInput): void {
+    const arc = this.arcDrag;
+    this.arcDrag = undefined;
+    if (arc === undefined) {
+      super.pointerUp(input);
+      return;
+    }
+    const pick = toPick(this.picker.update(input, { anchor: { position: arc.from }, exclude: this.arcExclude() }));
+    const shape = tangentArc(arc.from, arc.tangent, pick.position);
+    this.editor.cancelDrag();
+    if (shape === undefined || shape.radius < this.picker.tolerance) {
+      this.editor.viewChanged();
+      return;
+    }
+    const draft = new Draft(this.editor.sketch);
+    const p1 = this.startId ?? (this.start === undefined ? undefined : resolve(draft, this.start));
+    if (p1 === undefined) return;
+    const p2 = placePoint(draft, pick.result);
+    if (p1 === p2) return;
+    const center = draft.point(shape.center);
+    const id = shape.swapped ? draft.arc(center, p2, p1) : draft.arc(center, p1, p2);
+    if (this.startCurveId !== undefined) {
+      draft.constrain({ kind: 'tangent', a: this.startCurveId, b: id });
+    }
+    if (!this.editor.commit(draft.sketch)) return;
+
+    const end = position(this.editor, p2, pick.position);
+    this.start = { position: end, result: { position: end, constraints: [], alignments: [] } };
+    this.startId = p2;
+    this.editor.viewChanged();
+  }
+
   protected click(pick: Pick): void {
+    if (this.arcDrag !== undefined) return;
     const start = this.start;
     if (start === undefined) {
       this.start = pick;
@@ -124,9 +193,39 @@ export class LineCommand extends DrawCommand {
     this.startId = p2;
   }
 
+  /** Curve (line or arc) whose endpoint is the chain's current start point. */
+  private get startCurveId(): Id | undefined {
+    const startId = this.startId;
+    if (startId === undefined) return undefined;
+    return this.editor.sketch.entities.find(
+      (e) =>
+        (e.kind === 'line' && (e.p1 === startId || e.p2 === startId)) ||
+        (e.kind === 'arc' && (e.start === startId || e.end === startId)),
+    )?.id;
+  }
+
+  private arcExclude(): ReadonlySet<Id> {
+    return new Set(this.startId === undefined ? [] : [this.startId]);
+  }
+
+  override cancel(): boolean {
+    if (this.arcDrag !== undefined) {
+      this.arcDrag = undefined;
+      this.editor.endDrag();
+      return true;
+    }
+    return super.cancel();
+  }
+
   protected preview(): OverlayShape[] {
     const pick = this.picker.pick;
-    if (this.start === undefined || pick === undefined) return [];
+    if (this.start === undefined) return [];
+    const arc = this.arcDrag;
+    if (arc !== undefined && pick !== undefined) {
+      const shape = tangentArc(arc.from, arc.tangent, pick.position);
+      return shape === undefined ? [] : arcPreview(shape);
+    }
+    if (pick === undefined) return [];
     return [{ kind: 'previewLine', from: this.start.position, to: pick.position }];
   }
 
@@ -240,6 +339,166 @@ export class RectangleCommand extends DrawCommand {
   protected restart(): boolean {
     if (this.first === undefined) return false;
     this.first = undefined;
+    return true;
+  }
+}
+
+interface ArcShape {
+  readonly center: Vec2;
+  readonly radius: number;
+  readonly startAngle: number;
+  readonly endAngle: number;
+}
+
+/** An arc as preview segments, so the overlay needs no arc primitive. */
+function arcPreview(arc: ArcShape): OverlayShape[] {
+  const n = Math.max(8, Math.ceil(((arc.endAngle - arc.startAngle) / (Math.PI * 2)) * 64));
+  const at = (i: number): Vec2 => {
+    const t = arc.startAngle + ((arc.endAngle - arc.startAngle) * i) / n;
+    return { x: arc.center.x + arc.radius * Math.cos(t), y: arc.center.y + arc.radius * Math.sin(t) };
+  };
+  return Array.from({ length: n }, (_, i): OverlayShape => ({ kind: 'previewLine', from: at(i), to: at(i + 1) }));
+}
+
+/**
+ * The arc leaving `from` in direction `tangent` (unit) and ending at `to`,
+ * oriented clockwise on screen like model arcs. Undefined when `to` lies on
+ * the tangent line (the arc would be infinitely large).
+ */
+export function tangentArc(
+  from: Vec2,
+  tangent: Vec2,
+  to: Vec2,
+): (ArcShape & { readonly swapped: boolean }) | undefined {
+  const n = { x: -tangent.y, y: tangent.x };
+  const d = { x: to.x - from.x, y: to.y - from.y };
+  const dn = d.x * n.x + d.y * n.y;
+  const len2 = d.x * d.x + d.y * d.y;
+  if (Math.abs(dn) < 1e-6 * Math.sqrt(len2) || len2 === 0) return undefined;
+  const r = len2 / (2 * dn);
+  const center = { x: from.x + n.x * r, y: from.y + n.y * r };
+  // Moving clockwise on screen (increasing angle) at `from` heads along (-sin a, cos a).
+  const a = angleOf(center, from);
+  const swapped = -Math.sin(a) * tangent.x + Math.cos(a) * tangent.y < 0;
+  const params = swapped ? arcParams(center, to, from) : arcParams(center, from, to);
+  return { center, swapped, ...params };
+}
+
+/** Unit direction leaving `curve` at its endpoint `at`, continuing the curve. */
+function exitDirection(editor: Editor, curveId: Id, at: Id): Vec2 | undefined {
+  const sketch = editor.sketch;
+  const curve = sketch.entities.find((e) => e.id === curveId);
+  const point = (id: Id) => {
+    const p = sketch.entities.find((e) => e.id === id);
+    return p?.kind === 'point' ? p : undefined;
+  };
+  if (curve?.kind === 'line') {
+    const [p1, p2] = [point(curve.p1), point(curve.p2)];
+    if (p1 === undefined || p2 === undefined) return undefined;
+    const [from, to] = curve.p2 === at ? [p1, p2] : [p2, p1];
+    const len = distance(from, to);
+    return len === 0 ? undefined : { x: (to.x - from.x) / len, y: (to.y - from.y) / len };
+  }
+  if (curve?.kind === 'arc') {
+    const c = point(curve.center);
+    const p = point(at);
+    if (c === undefined || p === undefined) return undefined;
+    const a = angleOf(c, p);
+    // Clockwise travel continues past `end`; leaving at `start` reverses it.
+    return curve.end === at ? { x: -Math.sin(a), y: Math.cos(a) } : { x: Math.sin(a), y: -Math.cos(a) };
+  }
+  return undefined;
+}
+
+/** Center of the circle through three points, or undefined when they are (nearly) collinear. */
+export function circumcenter(a: Vec2, b: Vec2, c: Vec2): Vec2 | undefined {
+  const d = 2 * (a.x * (b.y - c.y) + b.x * (c.y - a.y) + c.x * (a.y - b.y));
+  const scale = Math.max(distance(a, b), distance(b, c), distance(a, c));
+  if (Math.abs(d) < 1e-9 * scale * scale) return undefined;
+  const a2 = a.x * a.x + a.y * a.y;
+  const b2 = b.x * b.x + b.y * b.y;
+  const c2 = c.x * c.x + c.y * c.y;
+  return {
+    x: (a2 * (b.y - c.y) + b2 * (c.y - a.y) + c2 * (a.y - b.y)) / d,
+    y: (a2 * (c.x - b.x) + b2 * (a.x - c.x) + c2 * (b.x - a.x)) / d,
+  };
+}
+
+/**
+ * The arc through `start`, `through` and `end`, oriented the way the model
+ * stores arcs (clockwise on screen). `swapped` tells whether start and end
+ * had to trade places for that.
+ */
+export function threePointArc(
+  start: Vec2,
+  through: Vec2,
+  end: Vec2,
+): { center: Vec2; swapped: boolean; radius: number; startAngle: number; endAngle: number } | undefined {
+  const center = circumcenter(start, through, end);
+  if (center === undefined) return undefined;
+  const params = arcParams(center, start, end);
+  let a = angleOf(center, through);
+  while (a < params.startAngle) a += Math.PI * 2;
+  if (a <= params.endAngle) return { center, swapped: false, ...params };
+  return { center, swapped: true, ...arcParams(center, end, start) };
+}
+
+/** Three point arc (A3): start, end, then a point the arc passes through. */
+export class ArcCommand extends DrawCommand {
+  readonly id = 'arc';
+  private start: Pick | undefined;
+  private end: Pick | undefined;
+
+  prompt(): Message {
+    if (this.start === undefined) return { key: 'prompts.arcStart' };
+    return { key: this.end === undefined ? 'prompts.arcEnd' : 'prompts.arcThrough' };
+  }
+
+  protected anchor(): Anchor | undefined {
+    return undefined;
+  }
+
+  protected click(pick: Pick): void {
+    if (this.start === undefined) {
+      this.start = pick;
+      return;
+    }
+    if (this.end === undefined) {
+      if (distance(this.start.position, pick.position) >= this.picker.tolerance) this.end = pick;
+      return;
+    }
+    const arc = threePointArc(this.start.position, pick.position, this.end.position);
+    if (arc === undefined) return;
+
+    const draft = new Draft(this.editor.sketch);
+    const s = resolve(draft, this.start);
+    const e = resolve(draft, this.end);
+    if (s === e) return;
+    const center = draft.point(arc.center);
+    const id = arc.swapped ? draft.arc(center, e, s) : draft.arc(center, s, e);
+    const through = snappedPoint(pick.result);
+    if (through !== undefined && through !== s && through !== e) {
+      draft.constrain({ kind: 'pointOnCurve', point: through, curve: id });
+    }
+    if (this.editor.commit(draft.sketch)) {
+      this.start = undefined;
+      this.end = undefined;
+    }
+  }
+
+  protected preview(): OverlayShape[] {
+    const pick = this.picker.pick;
+    if (this.start === undefined || pick === undefined) return [];
+    if (this.end === undefined) return [{ kind: 'previewLine', from: this.start.position, to: pick.position }];
+    const arc = threePointArc(this.start.position, pick.position, this.end.position);
+    if (arc === undefined) return [{ kind: 'previewLine', from: this.start.position, to: this.end.position }];
+    return arcPreview(arc);
+  }
+
+  protected restart(): boolean {
+    if (this.start === undefined) return false;
+    if (this.end !== undefined) this.end = undefined;
+    else this.start = undefined;
     return true;
   }
 }

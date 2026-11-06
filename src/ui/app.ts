@@ -165,7 +165,7 @@ export class App {
     return [
       {
         label: 'ribbon.panels.create',
-        buttons: [cmd('line', 'line'), cmd('circle', 'circle'), cmd('arc', 'arc'), cmd('rectangle', 'rectangle'), cmd('point', 'point', 'small')],
+        buttons: [cmd('line', 'line'), cmd('circle', 'circle'), cmd('arc', 'arc'), cmd('rectangle', 'rectangle'), cmd('point', 'point')],
       },
       {
         label: 'ribbon.panels.modify',
@@ -200,6 +200,7 @@ export class App {
             run: () => e.toggleConstruction(),
           },
           cmd('driven', 'driven', 'small'),
+          cmd('artboard', 'artboard', 'small'),
         ],
       },
       {
