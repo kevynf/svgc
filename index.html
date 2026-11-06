@@ -1,20 +1,13 @@
 <!doctype html>
-<html lang="en">
+<html lang="zh-CN">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="color-scheme" content="dark" />
     <title>svgc</title>
   </head>
   <body>
-    <header>
-      <h1>svgc</h1>
-    </header>
-    <main>
-      <svg id="canvas" viewBox="0 0 800 500" role="application" aria-label="Sketch canvas. Drag points, or focus one and use arrow keys."></svg>
-    </main>
-    <footer>
-      <output id="status" aria-live="polite">Loading solver…</output>
-    </footer>
+    <div id="app"><p class="boot" role="status">正在加载求解器… / Loading solver…</p></div>
     <script type="module" src="/src/main.ts"></script>
   </body>
 </html>

@@ -1,71 +1,575 @@
+/* Dark theme. All colors are tokens so a light theme can be added by overriding them. */
 :root {
-  color-scheme: light;
-  font-family: system-ui, sans-serif;
-  --curve: #1f5fbf;
-  --curve-done: #1a1a1a;
-  --construction: #8a8a8a;
-  --handle: #ffffff;
-  --accent: #e0662b;
+  color-scheme: dark;
+  --font: 'Segoe UI', 'Microsoft YaHei UI', 'PingFang SC', system-ui, sans-serif;
+  --font-mono: 'Cascadia Mono', Consolas, ui-monospace, monospace;
+
+  --bg-app: #1e2124;
+  --bg-chrome: #2b2f33;
+  --bg-chrome-raised: #353a3f;
+  --bg-hover: #3f454b;
+  --bg-pressed: #24507a;
+  --bg-canvas: #212830;
+  --border: #14171a;
+  --border-subtle: #3a4046;
+
+  --text: #e3e6e8;
+  --text-muted: #9aa3ab;
+  --text-disabled: #5d656c;
+  --accent: #3d9be9;
+  --focus: #5cb3ff;
+
+  --grid-minor: #283039;
+  --grid-major: #313b46;
+  --axis-x: #8a3b3b;
+  --axis-y: #3b7a46;
+
+  /* Sketch geometry, following Inventor's dark scheme: under-constrained
+     geometry is bright, fully constrained geometry turns a calmer tone. */
+  --geom: #e6edf3;
+  --geom-constrained: #6fb8ff;
+  --geom-construction: #d8b25a;
+  --geom-hover: #ffb347;
+  --geom-selected: #4fd1ff;
+  --point: #e6edf3;
+
+  --ok: #6ccf7f;
+  --pending: #e3e6e8;
+  --error: #ff6b6b;
+
+  --select-window: rgb(61 155 233 / 0.14);
+  --select-window-stroke: #3d9be9;
+  --select-crossing: rgb(108 207 127 / 0.14);
+  --select-crossing-stroke: #6ccf7f;
+
+  font-family: var(--font);
+  font-size: 13px;
+  color: var(--text);
+  background: var(--bg-app);
 }
 
-body {
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#app {
+  height: 100%;
+  margin: 0;
+}
+
+.boot {
   margin: 0;
   display: grid;
-  grid-template-rows: auto 1fr auto;
-  height: 100vh;
+  place-items: center;
+  height: 100%;
+  color: var(--text-muted);
 }
 
-header,
-footer {
-  padding: 0.5rem 1rem;
-  font-size: 0.875rem;
+:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: -2px;
 }
 
-header h1 {
+.icon {
+  display: block;
+  flex: none;
+}
+
+/* ── Shell ─────────────────────────────────────────────────────────────── */
+
+.app {
+  display: grid;
+  grid-template-rows: auto auto 1fr auto;
+  height: 100%;
+  overflow: hidden;
+}
+
+.titlebar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  height: 32px;
+  padding: 0 0.75rem;
+  background: var(--bg-app);
+  border-bottom: 1px solid var(--border);
+}
+
+.titlebar h1 {
   margin: 0;
-  font-size: 1rem;
+  font-size: 13px;
+  font-weight: 400;
+  color: var(--text-muted);
 }
 
-#canvas {
+.locale {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  color: var(--text-muted);
+}
+
+.locale select {
+  font: inherit;
+  color: var(--text);
+  background: var(--bg-chrome);
+  border: 1px solid var(--border-subtle);
+  border-radius: 3px;
+  padding: 2px 4px;
+}
+
+/* ── Ribbon ────────────────────────────────────────────────────────────── */
+
+.ribbon {
+  background: var(--bg-chrome);
+  border-bottom: 1px solid var(--border);
+}
+
+.ribbon-tabs {
+  display: flex;
+  padding: 0 0.5rem;
+  background: var(--bg-app);
+}
+
+.ribbon-tab {
+  font: inherit;
+  color: var(--text);
+  background: var(--bg-chrome);
+  border: 0;
+  border-top: 2px solid var(--accent);
+  padding: 4px 14px 5px;
+  cursor: default;
+}
+
+.ribbon-body {
+  display: flex;
+  align-items: stretch;
+  min-height: 92px;
+  padding: 4px 4px 0;
+  overflow-x: auto;
+}
+
+.ribbon-panel {
+  display: flex;
+  flex-direction: column;
+  padding: 0 4px;
+  border-right: 1px solid var(--border-subtle);
+}
+
+.ribbon-buttons {
+  display: flex;
+  align-items: flex-start;
+  gap: 2px;
+  flex: 1;
+}
+
+.ribbon-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.ribbon-panel-title {
+  margin: 2px 0 0;
+  padding: 2px 0 3px;
+  font-size: 11px;
+  font-weight: 400;
+  text-align: center;
+  color: var(--text-muted);
+}
+
+.ribbon-button {
+  font: inherit;
+  color: var(--text);
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 3px;
+  cursor: pointer;
+}
+
+.ribbon-button.large {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  min-width: 52px;
+  max-width: 72px;
+  padding: 6px 4px 4px;
+}
+
+.ribbon-button.large .label {
+  font-size: 12px;
+  line-height: 1.2;
+  text-align: center;
+}
+
+.ribbon-button.small {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 22px;
+  padding: 2px 8px 2px 4px;
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+.ribbon-button:hover:not(:disabled) {
+  background: var(--bg-hover);
+  border-color: var(--border-subtle);
+}
+
+.ribbon-button[aria-pressed='true'] {
+  background: var(--bg-pressed);
+  border-color: var(--accent);
+}
+
+.ribbon-button:disabled {
+  color: var(--text-disabled);
+  cursor: default;
+}
+
+/* ── Workspace ─────────────────────────────────────────────────────────── */
+
+.workspace {
+  display: grid;
+  grid-template-columns: 240px 1fr;
+  min-height: 0;
+}
+
+.browser {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  background: var(--bg-chrome);
+  border-right: 1px solid var(--border);
+}
+
+.browser-title {
+  margin: 0;
+  padding: 6px 10px;
+  font-size: 12px;
+  font-weight: 600;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.browser-tree,
+.browser-tree ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.browser-tree {
+  flex: 1;
+  overflow: auto;
+  padding: 4px 0;
+}
+
+.browser-group {
+  display: block;
+  padding: 4px 10px;
+  color: var(--text-muted);
+  font-size: 12px;
+}
+
+.browser-item,
+.browser-empty {
+  padding: 3px 10px 3px 26px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.browser-empty {
+  color: var(--text-disabled);
+}
+
+.browser-item {
+  cursor: pointer;
+}
+
+.browser-item:hover,
+.browser-item.hover {
+  background: var(--bg-hover);
+}
+
+.browser-item[aria-selected='true'] {
+  background: var(--bg-pressed);
+}
+
+.stage {
+  position: relative;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+}
+
+/* ── Canvas ────────────────────────────────────────────────────────────── */
+
+.canvas {
+  display: block;
   width: 100%;
   height: 100%;
-  background: #fafafa;
+  background: var(--bg-canvas);
   touch-action: none;
   user-select: none;
+  cursor: crosshair;
+}
+
+.canvas:focus-visible {
+  outline-offset: -2px;
+}
+
+.canvas.panning {
+  cursor: grabbing;
+}
+
+.canvas[data-command='select'] {
+  cursor: default;
+}
+
+.grid line {
+  stroke-width: 1;
+  shape-rendering: crispEdges;
+}
+
+.grid .minor {
+  stroke: var(--grid-minor);
+}
+
+.grid .major {
+  stroke: var(--grid-major);
+}
+
+.grid .axis.x {
+  stroke: var(--axis-x);
+}
+
+.grid .axis.y {
+  stroke: var(--axis-y);
+}
+
+.grid .origin {
+  fill: var(--bg-canvas);
+  stroke: var(--text-muted);
+  stroke-width: 1.5;
 }
 
 .curve {
   fill: none;
-  stroke: var(--curve);
+  stroke: var(--geom);
   stroke-width: 1.5;
-  vector-effect: non-scaling-stroke;
+  stroke-linecap: round;
 }
 
-.fully-constrained .curve {
-  stroke: var(--curve-done);
+.curve.constrained {
+  stroke: var(--geom-constrained);
 }
 
 .curve.construction {
-  stroke: var(--construction);
-  stroke-dasharray: 6 4;
+  stroke: var(--geom-construction);
+  stroke-width: 1;
+  stroke-dasharray: 8 4;
+}
+
+.curve.hover {
+  stroke: var(--geom-hover);
+  stroke-width: 2.5;
+}
+
+.curve.selected {
+  stroke: var(--geom-selected);
+  stroke-width: 2.5;
+}
+
+.point {
+  fill: var(--point);
+  stroke: none;
+}
+
+.point.constrained {
+  fill: var(--geom-constrained);
+}
+
+.point.center {
+  fill: none;
+  stroke: var(--point);
+  stroke-width: 1.5;
+}
+
+.point.center.constrained {
+  stroke: var(--geom-constrained);
+}
+
+.point.hover {
+  fill: var(--geom-hover);
+  stroke: var(--geom-hover);
+}
+
+.point.selected {
+  fill: var(--geom-selected);
+  stroke: var(--geom-selected);
+}
+
+.overlay .preview {
+  fill: none;
+  stroke: var(--geom-hover);
+  stroke-width: 1.5;
+  stroke-linecap: round;
+}
+
+.overlay .guide {
+  stroke: var(--text-muted);
+  stroke-width: 1;
+  stroke-dasharray: 2 4;
+}
+
+.overlay .snap {
+  fill: none;
+  stroke: var(--geom-hover);
+  stroke-width: 1.5;
+}
+
+.overlay .inferred {
+  color: var(--text);
+}
+
+.overlay .inferred-bg {
+  fill: var(--bg-chrome-raised);
+  stroke: var(--border-subtle);
   stroke-width: 1;
 }
 
-.handle {
-  fill: var(--handle);
-  stroke: var(--curve);
-  stroke-width: 1.5;
-  cursor: grab;
+.selection-box {
+  stroke-width: 1;
+  shape-rendering: crispEdges;
 }
 
-.handle:hover,
-.handle:focus-visible,
-.handle.active {
-  fill: var(--accent);
-  stroke: var(--accent);
-  outline: none;
+.selection-box.window {
+  fill: var(--select-window);
+  stroke: var(--select-window-stroke);
 }
 
-.handle.active {
-  cursor: grabbing;
+.selection-box.crossing {
+  fill: var(--select-crossing);
+  stroke: var(--select-crossing-stroke);
+  stroke-dasharray: 5 3;
+}
+
+/* ── Marking menu ──────────────────────────────────────────────────────── */
+
+.marking-menu {
+  position: absolute;
+  width: 0;
+  height: 0;
+  z-index: 10;
+}
+
+.marking-menu-hub {
+  position: absolute;
+  left: -14px;
+  top: -14px;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: 2px solid var(--accent);
+  background: rgb(43 47 51 / 0.85);
+}
+
+.marking-menu-item {
+  position: absolute;
+  left: var(--dx);
+  top: var(--dy);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font: inherit;
+  white-space: nowrap;
+  color: var(--text);
+  background: var(--bg-chrome-raised);
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  padding: 4px 10px 4px 6px;
+  box-shadow: 0 2px 6px rgb(0 0 0 / 0.45);
+  cursor: pointer;
+  transform: translate(-50%, -50%);
+}
+
+.marking-menu-item[data-side='right'] {
+  transform: translate(0, -50%);
+}
+
+.marking-menu-item[data-side='left'] {
+  transform: translate(-100%, -50%);
+}
+
+.marking-menu-item:hover:not(:disabled),
+.marking-menu-item:focus-visible {
+  background: var(--bg-pressed);
+  border-color: var(--accent);
+}
+
+.marking-menu-item:disabled {
+  color: var(--text-disabled);
+  cursor: default;
+}
+
+/* ── Status bar ────────────────────────────────────────────────────────── */
+
+.statusbar {
+  display: flex;
+  align-items: center;
+  gap: 1.25rem;
+  height: 26px;
+  padding: 0 0.75rem;
+  font-size: 12px;
+  background: var(--bg-chrome);
+  border-top: 1px solid var(--border);
+}
+
+.status-prompt {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.status-prompt.error {
+  color: var(--error);
+}
+
+.status-selection {
+  color: var(--text-muted);
+}
+
+.status-coords {
+  min-width: 15ch;
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  color: var(--text-muted);
+}
+
+.status-state {
+  min-width: 9ch;
+  text-align: right;
+}
+
+.status-state[data-tone='ok'] {
+  color: var(--ok);
+}
+
+.status-state[data-tone='error'] {
+  color: var(--error);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .ribbon-button,
+  .browser-item {
+    transition: background-color 80ms linear;
+  }
 }
