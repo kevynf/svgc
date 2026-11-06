@@ -61,6 +61,20 @@ const sources = {
   zoomAll: zoomScan,
 } as const;
 
+/**
+ * Ink offsets, in grid units, for the few Tabler icons whose geometry is not
+ * centered in the 24×24 viewBox (measured with getBBox). Applied so a row or
+ * column of icons lines up. Most icons need nothing.
+ */
+const OPTICAL: Partial<Record<IconName, readonly [number, number]>> = {
+  dimension: [0, 0.5],
+  language: [0, 0.5],
+  ok: [-0.5, 0],
+  redo: [0.5, 0],
+  trim: [1, 0],
+  undo: [-0.5, 0],
+};
+
 export type IconName = keyof typeof sources;
 
 const parser = new DOMParser();
@@ -75,5 +89,13 @@ export function icon(name: IconName, size = 20): SVGSVGElement {
   svg.setAttribute('height', String(size));
   svg.setAttribute('aria-hidden', 'true');
   svg.setAttribute('focusable', 'false');
+
+  const [dx, dy] = OPTICAL[name] ?? [0, 0];
+  if (dx !== 0 || dy !== 0) {
+    const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+    g.setAttribute('transform', `translate(${dx} ${dy})`);
+    g.replaceChildren(...svg.querySelectorAll('path'));
+    svg.replaceChildren(g);
+  }
   return document.importNode(svg, true);
 }

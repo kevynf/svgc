@@ -196,10 +196,10 @@ export class App {
         label: 'ribbon.panels.constrain',
         buttons: [
           cmd('dimension', 'dimension'),
-          cmd('fix', 'fix', 'small'),
-          cmd('equal', 'equal', 'small'),
-          cmd('horizontal', 'horizontal', 'small'),
-          cmd('vertical', 'vertical', 'small'),
+          cmd('fix', 'fix'),
+          cmd('equal', 'equal'),
+          cmd('horizontal', 'horizontal'),
+          cmd('vertical', 'vertical'),
         ],
       },
       {
