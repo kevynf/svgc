@@ -64,6 +64,23 @@ export class Solver {
     }
   }
 
+  /**
+   * Loads `sketch` into the planegcs system and runs `probe` against it. The
+   * probe may push extra primitives and re-solve as often as it likes: the
+   * solution is never applied to the parameters, and `solve()` clears the
+   * system before loading a sketch, so probing cannot affect later solves.
+   * Used by `analyzeStatus` for per-entity constraint status.
+   */
+  probeSystem<T>(sketch: Sketch, probe: (translation: Translation, gcs: GcsWrapper) => T): T {
+    if (this.disposed) {
+      throw new Error('Solver has been disposed');
+    }
+    const translation = translate(sketch);
+    this.gcs.clear_data();
+    this.gcs.push_primitives_and_params(translation.primitives);
+    return probe(translation, this.gcs);
+  }
+
   private readBack(sketch: Sketch, translation: Translation): Sketch {
     const solved = (entity: Entity): SketchPrimitive | undefined => {
       const gcsId = translation.gcsIdOf.get(entity.id);
