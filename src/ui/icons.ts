@@ -8,6 +8,8 @@ import arrowsVertical from '@tabler/icons/outline/arrows-vertical.svg?raw';
 import borderCornerRounded from '@tabler/icons/outline/border-corner-rounded.svg?raw';
 import boxMargin from '@tabler/icons/outline/box-margin.svg?raw';
 import check from '@tabler/icons/outline/check.svg?raw';
+import chevronDown from '@tabler/icons/outline/chevron-down.svg?raw';
+import chevronUp from '@tabler/icons/outline/chevron-up.svg?raw';
 import circleDot from '@tabler/icons/outline/circle-dot.svg?raw';
 import equal from '@tabler/icons/outline/equal.svg?raw';
 import flipHorizontal from '@tabler/icons/outline/flip-horizontal.svg?raw';
@@ -31,6 +33,8 @@ const sources = {
   arc: vectorBezierArc,
   artboard,
   cancel: x,
+  chevronDown,
+  chevronUp,
   circle: circleDot,
   construction: lineDashed,
   delete: trash,

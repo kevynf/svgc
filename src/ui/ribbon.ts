@@ -26,24 +26,38 @@ export interface RibbonPanel {
 export class Ribbon {
   readonly element = document.createElement('div');
   private readonly buttons = new Map<string, { def: RibbonButton; el: HTMLButtonElement }>();
+  /** The collapse toggle lives in the header strip, so it is exposed as a button. */
+  readonly collapseToggle: HTMLButtonElement;
 
   constructor(
     private readonly t: Translator,
     panels: readonly RibbonPanel[],
   ) {
     this.element.className = 'ribbon';
+    this.element.id = 'ribbon-body';
+    this.element.setAttribute('role', 'tabpanel');
+    this.element.setAttribute('aria-labelledby', 'ribbon-tab-sketch');
+    this.element.append(...panels.map((p) => this.panel(p)));
 
-    const body = document.createElement('div');
-    body.className = 'ribbon-body';
-    body.id = 'ribbon-body';
-    body.append(...panels.map((p) => this.panel(p)));
+    this.collapseToggle = document.createElement('button');
+    this.collapseToggle.type = 'button';
+    this.collapseToggle.className = 'ribbon-collapse';
+    this.collapseToggle.title = t.t('ribbon.collapse');
+    this.collapseToggle.setAttribute('aria-label', t.t('ribbon.collapse'));
+    this.collapseToggle.setAttribute('aria-controls', this.element.id);
+    this.collapseToggle.addEventListener('click', () => this.setCollapsed(!this.collapsed));
 
-    this.element.append(body);
     this.setCollapsed(localStorage.getItem(COLLAPSE_KEY) === '1');
+  }
+
+  get collapsed(): boolean {
+    return this.element.dataset['collapsed'] === 'true';
   }
 
   private setCollapsed(collapsed: boolean): void {
     this.element.dataset['collapsed'] = String(collapsed);
+    this.collapseToggle.setAttribute('aria-expanded', String(!collapsed));
+    this.collapseToggle.replaceChildren(icon(collapsed ? 'chevronDown' : 'chevronUp', 14));
     localStorage.setItem(COLLAPSE_KEY, collapsed ? '1' : '0');
   }
 

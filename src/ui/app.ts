@@ -155,22 +155,7 @@ export class App {
     tabButton.id = 'ribbon-tab-sketch';
     tabButton.textContent = this.t.t('ribbon.sketchTab');
 
-    const toggle = document.createElement('button');
-    toggle.type = 'button';
-    toggle.className = 'ribbon-collapse';
-    toggle.append(icon('select', 14));
-    toggle.title = this.t.t('ribbon.collapse');
-    toggle.setAttribute('aria-label', this.t.t('ribbon.collapse'));
-    toggle.setAttribute('aria-expanded', 'true');
-    toggle.setAttribute('aria-controls', 'ribbon-body');
-    toggle.addEventListener('click', () => {
-      const collapsed = document.body.dataset['ribbonCollapsed'] !== 'true';
-      document.body.dataset['ribbonCollapsed'] = String(collapsed);
-      toggle.setAttribute('aria-expanded', String(!collapsed));
-      localStorage.setItem('svgc.ribbonCollapsed', collapsed ? '1' : '0');
-    });
-
-    row.append(tabButton, toggle);
+    row.append(tabButton, this.ribbon.collapseToggle);
     return row;
   }
 
