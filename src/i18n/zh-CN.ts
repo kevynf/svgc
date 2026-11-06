@@ -109,6 +109,12 @@ export const zhCN = {
   menu: {
     label: '标记菜单',
   },
+  properties: {
+    label: '特性',
+  },
+  artboard: {
+    label: '画板',
+  },
 } as const satisfies MessageTree;
 
 export type Messages = typeof zhCN;

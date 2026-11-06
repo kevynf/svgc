@@ -106,4 +106,10 @@ export const en: Catalog<Messages> = {
   menu: {
     label: 'Marking menu',
   },
+  properties: {
+    label: 'Properties',
+  },
+  artboard: {
+    label: 'Artboard',
+  },
 };

@@ -9,6 +9,7 @@ import { SketchView } from '../render/view';
 import { Browser } from './browser';
 import { icon } from './icons';
 import { MarkingMenu } from './marking-menu';
+import { PropertiesPanel } from './properties';
 import { Ribbon } from './ribbon';
 import type { RibbonButton, RibbonPanel } from './ribbon';
 import { StatusBar } from './statusbar';
@@ -50,6 +51,7 @@ export class App {
   private readonly t: Translator;
   private readonly ribbon: Ribbon;
   private readonly browser: Browser;
+  private readonly properties: PropertiesPanel;
   private readonly status: StatusBar;
   private readonly menu: MarkingMenu;
   private readonly canvas: SVGSVGElement;
@@ -85,6 +87,9 @@ export class App {
     const workspace = document.createElement('div');
     workspace.className = 'workspace';
     workspace.append(this.browser.element, stage);
+
+    this.properties = new PropertiesPanel(editor, t);
+    workspace.append(this.properties.element);
 
     this.element.append(this.titleBar(onLocaleChange), this.ribbon.element, workspace, this.status.element);
 
@@ -245,6 +250,7 @@ export class App {
     this.canvas.classList.toggle('panning', this.pan !== undefined);
     this.ribbon.update();
     this.browser.update();
+    this.properties.update();
     this.status.update();
   }
 

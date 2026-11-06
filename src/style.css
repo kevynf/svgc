@@ -236,7 +236,7 @@ body,
 
 .workspace {
   display: grid;
-  grid-template-columns: 240px 1fr;
+  grid-template-columns: 240px 1fr auto;
   min-height: 0;
 }
 

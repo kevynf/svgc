@@ -1,10 +1,23 @@
 import type { Entity, EntityKind, Id } from './model';
 import type { Constraint } from './model';
 
+/**
+ * The exported page: SVG `viewBox` origin and size, in world px. Geometry
+ * outside it still exists in the model but is clipped in the exported file.
+ */
+export interface Artboard {
+  readonly x: number;
+  readonly y: number;
+  readonly width: number;
+  readonly height: number;
+}
+
 export interface Sketch {
   readonly entities: readonly Entity[];
   readonly constraints: readonly Constraint[];
   readonly params: Readonly<Record<string, number>>;
+  /** Absent until the user defines one; export then falls back to the geometry bounds. */
+  readonly artboard?: Artboard;
 }
 
 export class SketchError extends Error {

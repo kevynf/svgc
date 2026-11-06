@@ -4,6 +4,7 @@ import type { Entity, Id, Point } from '../core/model';
 import type { Sketch } from '../core/sketch';
 import type { OverlayShape } from '../editor/command';
 import type { InferredConstraint } from '../editor/inference';
+import { artboardElements } from './artboard';
 import { constraintIcon } from '../ui/constraint-icons';
 import type { ConstraintGlyph } from '../ui/constraint-icons';
 import { pointLookup } from '../editor/hit';
@@ -51,12 +52,13 @@ const POINT_PX = { endpoint: 2.5, sketchPoint: 3.5, center: 4 } as const;
  */
 export class SketchView {
   private readonly grid = svgElement('g', { class: 'grid', 'aria-hidden': 'true' });
+  private readonly artboard = svgElement('g', { class: 'artboard', 'aria-hidden': 'true' });
   private readonly curves = svgElement('g', { class: 'curves' });
   private readonly points = svgElement('g', { class: 'points' });
   private readonly overlay = svgElement('g', { class: 'overlay', 'aria-hidden': 'true' });
 
   constructor(readonly root: SVGSVGElement) {
-    root.append(this.grid, this.curves, this.points, this.overlay);
+    root.append(this.grid, this.artboard, this.curves, this.points, this.overlay);
   }
 
   render(state: ViewState): void {
@@ -65,6 +67,7 @@ export class SketchView {
     const s = (p: Vec2) => vp.toScreen(p);
 
     this.renderGrid(vp);
+    this.artboard.replaceChildren(...artboardElements(sketch.artboard, vp));
 
     const classes = (e: Entity, base: string) => {
       const list = [base];
