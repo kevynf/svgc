@@ -80,24 +80,18 @@ export class Ribbon {
     title.textContent = this.t.t(panel.label);
     group.setAttribute('aria-label', title.textContent);
 
-    // Small buttons flow into 3-row columns; each column fills its rows so
-    // panels of different button counts still line up in height.
-    const stacks: HTMLElement[] = [];
+    // Small buttons flow horizontally and wrap; large buttons keep their own row.
+    const smalls: HTMLButtonElement[] = [];
     for (const def of panel.buttons) {
       const el = this.button(def);
-      if (def.size === 'small') {
-        let stack = stacks.at(-1);
-        if (stack === undefined || stack.childElementCount === 3) {
-          stack = document.createElement('div');
-          stack.className = 'ribbon-stack';
-          stacks.push(stack);
-          group.append(stack);
-        }
-        stack.append(el);
-      } else {
-        stacks.length = 0;
-        group.append(el);
-      }
+      if (def.size === 'small') smalls.push(el);
+      else group.append(el);
+    }
+    if (smalls.length > 0) {
+      const row = document.createElement('div');
+      row.className = 'ribbon-smalls';
+      row.append(...smalls);
+      group.append(row);
     }
     section.append(group, title);
     return section;
