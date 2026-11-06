@@ -80,7 +80,8 @@ export class Ribbon {
     title.textContent = this.t.t(panel.label);
     group.setAttribute('aria-label', title.textContent);
 
-    // Small buttons flow horizontally and wrap; large buttons keep their own row.
+    // Small buttons fill a 2-row grid that wraps into columns (Inventor layout);
+    // large buttons keep their own row.
     const smalls: HTMLButtonElement[] = [];
     for (const def of panel.buttons) {
       const el = this.button(def);
@@ -88,10 +89,11 @@ export class Ribbon {
       else group.append(el);
     }
     if (smalls.length > 0) {
-      const row = document.createElement('div');
-      row.className = 'ribbon-smalls';
-      row.append(...smalls);
-      group.append(row);
+      const grid = document.createElement('div');
+      grid.className = 'ribbon-smalls';
+      grid.setAttribute('role', 'group');
+      grid.append(...smalls);
+      group.append(grid);
     }
     section.append(group, title);
     return section;
