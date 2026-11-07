@@ -7,6 +7,7 @@ import type { OverlayShape } from '../editor/command';
 import type { InferredConstraint } from '../editor/inference';
 import { artboardElements, artboardHandles } from './artboard';
 import { constraintElements, constraintPlacements, hitConstraint } from './constraints';
+import type { ConstraintPlacement } from './constraints';
 import { constraintIcon } from '../ui/constraint-icons';
 import type { ConstraintGlyph } from '../ui/constraint-icons';
 import { dimensionLayout, dimensionText, isDimensionKind } from './dimensions';
@@ -52,6 +53,8 @@ export interface ViewState {
   readonly dimensionLabel?: (constraint: Constraint) => string | undefined;
   /** Formats a dimension's value text; the app supplies its locale's number format. */
   readonly formatNumber?: (n: number) => string;
+  /** Accessible name and tooltip of a constraint symbol, e.g. `t('constraints.symbol', { kind })`. */
+  readonly constraintLabel?: (placement: ConstraintPlacement) => string | undefined;
 }
 
 /** Point radius on screen, by role. */
@@ -157,7 +160,11 @@ export class SketchView {
       });
       return el === undefined ? [] : [el];
     });
-    const symbols = constraintElements(placements, s, vp.scale, { hovered, selected });
+    const symbols = constraintElements(placements, s, vp.scale, {
+      hovered,
+      selected,
+      label: state.constraintLabel,
+    });
     // Opaque glyph chips read as badges on top, so the dimension graphics go
     // underneath them; the two are spatially separated, so order is cosmetic.
     this.constraints.replaceChildren(...dimensions, ...symbols);

@@ -10,8 +10,8 @@ import { parseSketch, serializeSketch } from '../io/sketch-file';
 import type { SketchFileError } from '../io/sketch-file';
 import { createFileSaver } from '../io/save';
 import { sketchToSvg } from '../io/svg';
-import { emptySketch } from '../core/sketch';
-import { dimensionText } from '../render/dimensions';
+import { emptySketch, indexEntities } from '../core/sketch';
+import { dimensionLayout, dimensionText, isDimensionKind } from '../render/dimensions';
 import { SketchView } from '../render/view';
 import { AppMenu } from './app-menu';
 import { Browser } from './browser';
@@ -19,6 +19,7 @@ import { icon } from './icons';
 import { MarkingMenu } from './marking-menu';
 import { ParametersDialog } from './parameters';
 import { PropertiesPanel } from './properties';
+import { parseNumber } from './properties-model';
 import { settings } from '../editor/settings';
 import { constraintPlacements, hitConstraint } from '../render/constraints';
 import { ConstraintSettingsDialog } from './constraint-settings';
@@ -68,6 +69,9 @@ export interface AppOptions {
   readonly onLocaleChange: (locale: Locale) => void;
 }
 
+/** Who asked for the inline value box: a command placing a dimension, or a double-click on one. */
+type EditSource = 'command' | 'constraint';
+
 /** Builds the editor shell (title bar, ribbon, browser, canvas, status bar) and routes input. */
 export class App {
   readonly element = document.createElement('div');
@@ -90,10 +94,14 @@ export class App {
   private pendingMove: PointerInput | undefined;
   private pan: { pointer: number; x: number; y: number } | undefined;
   private menuGesture: { pointer: number; x: number; y: number } | undefined;
-  /** The inline value box the active command asked for, while it is open. */
+  /** The inline value box, while it is open — whichever source asked for it. */
   private editInput: HTMLInputElement | undefined;
   /** Whether the user has typed in the value box, i.e. edited the measurement. */
   private editDirty = false;
+  /** The dimension a double-click asked to re-value, while its value box is open. */
+  private constraintEdit: { readonly constraint: Id; readonly at: Vec2; readonly value: number } | undefined;
+  /** Which source the open box belongs to, so a change of source re-opens it. */
+  private editSource: EditSource | undefined;
   private readonly settingsDialog: ConstraintSettingsDialog;
   private readonly parametersDialog: ParametersDialog;
   private readonly appMenu: AppMenu;
@@ -407,6 +415,12 @@ export class App {
         if (value === undefined) return undefined;
         return dimensionText(value, c.kind === 'radius', format);
       },
+      // A glyph chip is otherwise mute: it names the constraint it stands for,
+      // which is both the tooltip and the accessible name a screen reader reads.
+      constraintLabel: (placement) => {
+        const kind = this.t.t(`constraints.${placement.glyph}` as Key);
+        return this.t.t('constraints.symbol', { kind });
+      },
       formatNumber: format,
     });
     this.canvas.dataset['command'] = e.activeCommand.id;
@@ -421,26 +435,57 @@ export class App {
   // ── Inline value box ───────────────────────────────────────────────────
 
   /**
-   * The inline value box a command asks for while it places something (a
-   * dimension): opened when the request appears, repositioned on every render
-   * so it follows the value text, and closed as soon as the request goes away.
+   * The inline value box: opened when a request appears, repositioned on every
+   * render so it follows the value text, and closed as soon as the request goes
+   * away. Two things ask for it — the active command while it places a
+   * dimension, and a double-click on one already placed — and both get this
+   * same box; only where the value goes differs (`commitEditBox`).
    */
   private syncEdit(): void {
-    const request = this.editor.activeCommand.edit;
-    if (request === undefined) {
+    const edit = this.editRequest();
+    if (edit === undefined) {
       this.closeEdit();
       return;
     }
     const input = this.editInput;
-    if (input !== undefined) {
-      // The box is already open: follow the anchor, but never overwrite what
-      // the user is typing, exactly like the properties panel refreshes.
-      const at = this.editor.viewport.toScreen(request.at);
+    // The box is already open on this source: follow the anchor, but never
+    // overwrite what the user is typing, exactly like the properties panel
+    // refreshes. A box the other source took over is re-opened, so it is never
+    // holding one source's value while the other commits.
+    if (input !== undefined && this.editSource === edit.source) {
+      const at = this.editor.viewport.toScreen(edit.request.at);
       input.style.left = `${at.x}px`;
       input.style.top = `${at.y}px`;
       return;
     }
-    this.openEdit(request);
+    if (input !== undefined) this.closeEdit();
+    this.editSource = edit.source;
+    this.openEdit(edit.request);
+  }
+
+  /**
+   * What the box should be editing, and which source it came from. The command's
+   * own request comes first: it owns the value entry until the dimension it is
+   * placing is committed, and taking the box over drops the double-click's
+   * request. Otherwise the re-valuing a double-click asked for stands — unless
+   * the constraint has since been deleted, which leaves nothing to edit.
+   */
+  private editRequest(): { readonly source: EditSource; readonly request: EditRequest } | undefined {
+    const request = this.editor.activeCommand.edit;
+    if (request !== undefined) {
+      this.constraintEdit = undefined;
+      return { source: 'command', request };
+    }
+    const constraint = this.constraintEdit;
+    if (constraint === undefined) return undefined;
+    if (!this.editor.sketch.constraints.some((c) => c.id === constraint.constraint)) {
+      this.constraintEdit = undefined;
+      return undefined;
+    }
+    return {
+      source: 'constraint',
+      request: { at: constraint.at, value: constraint.value, label: { key: 'prompts.dimensionValue' } },
+    };
   }
 
   /** Opens the box over the value text's anchor, pre-filled with the measurement. */
@@ -479,8 +524,15 @@ export class App {
   /** Enter, or a blur: applies what the user typed. A rejection keeps the box open. */
   private commitEditBox(): void {
     const input = this.editInput;
+    if (input === undefined) return;
+    // The box belongs to a double-clicked dimension, so it re-values that
+    // constraint; anything else belongs to the command that asked for it.
+    if (this.editSource === 'constraint') {
+      this.commitConstraintEdit(input);
+      return;
+    }
     const command = this.editor.activeCommand;
-    if (input === undefined || command.commitEdit === undefined) return;
+    if (command.commitEdit === undefined) return;
     // An unusable value or a solver rejection keeps the box open and focused,
     // so the user can fix it, exactly like the properties panel does.
     if (!command.commitEdit(input.value, this.editDirty)) {
@@ -489,8 +541,59 @@ export class App {
     }
   }
 
+  /**
+   * Applies what the user typed to the dimension the box is re-valuing, the way
+   * the properties panel's value field does: the text is a parameter name or an
+   * expression, and the editor commits it as one undo step. An unusable value,
+   * or one the solver rejects, keeps the box open and focused so it can be fixed.
+   */
+  private commitConstraintEdit(input: HTMLInputElement): void {
+    const edit = this.constraintEdit;
+    if (edit === undefined) return;
+    // Nothing typed: the value stands as it is, exactly like a command's box
+    // accepts an untouched measurement — which keeps a bound parameter bound.
+    if (!this.editDirty) {
+      this.closeEdit();
+      return;
+    }
+    const params = this.editor.sketch.params;
+    const parsed = parseNumber(input.value, params);
+    if (!parsed.ok) {
+      // Unusable text: the same message the properties panel shows, and the box
+      // stays open on the entry so it can be corrected.
+      this.editor.setMessage({ key: 'properties.invalid' });
+      input.setAttribute('aria-invalid', 'true');
+      input.title = parsed.error;
+      input.focus();
+      input.select();
+      return;
+    }
+    // A parameter's name binds the dimension to it; anything else stores the number.
+    const name = input.value.trim();
+    this.editor.setConstraintValue(edit.constraint, name in params ? name : parsed.value);
+    // A re-solve the sketch does not survive leaves the constraint on its old
+    // value, which is how the box learns the entry was refused. (The editor has
+    // already reported why, so the box says nothing more.)
+    const applied = this.editor.sketch.constraints.find((c) => c.id === edit.constraint);
+    if (applied === undefined || constraintValue(applied, params) !== parsed.value) {
+      input.setAttribute('aria-invalid', 'true');
+      input.focus();
+      input.select();
+      return;
+    }
+    // Applied, so the box is done. Closed here rather than left to the next
+    // render: a value the sketch already holds commits nothing, and would then
+    // leave the box open with nothing to close it.
+    this.closeEdit();
+  }
+
   /** Esc: drops the entry; the command steps back to placing the dimension. */
   private cancelEditBox(): void {
+    // A double-click's box has no command to step back through, so it just closes.
+    if (this.editSource === 'constraint') {
+      this.closeEdit();
+      return;
+    }
     this.editor.activeCommand.cancelEdit?.();
   }
 
@@ -498,6 +601,8 @@ export class App {
     const input = this.editInput;
     this.editInput = undefined;
     this.editDirty = false;
+    this.editSource = undefined;
+    this.constraintEdit = undefined;
     // The field is cleared before the element goes: removing a focused input
     // blurs it, and the blur handler must then find no box left to commit.
     input?.remove();
@@ -505,7 +610,8 @@ export class App {
 
   // 鈹€鈹€ Canvas input 鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€
 
-  private input(event: PointerEvent | WheelEvent): PointerInput {
+  /** Where a canvas mouse event — a pointer, the wheel, a double-click — points, in both coordinate systems. */
+  private input(event: MouseEvent): PointerInput {
     const rect = this.canvas.getBoundingClientRect();
     const screen = { x: event.clientX - rect.left, y: event.clientY - rect.top };
     return {
@@ -547,6 +653,32 @@ export class App {
     signal.addEventListener('abort', () => c.replaceChildren());
 
     c.addEventListener('contextmenu', (event) => event.preventDefault(), { signal });
+
+    // A double-click on a dimension re-values it in place, the way Inventor
+    // edits one, opening the same inline box a command's value entry uses.
+    c.addEventListener(
+      'dblclick',
+      (event) => {
+        // The command's own box owns the value entry while it is open.
+        if (this.editor.activeCommand.edit !== undefined) return;
+        const input = this.input(event);
+        const id = this.constraintAt(input.world);
+        if (id === undefined) return;
+        const constraint = this.editor.sketch.constraints.find((x) => x.id === id);
+        // Only a dimension carries a value to re-enter; a miss, or any other
+        // constraint, does nothing.
+        if (constraint === undefined || !isDimensionKind(constraint.kind)) return;
+        this.constraintEdit = {
+          constraint: constraint.id,
+          // Over the value text the dimension draws, so the box lands where the
+          // user double-clicked; degenerate geometry falls back to the cursor.
+          at: dimensionLayout(constraint, indexEntities(this.editor.sketch), vp.scale)?.textAt ?? input.world,
+          value: constraintValue(constraint, this.editor.sketch.params) ?? 0,
+        };
+        this.schedule();
+      },
+      { signal },
+    );
 
     c.addEventListener(
       'pointerdown',
