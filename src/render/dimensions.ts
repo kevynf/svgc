@@ -18,8 +18,17 @@ import type { EntityIndex } from '../core/sketch';
 /**
  * Dimensions on the canvas — the measured value a `distance`, `radius` or
  * `angle` constraint carries, drawn the way a CAD system does: a dimension
- * line with witness lines and arrowheads, the value text just beyond it, an
- * arc for an angle and a leader for a radius.
+ * line terminated by arrowheads, witness lines off the measured feature, the
+ * value text just beyond it, an arc for an angle and a leader for a radius.
+ *
+ * The arrangement is the one GB/T 4458.4 / ISO 129-1 prescribes: the dimension
+ * line runs BETWEEN the two witness lines, so its arrowheads sit on those
+ * crossings with their tips touching, pointing outward — reaching past the
+ * witness lines with the arrows out there is the not-enough-room arrangement,
+ * not this one. Each witness line leaves a gap from the feature it measures
+ * and runs a little past the dimension line, at whatever distance the
+ * dimension was placed. A radius leader has no witness lines: it runs from the
+ * centre through the curve.
  *
  * The layout is pure geometry in WORLD coordinates, and takes the viewport
  * `scale` because every offset from the geometry is given in SCREEN pixels
@@ -38,10 +47,10 @@ import type { EntityIndex } from '../core/sketch';
 
 /** How far a dimension sits off the geometry it measures, on screen. */
 const OFFSET_PX = 14;
+/** How far a witness line leaves a gap from the feature it measures, on screen. */
+export const GAP_PX = 3;
 /** How far a witness line runs past the dimension line, on screen. */
-const OVERSHOOT_PX = 2;
-/** How far the dimension line runs past each projection, on screen. */
-const EXTEND_PX = 10;
+export const OVERSHOOT_PX = 3;
 /** Radius of an angle dimension's arc, on screen. */
 const ANGLE_RADIUS_PX = 30;
 /** How far a radius leader runs past the curve, on screen. */
@@ -78,8 +87,13 @@ export interface DimensionArc {
 }
 
 export interface DimensionLayout {
-  /** Dimension line, witness lines and leaders, in world coordinates. */
+  /** Which dimension this is, so the renderer picks its line style. */
+  readonly kind: DimensionKind;
+  /** The dimension line (a distance) or the radius leader; empty for an angle. */
   readonly lines: readonly (readonly [Vec2, Vec2])[];
+  /** Witness lines: from the measured feature, leaving a gap, overshooting the dimension line. */
+  readonly witnesses: readonly (readonly [Vec2, Vec2])[];
+  /** Angle only: the dimension arc, clockwise on screen. */
   readonly arc?: DimensionArc;
   readonly arrows: readonly DimensionArrow[];
   /** Where the value text sits, in world coordinates. */
@@ -111,9 +125,9 @@ export interface DimensionSpec {
  * `placement` if there is one, the stored `offset` otherwise, the kind's
  * default anchor if neither — and each kind reads it as one quantity: the
  * offset for a distance, the arc's radius for an angle, the leader's direction
- * for a radius. Everything else — witness lines, the reach past each
- * projection, arrowheads and where the value sits — derives from that as it
- * always has.
+ * for a radius. Everything else — where the dimension line stops, its witness
+ * lines with their gap and overshoot, the arrowheads and where the value sits
+ * — derives from that as it always has.
  */
 export function layoutDimension(spec: DimensionSpec, index: EntityIndex, scale: number): DimensionLayout | undefined {
   const offset = resolveOffset(spec, index, scale);
@@ -438,45 +452,51 @@ function distanceLayout(
 ): DimensionLayout | undefined {
   const d = distanceOperands(aId, bId, index);
   if (d === undefined) return undefined;
-  return d.form === 'points' ? pointToPoint(d.a, d.b, k, offset) : pointToLine(d.point, d.line, index, offset);
+  return d.form === 'points'
+    ? pointToPoint(d.a, d.b, k, offset)
+    : pointToLine(d.point, d.line, index, k, offset);
 }
 
 /**
  * The dimension line runs parallel to the two points, one offset away, and
- * reaches past each of their projections; a witness line drops from each point
- * to it. The offset is the resolved placement — the cursor's signed distance
- * across the segment, or the distance the dimension was placed at — so the
- * user can drag the dimension to either side and any distance away.
+ * stops between their two witness lines: each end is where the line through a
+ * point crosses it, so an arrowhead sits there with its tip on that crossing.
+ * A witness line drops from each point, leaving a gap from it and running past
+ * the dimension line. The offset is the resolved placement — the cursor's
+ * signed distance across the segment, or the distance the dimension was placed
+ * at — so the user can drag the dimension to either side and any distance away,
+ * and its witness lines follow it all the way out.
  */
 function pointToPoint(a: Point, b: Point, k: number, offset: number): DimensionLayout | undefined {
   const spread = pointSpread(a, b);
   if (spread === undefined) return undefined; // coincident points have no direction
   const { a: from, b: to, dir, n } = spread;
   const off = scaled(n, offset);
-  const pa = add(from, off);
-  const pb = add(to, off);
-  const reach = scaled(dir, EXTEND_PX * k);
-  const start = sub(pa, reach);
-  const end = add(pb, reach);
-  // Each witness line runs the whole offset out to the dimension line, then
-  // OVERSHOOT_PX past it on the side the offset chose, so a dimension placed
-  // far from its geometry no longer leaves its stubs hanging in mid-air. At
-  // the default offset that is the (OFFSET_PX + OVERSHOOT_PX) stub it always
-  // was.
+  const start = add(from, off);
+  const end = add(to, off);
+  // Which side of the segment the offset chose; a zero offset takes the
+  // normal's own, the side the default anchor sits on.
   const side = offset < 0 ? -1 : 1;
-  const witness = add(off, scaled(n, side * OVERSHOOT_PX * k));
+  const near = scaled(n, side * GAP_PX * k);
+  // The offset is world units; the overshoot is screen pixels, so it converts on
+  // its own. (Adding the two before the scale would only be right at zoom 1.)
+  const far = scaled(n, side * (Math.abs(offset) + OVERSHOOT_PX * k));
   return {
-    lines: [
-      [start, end],
-      [from, add(from, witness)],
-      [to, add(to, witness)],
+    kind: 'distance',
+    lines: [[start, end]],
+    // Each witness line leaves GAP_PX off its point and runs past the dimension
+    // line, so a dimension placed far from its geometry still reaches it rather
+    // than leaving its stubs hanging in mid-air.
+    witnesses: [
+      [add(from, near), add(from, far)],
+      [add(to, near), add(to, far)],
     ],
     // The two arrowheads sit at the ends and point outward, away from each other.
     arrows: [
       { at: start, angle: Math.atan2(-dir.y, -dir.x) },
       { at: end, angle: Math.atan2(dir.y, dir.x) },
     ],
-    textAt: midpoint(pa, pb),
+    textAt: midpoint(start, end),
   };
 }
 
@@ -486,8 +506,11 @@ function pointToPoint(a: Point, b: Point, k: number, offset: number): DimensionL
  * point being measured. The nudge is the resolved offset — the cursor's
  * projection along the line measured from the foot, or the slide the dimension
  * was placed at — so the dimension slides along the line as the cursor does.
+ * Each end takes a witness line across it: the point's runs along the measured
+ * line, the foot's up the gap, and both leave a gap from the feature they
+ * measure and run past the dimension line.
  */
-function pointToLine(p: Point, line: Line, index: EntityIndex, offset: number): DimensionLayout | undefined {
+function pointToLine(p: Point, line: Line, index: EntityIndex, k: number, offset: number): DimensionLayout | undefined {
   const gap = pointGap(p, line, index);
   if (gap === undefined) return undefined;
   const { along, foot, side } = gap;
@@ -495,11 +518,25 @@ function pointToLine(p: Point, line: Line, index: EntityIndex, offset: number): 
   const nudge = scaled(along, offset);
   const start = add(point, nudge);
   const end = add(foot, nudge);
+  // Which way along the line the offset slid the dimension, the way each
+  // witness line reaches out toward it; a zero offset takes the line's own.
+  const toward = offset < 0 ? -1 : 1;
+  // The point's witness runs along the measured line: a gap off the point, then
+  // past the dimension line the offset slid away to.
+  const pointWitness: readonly [Vec2, Vec2] = [
+    add(point, scaled(along, toward * GAP_PX * k)),
+    add(point, scaled(along, toward * (Math.abs(offset) + OVERSHOOT_PX * k))),
+  ];
+  // The foot's runs up the gap toward the point, so it leaves the line with a
+  // gap and clears the dimension line's far end — the point itself.
+  const footWitness: readonly [Vec2, Vec2] = [
+    add(foot, scaled(side, GAP_PX * k)),
+    add(foot, scaled(side, distance(point, foot) + OVERSHOOT_PX * k)),
+  ];
   return {
-    lines: [
-      [start, end],
-      [point, start],
-    ],
+    kind: 'distance',
+    lines: [[start, end]],
+    witnesses: [pointWitness, footWitness],
     // Both ends point outward along the perpendicular, away from each other.
     arrows: [
       { at: start, angle: Math.atan2(side.y, side.x) },
@@ -521,7 +558,11 @@ function radiusLayout(curveId: Id, index: EntityIndex, k: number, offset: number
   const on = add(f.center, scaled(dir, f.radius));
   const end = add(on, scaled(dir, (LEADER_PX + TEXT_GAP_PX) * k));
   return {
+    kind: 'radius',
     lines: [[f.center, end]],
+    // A leader runs from the centre through the curve, so it measures nothing
+    // on the way and takes no witness lines.
+    witnesses: [],
     // One arrowhead, on the curve, pointing away from the centre.
     arrows: [{ at: on, angle: Math.atan2(dir.y, dir.x) }],
     textAt: end,
@@ -529,6 +570,14 @@ function radiusLayout(curveId: Id, index: EntityIndex, k: number, offset: number
 }
 
 // ── Angle ───────────────────────────────────────────────────────────────────
+
+/**
+ * A witness line along one leg of an angle: a gap off the vertex, then out
+ * past the arc, so the arrowhead at the arc's radius touches it.
+ */
+function radialWitness(vertex: Vec2, dir: Vec2, reach: number, k: number): readonly [Vec2, Vec2] {
+  return [add(vertex, scaled(dir, GAP_PX * k)), add(vertex, scaled(dir, reach + OVERSHOOT_PX * k))];
+}
 
 /**
  * An arc between two lines, centred where they meet. Its radius is the resolved
@@ -546,8 +595,13 @@ function angleLayout(aId: Id, bId: Id, index: EntityIndex, k: number, offset: nu
   const { radius, startAngle, endAngle } = arcParams(vertex, from, to);
   const mid = (startAngle + endAngle) / 2;
   return {
-    // The arc is the dimension line here; no witness lines are needed.
+    kind: 'angle',
+    // The arc is the dimension line here; the witness lines ride the legs.
     lines: [],
+    // Each leg takes a witness line along it, from a gap off the vertex out
+    // past the arc, so the arc terminates on them with its arrowheads' tips
+    // touching — the same gap and overshoot a distance's witness lines have.
+    witnesses: [radialWitness(vertex, dirA, radius, k), radialWitness(vertex, dirB, radius, k)],
     arc: { center: vertex, radius, startAngle, endAngle },
     // Each arrowhead points the way the arc travels, so the pair reads as a
     // clockwise sweep from line a round to line b.

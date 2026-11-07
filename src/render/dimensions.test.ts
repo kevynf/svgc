@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { SketchBuilder } from '../core/builder';
-import { distance, midpoint, perpendicularDistance } from '../core/geometry';
+import { add, distance, midpoint, perpendicularDistance, scaled, segmentNormal, sub } from '../core/geometry';
 import type { Vec2 } from '../core/geometry';
 import type { Constraint, Line } from '../core/model';
 import { indexEntities } from '../core/sketch';
@@ -8,6 +8,8 @@ import type { EntityIndex, Sketch } from '../core/sketch';
 import type { DimensionArrow, DimensionArc, DimensionLayout, DimensionSpec } from './dimensions';
 import {
   DIMENSION_KINDS,
+  GAP_PX,
+  OVERSHOOT_PX,
   dimensionLayout,
   dimensionText,
   isDimensionKind,
@@ -56,11 +58,22 @@ function firstLine(layout: DimensionLayout): readonly [Vec2, Vec2] {
   return line;
 }
 
-/** The far end of the witness line that touches `p`. */
-function witnessEnd(lines: readonly (readonly [Vec2, Vec2])[], p: Vec2): Vec2 {
-  const line = lines.find(([a, b]) => distance(a, p) < 1e-9 || distance(b, p) < 1e-9);
-  if (line === undefined) throw new Error(`no line touches ${p.x},${p.y}`);
-  return distance(line[0], p) < 1e-9 ? line[1] : line[0];
+/**
+ * The witness line leaving `p` along `heading`, its near end — the gap from the
+ * measured feature — first. The heading picks out which of a dimension's
+ * witness lines this is, since two of them can run the same way; the near end
+ * then says which end of it belongs to `p`.
+ */
+function witnessFrom(layout: DimensionLayout, p: Vec2, heading: Vec2): readonly [Vec2, Vec2] {
+  const angle = Math.atan2(heading.y, heading.x);
+  let best: readonly [Vec2, Vec2] | undefined;
+  for (const w of layout.witnesses) {
+    // A witness line runs from its gap out past the dimension line.
+    if (between(dir(w[0], w[1]), angle) > 1e-9) continue;
+    if (best === undefined || distance(w[0], p) < distance(best[0], p)) best = w;
+  }
+  if (best === undefined) throw new Error(`no witness line leaves ${p.x},${p.y}`);
+  return best;
 }
 
 /** The arrowhead nearest a point, for picking one end of a two-arrow dimension. */
@@ -107,6 +120,7 @@ function drawnPoints(layout: DimensionLayout): Vec2[] {
   return [
     layout.textAt,
     ...layout.lines.flatMap(([a, b]) => [a, b]),
+    ...layout.witnesses.flatMap(([a, b]) => [a, b]),
     ...layout.arrows.map((arrow) => arrow.at),
   ];
 }
@@ -149,25 +163,59 @@ describe('dimensionLayout', () => {
       expect(perpendicularDistance(s(mid), s(start), s(end))).toBeCloseTo(14, 9);
     });
 
-    it('reaches 10px past each projection', () => {
+    it('stops the dimension line between the two witness-line crossings', () => {
+      const layout = layoutOf(constraint, index, 1);
+      const [start, end] = firstLine(layout);
+      // The line runs from one crossing to the other — the two points offset by
+      // the resolved 14px — and no further: no reach past either witness line.
+      const n = segmentNormal(a, c);
+      expect(start).toEqual(add(a, scaled(n, 14)));
+      expect(end).toEqual(add(c, scaled(n, 14)));
+      expect(distance(start, end)).toBeCloseTo(distance(a, c), 9);
+    });
+
+    it('leaves each witness line a gap off its point, overshooting the dimension line', () => {
       const s = toScreen(1);
       const layout = layoutOf(constraint, index, 1);
       const [start, end] = firstLine(layout);
-      expect(distance(s(start), s(end))).toBeCloseTo(distance(a, c) + 2 * 10, 9);
-    });
-
-    it('drops a witness line from each point, overshooting the dimension line', () => {
-      const s = toScreen(1);
-      const layout = layoutOf(constraint, index, 1);
+      const n = segmentNormal(a, c);
       for (const p of [a, c]) {
-        expect(distance(s(p), s(witnessEnd(layout.lines, p)))).toBeCloseTo(14 + 2, 9);
+        const [near, far] = witnessFrom(layout, p, n);
+        // GAP_PX off the point, then OVERSHOOT_PX past the dimension line.
+        expect(distance(s(p), s(near))).toBeCloseTo(GAP_PX, 9);
+        expect(perpendicularDistance(s(far), s(start), s(end))).toBeCloseTo(OVERSHOOT_PX, 9);
+        expect(distance(s(p), s(far))).toBeCloseTo(14 + OVERSHOOT_PX, 9);
+        // The arrowhead at that end sits ON the witness line, tip touching it.
+        expect(perpendicularDistance(s(arrowNear(layout, p).at), s(near), s(far))).toBeCloseTo(0, 9);
       }
     });
 
-    it('points the two arrowheads away from each other', () => {
+    it('keeps the witness gap and overshoot in screen px at any zoom', () => {
+      // The resolved offset is world units while the gap and the overshoot are
+      // screen pixels: at any zoom but 1, adding them before scaling the sum
+      // would leave the witnesses short of (or past) the dimension line.
+      for (const scale of SCALES) {
+        const s = toScreen(scale);
+        const layout = layoutOf(constraint, index, scale);
+        const [start, end] = firstLine(layout);
+        const n = segmentNormal(a, c);
+        for (const p of [a, c]) {
+          const [near, far] = witnessFrom(layout, p, n);
+          expect(distance(s(p), s(near))).toBeCloseTo(GAP_PX, 9);
+          expect(perpendicularDistance(s(far), s(start), s(end))).toBeCloseTo(OVERSHOOT_PX, 9);
+        }
+      }
+    });
+
+    it('puts each arrowhead tip on a witness-line crossing, pointing outward', () => {
       const layout = layoutOf(constraint, index, 1);
+      const [start, end] = firstLine(layout);
       const atA = arrowNear(layout, a);
       const atC = arrowNear(layout, c);
+      // The tips sit where the witness lines cross the dimension line, so they
+      // touch the witness lines rather than reaching past them.
+      expect(atA.at).toEqual(start);
+      expect(atC.at).toEqual(end);
       expect(between(atA.angle, atC.angle)).toBeCloseTo(Math.PI, 9);
       const away = dir(atC.at, atA.at);
       expect(between(atA.angle, away)).toBeCloseTo(0, 9);
@@ -176,9 +224,41 @@ describe('dimensionLayout', () => {
 
     it('draws a dimension line, a witness line per point and two arrowheads', () => {
       const layout = layoutOf(constraint, index, 1);
-      expect(layout.lines).toHaveLength(3);
+      expect(layout.kind).toBe('distance');
+      expect(layout.lines).toHaveLength(1);
+      expect(layout.witnesses).toHaveLength(2);
       expect(layout.arrows).toHaveLength(2);
       expect(layout.arc).toBeUndefined();
+    });
+
+    it('mirrors the dimension line and its witnesses onto the other side', () => {
+      const s = toScreen(1);
+      const layout = specLayout({ kind: 'distance', operands: [p1, p2], offset: -40 }, index, 1);
+      const [start, end] = firstLine(layout);
+      // The other side of the segment: the dimension line 40 the other way, and
+      // the witness lines with it — gap and overshoot on that side.
+      const n = segmentNormal(a, c);
+      expect(start).toEqual(add(a, scaled(n, -40)));
+      expect(end).toEqual(add(c, scaled(n, -40)));
+      for (const p of [a, c]) {
+        const [near, far] = witnessFrom(layout, p, scaled(n, -1));
+        expect(distance(s(p), s(near))).toBeCloseTo(GAP_PX, 9);
+        expect(distance(s(p), s(far))).toBeCloseTo(40 + OVERSHOOT_PX, 9);
+        expect(perpendicularDistance(s(far), s(start), s(end))).toBeCloseTo(OVERSHOOT_PX, 9);
+      }
+    });
+
+    it('runs the witnesses the whole way out to a dimension placed far away', () => {
+      const s = toScreen(1);
+      // A stored placement has nothing to do with where the geometry sits, so
+      // the witness lines reach the dimension line however far out it is.
+      const layout = specLayout({ kind: 'distance', operands: [p1, p2], offset: 100 }, index, 1);
+      const n = segmentNormal(a, c);
+      for (const p of [a, c]) {
+        const [near, far] = witnessFrom(layout, p, n);
+        expect(distance(s(p), s(near))).toBeCloseTo(GAP_PX, 9);
+        expect(distance(s(p), s(far))).toBeCloseTo(100 + OVERSHOOT_PX, 9);
+      }
     });
 
     it('keeps the value 14 screen px off the geometry at any zoom', () => {
@@ -234,17 +314,46 @@ describe('dimensionLayout', () => {
       }
     });
 
-    it('joins the point to its shifted end with a witness line', () => {
+    it('leaves a gap on both witness lines, overshooting the dimension line', () => {
       const s = toScreen(1);
       const layout = layoutOf(constraint, index, 1);
-      const far = witnessEnd(layout.lines, point);
-      expect(distance(s(point), s(far))).toBeCloseTo(14, 9);
-      expect(between(dir(s(point), s(far)), dir(s(from), s(to)))).toBeCloseTo(0, 9);
+      // The point's witness runs along the measured line: GAP_PX off the point,
+      // then OVERSHOOT_PX past the dimension line it was slid to.
+      const [pointNear, pointFar] = witnessFrom(layout, point, sub(to, from));
+      expect(distance(s(point), s(pointNear))).toBeCloseTo(GAP_PX, 9);
+      expect(between(dir(s(point), s(pointNear)), dir(s(from), s(to)))).toBeCloseTo(0, 9);
+      expect(distance(s(point), s(pointFar))).toBeCloseTo(14 + OVERSHOOT_PX, 9);
+      // The foot's runs up the gap: GAP_PX off the line, then past the dimension
+      // line's far end — the point itself, OVERSHOOT_PX beyond it.
+      const foot = { x: point.x, y: from.y };
+      const [footNear, footFar] = witnessFrom(layout, foot, sub(point, foot));
+      expect(distance(s(foot), s(footNear))).toBeCloseTo(GAP_PX, 9);
+      expect(between(dir(s(foot), s(footNear)), dir(s(foot), s(point)))).toBeCloseTo(0, 9);
+      expect(distance(s(foot), s(footFar))).toBeCloseTo(distance(point, foot) + OVERSHOOT_PX, 9);
+      expect(distance(s(footFar), s(point))).toBeCloseTo(OVERSHOOT_PX, 9);
     });
 
-    it('draws a dimension line, one witness line and two arrowheads', () => {
+    it('keeps the point and foot witness gap and overshoot in screen px at any zoom', () => {
+      // Same unit trap as the point-to-point witnesses: the slide is world
+      // units, the gap and overshoot screen pixels.
+      for (const scale of SCALES) {
+        const s = toScreen(scale);
+        const layout = layoutOf(constraint, index, scale);
+        const [pointNear, pointFar] = witnessFrom(layout, point, sub(to, from));
+        expect(distance(s(point), s(pointNear))).toBeCloseTo(GAP_PX, 9);
+        expect(distance(s(point), s(pointFar))).toBeCloseTo(14 + OVERSHOOT_PX, 9);
+        const foot = { x: point.x, y: from.y };
+        const [footNear, footFar] = witnessFrom(layout, foot, sub(point, foot));
+        expect(distance(s(foot), s(footNear))).toBeCloseTo(GAP_PX, 9);
+        expect(distance(s(footFar), s(point))).toBeCloseTo(OVERSHOOT_PX, 9);
+      }
+    });
+
+    it('draws a dimension line, a witness line per end and two arrowheads', () => {
       const layout = layoutOf(constraint, index, 1);
-      expect(layout.lines).toHaveLength(2);
+      expect(layout.kind).toBe('distance');
+      expect(layout.lines).toHaveLength(1);
+      expect(layout.witnesses).toHaveLength(2);
       expect(layout.arrows).toHaveLength(2);
       expect(layout.arc).toBeUndefined();
     });
@@ -305,6 +414,9 @@ describe('dimensionLayout', () => {
       expect(layout.lines).toHaveLength(1);
       expect(layout.arrows).toHaveLength(1);
       expect(layout.arc).toBeUndefined();
+      // A leader runs from the centre through the curve, so it measures nothing
+      // on the way and takes no witness lines.
+      expect(layout.witnesses).toHaveLength(0);
     });
 
     it('puts the value LEADER_PX + TEXT_GAP_PX beyond the curve on screen', () => {
@@ -365,10 +477,35 @@ describe('dimensionLayout', () => {
       }
     });
 
-    it('draws only the arc and two arrowheads', () => {
+    it('draws the arc, a witness line per leg and two arrowheads', () => {
       const layout = layoutOf(constraint, index, 1);
+      expect(layout.kind).toBe('angle');
       expect(layout.lines).toHaveLength(0);
+      expect(layout.witnesses).toHaveLength(2);
       expect(layout.arrows).toHaveLength(2);
+      expect(soleArc(layout)).toBeDefined();
+    });
+
+    it('runs a witness line along each leg, gapped and past the arc', () => {
+      const s = toScreen(1);
+      const layout = layoutOf(constraint, index, 1);
+      const arc = soleArc(layout);
+      for (const [near, far] of layout.witnesses) {
+        // A gap off the vertex, then out past the arc — where the arrowhead tips
+        // sit, so the arc terminates on the witness lines as a dimension line does.
+        expect(distance(s(vertex), s(near))).toBeCloseTo(GAP_PX, 9);
+        expect(distance(s(vertex), s(far))).toBeCloseTo(arc.radius + OVERSHOOT_PX, 9);
+      }
+      // One along each leg: line a runs +x from the vertex and line b +y, so the
+      // two read as the directions the arc's arrowheads point back along.
+      const legs = layout.witnesses.map(([near]) => dir(vertex, near));
+      expect([...legs].sort((x, y) => x - y)).toEqual([0, Math.PI / 2]);
+      // Each arrowhead tip lands on one of them, so the arc terminates against
+      // the witness lines the way a dimension line does.
+      for (const arrow of layout.arrows) {
+        const on = layout.witnesses.filter(([near, far]) => perpendicularDistance(s(arrow.at), s(near), s(far)) < 1e-9);
+        expect(on).toHaveLength(1);
+      }
     });
 
     it('points both arrowheads the way the arc travels', () => {
@@ -837,22 +974,28 @@ describe('a stored placement', () => {
   it('runs the witness lines all the way to a placed dimension line', () => {
     const s = toScreen(1);
     const layout = specLayout({ kind: 'distance', operands: [origin, far], offset: 60 }, index, 1);
+    const n = segmentNormal(a, c);
     for (const point of [a, c]) {
-      // 60 out to the dimension line, then the 2px overshoot past it.
-      expect(distance(s(point), s(witnessEnd(layout.lines, point)))).toBeCloseTo(60 + 2, 9);
+      const [near, far] = witnessFrom(layout, point, n);
+      // 60 out to the dimension line, then the 3px overshoot past it.
+      expect(distance(s(point), s(near))).toBeCloseTo(GAP_PX, 9);
+      expect(distance(s(point), s(far))).toBeCloseTo(60 + OVERSHOOT_PX, 9);
     }
     // The stubs stay on the side the offset chose: above, with the line above.
-    expect(s(witnessEnd(layout.lines, a)).y).toBeCloseTo(-62, 9);
+    expect(s(witnessFrom(layout, a, n)[1]).y).toBeCloseTo(-63, 9);
     const below = specLayout({ kind: 'distance', operands: [origin, far], offset: -60 }, index, 1);
-    expect(s(witnessEnd(below.lines, a)).y).toBeCloseTo(62, 9);
+    expect(s(witnessFrom(below, a, scaled(n, -1))[1]).y).toBeCloseTo(63, 9);
   });
 
   it('leaves the default witness stubs at OFFSET_PX + OVERSHOOT_PX', () => {
-    // No placement at all still draws the 16px stubs it always has.
+    // No placement at all still draws the (14 + 3)px stubs it always has.
     const s = toScreen(1);
     const layout = specLayout({ kind: 'distance', operands: [origin, far] }, index, 1);
+    const n = segmentNormal(a, c);
     for (const point of [a, c]) {
-      expect(distance(s(point), s(witnessEnd(layout.lines, point)))).toBeCloseTo(14 + 2, 9);
+      const [near, far] = witnessFrom(layout, point, n);
+      expect(distance(s(point), s(near))).toBeCloseTo(GAP_PX, 9);
+      expect(distance(s(point), s(far))).toBeCloseTo(14 + OVERSHOOT_PX, 9);
     }
   });
 

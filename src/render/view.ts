@@ -330,31 +330,27 @@ const ARROW_LENGTH_PX = 7;
 const ARROW_HALF_WIDTH_PX = 3;
 
 /**
- * Lines, arc, arrowheads and (when given) the value text of one laid-out
- * dimension. Shared by a committed constraint and a dimension being placed, so
- * the two read identically on the canvas.
+ * The dimension line (or a radius's leader), the witness lines, the arc, the
+ * arrowheads and (when given) the value text of one laid-out dimension. Shared
+ * by a committed constraint and a dimension being placed, so the two read
+ * identically on the canvas.
  */
 function dimensionParts(layout: DimensionLayout, s: (p: Vec2) => Vec2, label?: string): SVGElement[] {
   const parts: SVGElement[] = [];
-  // A radius's leader is the whole dimension, and the only layout with a single
-  // line: a distance draws its dimension line first and its witness lines after
-  // it, and an angle has no lines, just the arc.
-  const leader = layout.lines.length === 1 ? 'dimension-leader' : undefined;
-  for (let i = 0; i < layout.lines.length; i++) {
-    const seg = layout.lines[i];
-    if (seg === undefined) continue;
+  const lineTo = (cls: string, seg: readonly [Vec2, Vec2]) => {
     const a = s(seg[0]);
     const b = s(seg[1]);
-    parts.push(
-      svgElement('line', {
-        class: leader ?? (i === 0 ? 'dimension-line' : 'dimension-witness'),
-        x1: a.x,
-        y1: a.y,
-        x2: b.x,
-        y2: b.y,
-      }),
-    );
-  }
+    return svgElement('line', { class: cls, x1: a.x, y1: a.y, x2: b.x, y2: b.y });
+  };
+  // The one line a layout draws, in the class its kind asks for: a radius's
+  // leader stands in for the dimension line a radius has none of. An angle has
+  // no line either — the arc below is its dimension line.
+  const lineClass = layout.kind === 'radius' ? 'dimension-leader' : 'dimension-line';
+  for (const seg of layout.lines) parts.push(lineTo(lineClass, seg));
+  // Witness lines are their own group — a distance's two, an angle's one per
+  // leg, a radius's none — and come after the dimension line, so the line reads
+  // as the one carrying the value and they as the ones pointing at it.
+  for (const seg of layout.witnesses) parts.push(lineTo('dimension-witness', seg));
   if (layout.arc !== undefined) parts.push(dimensionArc(layout.arc, s));
   for (const arrow of layout.arrows) parts.push(dimensionArrow(arrow, s));
   if (label !== undefined) {
