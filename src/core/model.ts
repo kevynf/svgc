@@ -62,10 +62,28 @@ export type Constraint =
   | { readonly kind: 'pointOnLine'; readonly id: Id; readonly point: Id; readonly line: Id }
   | { readonly kind: 'pointOnCurve'; readonly id: Id; readonly point: Id; readonly curve: Id }
   | { readonly kind: 'midpoint'; readonly id: Id; readonly point: Id; readonly line: Id }
-  /** Point-to-point, or point-to-line when either side is a line. */
-  | { readonly kind: 'distance'; readonly id: Id; readonly a: Id; readonly b: Id; readonly value: Value }
-  | { readonly kind: 'radius'; readonly id: Id; readonly curve: Id; readonly value: Value }
-  /** Degrees, measured counterclockwise on screen from line `a` to line `b`. */
-  | { readonly kind: 'angle'; readonly id: Id; readonly a: Id; readonly b: Id; readonly value: Value };
+  /**
+   * The dimensions: the constraints that carry a measured value. Each may also
+   * carry a `placement` — where the user put the dimension when they placed it,
+   * in the units the per-kind comments give. It is presentation only: the
+   * solver ignores it, and absent means the default anchor (see
+   * `render/dimensions.ts`).
+   */
+  /**
+   * Point-to-point, or point-to-line when either side is a line. `placement` is
+   * the signed perpendicular distance (world px) from the measured segment to
+   * the dimension line, positive on the side `segmentNormal` points — above a
+   * left-to-right segment. For a point and a line it is instead the signed
+   * distance (world px) along the line, from the perpendicular foot, that the
+   * dimension line is shifted.
+   */
+  | { readonly kind: 'distance'; readonly id: Id; readonly a: Id; readonly b: Id; readonly value: Value; readonly placement?: number }
+  /** `placement` is the leader's direction in radians — atan2, Y pointing down — clamped onto the arc's sweep for an arc. */
+  | { readonly kind: 'radius'; readonly id: Id; readonly curve: Id; readonly value: Value; readonly placement?: number }
+  /**
+   * Degrees, measured counterclockwise on screen from line `a` to line `b`.
+   * `placement` is the dimension arc's radius, in world px.
+   */
+  | { readonly kind: 'angle'; readonly id: Id; readonly a: Id; readonly b: Id; readonly value: Value; readonly placement?: number };
 
 export type ConstraintKind = Constraint['kind'];

@@ -5,8 +5,15 @@ import type { Vec2 } from '../core/geometry';
 import type { Constraint, Line } from '../core/model';
 import { indexEntities } from '../core/sketch';
 import type { EntityIndex, Sketch } from '../core/sketch';
-import type { DimensionArrow, DimensionArc, DimensionLayout } from './dimensions';
-import { DIMENSION_KINDS, dimensionLayout, isDimensionKind } from './dimensions';
+import type { DimensionArrow, DimensionArc, DimensionLayout, DimensionSpec } from './dimensions';
+import {
+  DIMENSION_KINDS,
+  dimensionLayout,
+  dimensionText,
+  isDimensionKind,
+  layoutDimension,
+  resolveOffset,
+} from './dimensions';
 
 /** Offsets are screen px, so a world→screen map with no panning is enough. */
 const toScreen = (scale: number) => (p: Vec2) => ({ x: p.x * scale, y: p.y * scale });
@@ -25,6 +32,13 @@ function constraintAt(sketch: Sketch, id: string): Constraint {
 function layoutOf(c: Constraint, index: EntityIndex, scale: number): DimensionLayout {
   const layout = dimensionLayout(c, index, scale);
   if (layout === undefined) throw new Error(`no layout for a ${c.kind} constraint`);
+  return layout;
+}
+
+/** Fails loudly rather than yielding NaN, so a missing layout shows up as a throw. */
+function specLayout(spec: DimensionSpec, index: EntityIndex, scale: number): DimensionLayout {
+  const layout = layoutDimension(spec, index, scale);
+  if (layout === undefined) throw new Error(`no layout for a ${spec.kind} spec`);
   return layout;
 }
 
@@ -470,6 +484,483 @@ describe('dimensionLayout', () => {
       // A kind that is not a dimension has no layout either.
       expect(dimensionLayout({ kind: 'horizontal', id: 'h', a: line }, index, 1)).toBeUndefined();
     });
+  });
+});
+
+describe('layoutDimension', () => {
+  const b = new SketchBuilder();
+  const p1 = b.point(0, 0);
+  const p2 = b.point(100, 0);
+  const pp = b.constrain({ kind: 'distance', a: p1, b: p2, value: 100 });
+  const line = b.line(p1, p2);
+  const p = b.point(50, 40);
+  const ptl = b.constrain({ kind: 'distance', a: p, b: line, value: 40 });
+  const center = b.point(50, 50);
+  const circle = b.circle(center, 40);
+  const radius = b.constrain({ kind: 'radius', curve: circle, value: 40 });
+  const v = b.point(200, 0);
+  const right = b.point(300, 0);
+  const down = b.point(200, 100);
+  const lineA = b.line(v, right);
+  const lineB = b.line(v, down);
+  const angle = b.constrain({ kind: 'angle', a: lineA, b: lineB, value: 90 });
+  const arcCenter = b.point(400, 0);
+  const arcStart = b.point(410, 0);
+  const arcEnd = b.point(400, 10);
+  const arc = b.arc(arcCenter, arcStart, arcEnd);
+  const sketch = b.build();
+  const index = indexEntities(sketch);
+
+  it('lays out a spec with no placement exactly like the committed constraint', () => {
+    // A spec with no cursor is the committed dimension, so every kind has to
+    // agree with what `dimensionLayout` draws for the matching constraint.
+    expect(specLayout({ kind: 'distance', operands: [p1, p2] }, index, 1)).toEqual(
+      layoutOf(constraintAt(sketch, pp), index, 1),
+    );
+    expect(specLayout({ kind: 'distance', operands: [p, line] }, index, 1)).toEqual(
+      layoutOf(constraintAt(sketch, ptl), index, 1),
+    );
+    expect(specLayout({ kind: 'radius', operands: [circle] }, index, 1)).toEqual(
+      layoutOf(constraintAt(sketch, radius), index, 1),
+    );
+    expect(specLayout({ kind: 'angle', operands: [lineA, lineB] }, index, 1)).toEqual(
+      layoutOf(constraintAt(sketch, angle), index, 1),
+    );
+  });
+
+  describe('distance between two points', () => {
+    // The segment runs left to right along y = 0, so its normal points up the
+    // screen and the cursor's y is the offset's sign and size.
+    const mid = { x: 50, y: 0 };
+
+    it("takes the offset's magnitude and side from the cursor", () => {
+      const s = toScreen(1);
+      const above = specLayout({ kind: 'distance', operands: [p1, p2], placement: { x: 50, y: -40 } }, index, 1);
+      const below = specLayout({ kind: 'distance', operands: [p1, p2], placement: { x: 50, y: 60 } }, index, 1);
+      expect(perpendicularDistance(s(mid), s(firstLine(above)[0]), s(firstLine(above)[1]))).toBeCloseTo(40, 9);
+      expect(s(above.textAt).y).toBeCloseTo(s(mid).y - 40, 9);
+      expect(perpendicularDistance(s(mid), s(firstLine(below)[0]), s(firstLine(below)[1]))).toBeCloseTo(60, 9);
+      expect(s(below.textAt).y).toBeCloseTo(s(mid).y + 60, 9);
+    });
+
+    it("keeps the cursor's side when the offset is floored at OFFSET_PX", () => {
+      const s = toScreen(1);
+      // A cursor within 14px of the segment still lays the dimension out on its
+      // own side, a full 14px away; one right on it takes the normal's side.
+      const above = specLayout({ kind: 'distance', operands: [p1, p2], placement: { x: 50, y: -5 } }, index, 1);
+      const below = specLayout({ kind: 'distance', operands: [p1, p2], placement: { x: 50, y: 5 } }, index, 1);
+      const on = specLayout({ kind: 'distance', operands: [p1, p2], placement: { x: 50, y: 0 } }, index, 1);
+      expect(s(above.textAt).y).toBeCloseTo(s(mid).y - 14, 9);
+      expect(s(below.textAt).y).toBeCloseTo(s(mid).y + 14, 9);
+      expect(s(on.textAt).y).toBeCloseTo(s(mid).y - 14, 9);
+    });
+
+    it('measures the offset in screen pixels at any zoom', () => {
+      for (const scale of SCALES) {
+        const s = toScreen(scale);
+        // 60 world units off reads 15 screen px even at the smallest zoom here.
+        const far = specLayout({ kind: 'distance', operands: [p1, p2], placement: { x: 50, y: -60 } }, index, scale);
+        expect(distance(s(mid), s(far.textAt))).toBeCloseTo(60 * scale, 9);
+        // One world unit off is under the floor at every zoom, so it stays 14.
+        const near = specLayout({ kind: 'distance', operands: [p1, p2], placement: { x: 50, y: -1 } }, index, scale);
+        expect(distance(s(mid), s(near.textAt))).toBeCloseTo(14, 9);
+      }
+    });
+  });
+
+  describe('distance from a point to a line', () => {
+    // The line runs left to right along y = 0 with the point below it, so the
+    // foot is straight up from the point and the cursor's x is the slide.
+    const from = at(index, p1);
+    const to = at(index, p2);
+    const point = at(index, p);
+
+    it("slides the dimension along the line by the cursor's projection", () => {
+      const s = toScreen(1);
+      const ahead = specLayout({ kind: 'distance', operands: [p, line], placement: { x: 80, y: 40 } }, index, 1);
+      const behind = specLayout({ kind: 'distance', operands: [p, line], placement: { x: 20, y: 40 } }, index, 1);
+      // The foot sits at x = 50, so a cursor 30 either side of it slides the
+      // dimension 30 that way, both ends together.
+      expect(s(firstLine(ahead)[0]).x).toBeCloseTo(80, 9);
+      expect(s(firstLine(ahead)[1]).x).toBeCloseTo(80, 9);
+      expect(s(firstLine(behind)[0]).x).toBeCloseTo(20, 9);
+      expect(s(firstLine(behind)[1]).x).toBeCloseTo(20, 9);
+    });
+
+    it("reads only the cursor's projection along the line", () => {
+      // How far off the line the cursor sits does not enter the slide.
+      const near = specLayout({ kind: 'distance', operands: [p, line], placement: { x: 80, y: 40 } }, index, 1);
+      const far = specLayout({ kind: 'distance', operands: [p, line], placement: { x: 80, y: 400 } }, index, 1);
+      expect(far).toEqual(near);
+    });
+
+    it("floors the slide at OFFSET_PX, keeping the projection's direction", () => {
+      const s = toScreen(1);
+      // A cursor barely past the foot still slides the dimension a full 14px,
+      // the way it came from.
+      const ahead = specLayout({ kind: 'distance', operands: [p, line], placement: { x: 55, y: 40 } }, index, 1);
+      const behind = specLayout({ kind: 'distance', operands: [p, line], placement: { x: 45, y: 40 } }, index, 1);
+      expect(s(firstLine(ahead)[0]).x).toBeCloseTo(64, 9);
+      expect(s(firstLine(behind)[0]).x).toBeCloseTo(36, 9);
+    });
+
+    it('still measures the point-to-line gap wherever the cursor slides it', () => {
+      for (const scale of SCALES) {
+        const s = toScreen(scale);
+        const layout = specLayout({ kind: 'distance', operands: [p, line], placement: { x: 80, y: 40 } }, index, scale);
+        const [start, end] = firstLine(layout);
+        // The gap itself is untouched: the dimension line still spans it, at
+        // right angles to the line, with its far end on the infinite line.
+        expect(between(dir(s(start), s(end)), dir(s(from), s(to)))).toBeCloseTo(Math.PI / 2, 9);
+        expect(distance(s(start), s(end))).toBeCloseTo(perpendicularDistance(point, from, to) * scale, 9);
+        expect(perpendicularDistance(s(end), s(from), s(to))).toBeCloseTo(0, 9);
+      }
+    });
+  });
+
+  describe('angle', () => {
+    const vertex = at(index, v);
+
+    it('grows the arc to the cursor, floored at ANGLE_RADIUS_PX', () => {
+      for (const scale of SCALES) {
+        // A cursor far from the vertex sets the radius, measured in screen px.
+        const far = specLayout({ kind: 'angle', operands: [lineA, lineB], placement: { x: 320, y: 120 } }, index, scale);
+        expect(soleArc(far).radius * scale).toBeCloseTo(distance({ x: 320, y: 120 }, vertex) * scale, 9);
+        // A cursor all but on the vertex is floored at the default 30 screen px.
+        const near = specLayout({ kind: 'angle', operands: [lineA, lineB], placement: { x: 201, y: 1 } }, index, scale);
+        expect(soleArc(near).radius * scale).toBeCloseTo(30, 9);
+      }
+    });
+
+    it('keeps the arc centred on the vertex, sweeping from line a to line b', () => {
+      const layout = specLayout({ kind: 'angle', operands: [lineA, lineB], placement: { x: 320, y: 120 } }, index, 1);
+      const arc = soleArc(layout);
+      expect(distance(vertex, arc.center)).toBeCloseTo(0, 9);
+      // Line a runs +x from the vertex and line b +y, so the sweep is a quarter
+      // turn either way the radius grew.
+      expect(between(dir(vertex, arcPoint(arc, arc.startAngle)), 0)).toBeCloseTo(0, 9);
+      expect(between(dir(vertex, arcPoint(arc, arc.endAngle)), Math.PI / 2)).toBeCloseTo(0, 9);
+    });
+  });
+
+  describe('radius', () => {
+    const c = at(index, center);
+
+    it("points a circle's leader at the cursor", () => {
+      const s = toScreen(1);
+      const layout = specLayout({ kind: 'radius', operands: [circle], placement: { x: 90, y: 50 } }, index, 1);
+      const arrow = soleArrow(layout);
+      // The arrowhead lands on the curve toward the cursor and points away from
+      // the centre; the value sits LEADER_PX + TEXT_GAP_PX beyond it.
+      expect(arrow.at).toEqual({ x: 90, y: 50 });
+      expect(between(arrow.angle, dir(c, arrow.at))).toBeCloseTo(0, 9);
+      expect(distance(s(arrow.at), s(layout.textAt))).toBeCloseTo(14 + 8, 9);
+      expect(between(dir(c, layout.textAt), dir(c, arrow.at))).toBeCloseTo(0, 9);
+      // The leader still runs from the centre out through the curve.
+      const [start, end] = firstLine(layout);
+      expect(start).toEqual(c);
+      expect(perpendicularDistance(c, s(start), s(end))).toBeCloseTo(0, 9);
+    });
+
+    it('follows the cursor in any direction, however far away it is', () => {
+      for (const cursor of [
+        { x: 150, y: 50 },
+        { x: 90, y: 90 },
+        { x: 50, y: 10 },
+        { x: 10, y: 50 },
+      ]) {
+        const layout = specLayout({ kind: 'radius', operands: [circle], placement: cursor }, index, 1);
+        const arrow = soleArrow(layout);
+        // The direction is normalised, so only where the cursor points matters:
+        // the arrowhead always sits on the curve, toward it.
+        expect(distance(c, arrow.at)).toBeCloseTo(40, 9);
+        expect(between(dir(c, arrow.at), dir(c, cursor))).toBeCloseTo(0, 9);
+      }
+    });
+
+    describe('an arc', () => {
+      const ac = at(index, arcCenter);
+
+      it('follows the cursor inside the sweep', () => {
+        // The quarter arc runs from +x round to +y, so a cursor at 45° is on it.
+        const layout = specLayout({ kind: 'radius', operands: [arc], placement: { x: 407, y: 7 } }, index, 1);
+        const arrow = soleArrow(layout);
+        expect(between(dir(ac, arrow.at), Math.PI / 4)).toBeCloseTo(0, 9);
+        expect(distance(ac, arrow.at)).toBeCloseTo(10, 9);
+      });
+
+      it('clamps the leader onto the arc when the cursor points past it', () => {
+        // A cursor anywhere outside the sweep lands the arrowhead on the arc's
+        // end — the last point of the sweep — so it never floats off the curve.
+        for (const cursor of [
+          { x: 390, y: 0 },
+          { x: 400, y: -10 },
+          { x: 390, y: 10 },
+          { x: 393, y: -7 },
+        ]) {
+          const layout = specLayout({ kind: 'radius', operands: [arc], placement: cursor }, index, 1);
+          const arrow = soleArrow(layout);
+          expect(arrow.at.x).toBeCloseTo(400, 9);
+          expect(arrow.at.y).toBeCloseTo(10, 9);
+          expect(distance(ac, arrow.at)).toBeCloseTo(10, 9);
+        }
+      });
+
+      it('falls back to the mid-sweep with no cursor', () => {
+        const arrow = soleArrow(specLayout({ kind: 'radius', operands: [arc] }, index, 1));
+        expect(between(dir(ac, arrow.at), Math.PI / 4)).toBeCloseTo(0, 9);
+      });
+
+      it("wraps the cursor's angle into the sweep before clamping it", () => {
+        // A sweep crossing the negative y axis: the cursor's angle may be
+        // expressed either side of ±π and still clamp the same way.
+        const b = new SketchBuilder();
+        const center = b.point(500, 0);
+        const start = b.point(510, 0);
+        const end = b.point(500, -10);
+        const wide = b.arc(center, start, end);
+        const sketch = b.build();
+        const index = indexEntities(sketch);
+        const c = at(index, center);
+        // Inside the three-quarter sweep, at π: the leader follows the cursor.
+        const inside = specLayout({ kind: 'radius', operands: [wide], placement: { x: 490, y: 0 } }, index, 1);
+        const insideArrow = soleArrow(inside);
+        expect(between(dir(c, insideArrow.at), Math.PI)).toBeCloseTo(0, 9);
+        expect(distance(c, insideArrow.at)).toBeCloseTo(10, 9);
+        // Past the sweep's end, at -π/4 — the same direction as 7π/4 — the
+        // leader lands on the arc's end, at 3π/2.
+        const outside = specLayout({ kind: 'radius', operands: [wide], placement: { x: 507, y: -7 } }, index, 1);
+        expect(soleArrow(outside).at.x).toBeCloseTo(500, 9);
+        expect(soleArrow(outside).at.y).toBeCloseTo(-10, 9);
+      });
+    });
+  });
+});
+
+describe('a stored placement', () => {
+  // A committed dimension carries the placement the cursor chose for it, so it
+  // draws where the user put it instead of back at the default anchor.
+  const b = new SketchBuilder();
+  const origin = b.point(0, 0);
+  const far = b.point(100, 0);
+  const line = b.line(origin, far);
+  const p = b.point(50, 40);
+  const circle = b.circle(origin, 40);
+  const v = b.point(0, 200);
+  const right = b.point(100, 200);
+  const down = b.point(0, 300);
+  const lineA = b.line(v, right);
+  const lineB = b.line(v, down);
+  const arcCenter = b.point(300, 0);
+  const arcStart = b.point(310, 0);
+  const arcEnd = b.point(300, 10);
+  const arc = b.arc(arcCenter, arcStart, arcEnd);
+  const sketch = b.build();
+  const index = indexEntities(sketch);
+  const a = at(index, origin);
+  const c = at(index, far);
+  const mid = midpoint(a, c);
+  const centre = at(index, origin);
+  const vertex = at(index, v);
+  const ac = at(index, arcCenter);
+
+  it('lays out a stored placement exactly like the cursor that chose it', () => {
+    // The offset a cursor resolved to and the one stored from it are the same
+    // number, so the two lay out identically.
+    expect(specLayout({ kind: 'distance', operands: [origin, far], offset: 60 }, index, 1)).toEqual(
+      specLayout({ kind: 'distance', operands: [origin, far], placement: { x: 50, y: -60 } }, index, 1),
+    );
+    expect(specLayout({ kind: 'distance', operands: [p, line], offset: 40 }, index, 1)).toEqual(
+      specLayout({ kind: 'distance', operands: [p, line], placement: { x: 90, y: 40 } }, index, 1),
+    );
+    expect(specLayout({ kind: 'radius', operands: [circle], offset: Math.PI / 2 }, index, 1)).toEqual(
+      specLayout({ kind: 'radius', operands: [circle], placement: { x: 0, y: 40 } }, index, 1),
+    );
+  });
+
+  it('puts a point-to-point distance where it was placed', () => {
+    const s = toScreen(1);
+    // The segment runs left to right, so its normal points up the screen and a
+    // positive offset sits above it, 60 world px off.
+    const above = specLayout({ kind: 'distance', operands: [origin, far], offset: 60 }, index, 1);
+    expect(perpendicularDistance(s(mid), s(firstLine(above)[0]), s(firstLine(above)[1]))).toBeCloseTo(60, 9);
+    expect(s(above.textAt).y).toBeCloseTo(s(mid).y - 60, 9);
+    // A negative offset puts it on the other side of the segment.
+    const below = specLayout({ kind: 'distance', operands: [origin, far], offset: -60 }, index, 1);
+    expect(s(below.textAt).y).toBeCloseTo(s(mid).y + 60, 9);
+  });
+
+  it('slides a point-to-line distance along the line by its placement', () => {
+    const s = toScreen(1);
+    // The perpendicular foot sits at x = 50, so a placement of 40 slides the
+    // dimension line 40 that way and -40 slides it back, both ends together.
+    const ahead = specLayout({ kind: 'distance', operands: [p, line], offset: 40 }, index, 1);
+    const behind = specLayout({ kind: 'distance', operands: [p, line], offset: -40 }, index, 1);
+    expect(s(firstLine(ahead)[0]).x).toBeCloseTo(90, 9);
+    expect(s(firstLine(ahead)[1]).x).toBeCloseTo(90, 9);
+    expect(s(firstLine(behind)[0]).x).toBeCloseTo(10, 9);
+    expect(s(firstLine(behind)[1]).x).toBeCloseTo(10, 9);
+  });
+
+  it('sweeps an angle arc as wide as it was placed', () => {
+    const layout = specLayout({ kind: 'angle', operands: [lineA, lineB], offset: 80 }, index, 1);
+    const arc = soleArc(layout);
+    expect(arc.radius).toBeCloseTo(80, 9);
+    expect(distance(vertex, arc.center)).toBeCloseTo(0, 9);
+    // The value rides the bisector out beyond the wider arc, as it always has.
+    expect(distance(vertex, layout.textAt)).toBeCloseTo(80 + 8, 9);
+  });
+
+  it("points a radius leader where it was placed", () => {
+    // A circle at the origin, placed pointing down: atan2's +π/2 is +y, and Y
+    // points down the screen.
+    const layout = specLayout({ kind: 'radius', operands: [circle], offset: Math.PI / 2 }, index, 1);
+    const arrow = soleArrow(layout);
+    expect(between(dir(centre, arrow.at), Math.PI / 2)).toBeCloseTo(0, 9);
+    expect(distance(centre, arrow.at)).toBeCloseTo(40, 9);
+    expect(arrow.at.y).toBeCloseTo(40, 9);
+  });
+
+  it('follows the cursor over the stored placement when both are given', () => {
+    // A dimension being placed follows the cursor; the stored placement is only
+    // what it falls back to once the cursor is gone.
+    const above = { x: 50, y: -20 };
+    expect(specLayout({ kind: 'distance', operands: [origin, far], placement: above, offset: 60 }, index, 1)).toEqual(
+      specLayout({ kind: 'distance', operands: [origin, far], placement: above }, index, 1),
+    );
+    const left = { x: -40, y: 0 };
+    expect(specLayout({ kind: 'radius', operands: [circle], placement: left, offset: Math.PI / 2 }, index, 1)).toEqual(
+      specLayout({ kind: 'radius', operands: [circle], placement: left }, index, 1),
+    );
+  });
+
+  it('runs the witness lines all the way to a placed dimension line', () => {
+    const s = toScreen(1);
+    const layout = specLayout({ kind: 'distance', operands: [origin, far], offset: 60 }, index, 1);
+    for (const point of [a, c]) {
+      // 60 out to the dimension line, then the 2px overshoot past it.
+      expect(distance(s(point), s(witnessEnd(layout.lines, point)))).toBeCloseTo(60 + 2, 9);
+    }
+    // The stubs stay on the side the offset chose: above, with the line above.
+    expect(s(witnessEnd(layout.lines, a)).y).toBeCloseTo(-62, 9);
+    const below = specLayout({ kind: 'distance', operands: [origin, far], offset: -60 }, index, 1);
+    expect(s(witnessEnd(below.lines, a)).y).toBeCloseTo(62, 9);
+  });
+
+  it('leaves the default witness stubs at OFFSET_PX + OVERSHOOT_PX', () => {
+    // No placement at all still draws the 16px stubs it always has.
+    const s = toScreen(1);
+    const layout = specLayout({ kind: 'distance', operands: [origin, far] }, index, 1);
+    for (const point of [a, c]) {
+      expect(distance(s(point), s(witnessEnd(layout.lines, point)))).toBeCloseTo(14 + 2, 9);
+    }
+  });
+
+  it('honours the placement a committed constraint carries', () => {
+    const b = new SketchBuilder();
+    const first = b.point(0, 0);
+    const second = b.point(100, 0);
+    const d = b.constrain({ kind: 'distance', a: first, b: second, value: 100, placement: 60 });
+    const built = b.build();
+    const builtIndex = indexEntities(built);
+    const constraint = constraintAt(built, d);
+    // The builder passes the field straight through to the constraint...
+    expect(constraint).toEqual({ kind: 'distance', id: d, a: first, b: second, value: 100, placement: 60 });
+    // ...and the layout honours it: 60 above the segment, not the default 14.
+    const s = toScreen(1);
+    const layout = layoutOf(constraint, builtIndex, 1);
+    const spread = midpoint(at(builtIndex, first), at(builtIndex, second));
+    expect(perpendicularDistance(s(spread), s(firstLine(layout)[0]), s(firstLine(layout)[1]))).toBeCloseTo(60, 9);
+    expect(s(layout.textAt).y).toBeCloseTo(s(spread).y - 60, 9);
+  });
+
+  it('leaves a stored radius angle off the arc it was clamped from', () => {
+    // A cursor's angle is clamped into the sweep as it resolves; a stored one
+    // already went through that, so the layout takes it as it stands — even
+    // pointing up, outside the quarter sweep from +x round to +y.
+    const outside = specLayout({ kind: 'radius', operands: [arc], offset: -Math.PI / 2 }, index, 1);
+    const arrow = soleArrow(outside);
+    expect(arrow.at.x).toBeCloseTo(300, 9);
+    expect(arrow.at.y).toBeCloseTo(-10, 9);
+    expect(distance(ac, arrow.at)).toBeCloseTo(10, 9);
+    // A cursor pointing the same way would have been clamped onto the arc's end.
+    const clamped = specLayout({ kind: 'radius', operands: [arc], placement: { x: 300, y: -10 } }, index, 1);
+    expect(soleArrow(clamped).at.y).toBeCloseTo(10, 9);
+  });
+
+  describe('resolveOffset', () => {
+    it('floors the cursor offset at OFFSET_PX, keeping its side', () => {
+      for (const scale of SCALES) {
+        // A cursor 5 screen px from the segment is inside the floor at every
+        // zoom, so the offset is the floor: 14 screen px, in world units.
+        const near = 5 / scale;
+        const above = resolveOffset({ kind: 'distance', operands: [origin, far], placement: { x: 50, y: -near } }, index, scale);
+        const below = resolveOffset({ kind: 'distance', operands: [origin, far], placement: { x: 50, y: near } }, index, scale);
+        expect(above).toBeCloseTo(14 / scale, 9);
+        expect(below).toBeCloseTo(-14 / scale, 9);
+      }
+      // Well clear of the floor, the cursor sets the offset exactly.
+      expect(resolveOffset({ kind: 'distance', operands: [origin, far], placement: { x: 50, y: -60 } }, index, 1)).toBeCloseTo(60, 9);
+    });
+
+    it('takes a stored offset as it stands', () => {
+      expect(resolveOffset({ kind: 'distance', operands: [origin, far], offset: 60 }, index, 1)).toBe(60);
+      expect(resolveOffset({ kind: 'distance', operands: [p, line], offset: -40 }, index, 1)).toBe(-40);
+      expect(resolveOffset({ kind: 'angle', operands: [lineA, lineB], offset: 80 }, index, 1)).toBe(80);
+      expect(resolveOffset({ kind: 'radius', operands: [circle], offset: Math.PI / 2 }, index, 1)).toBe(Math.PI / 2);
+    });
+
+    it("falls back to each kind's default anchor with neither", () => {
+      // The defaults, in world units: 14 off for a distance, a 30px arc for an
+      // angle, and the mid-sweep for a radius — the top of a circle.
+      expect(resolveOffset({ kind: 'distance', operands: [origin, far] }, index, 1)).toBeCloseTo(14, 9);
+      expect(resolveOffset({ kind: 'distance', operands: [p, line] }, index, 1)).toBeCloseTo(14, 9);
+      expect(resolveOffset({ kind: 'angle', operands: [lineA, lineB] }, index, 1)).toBeCloseTo(30, 9);
+      expect(resolveOffset({ kind: 'radius', operands: [circle] }, index, 1)).toBeCloseTo(-Math.PI / 2, 9);
+      expect(resolveOffset({ kind: 'radius', operands: [arc] }, index, 1)).toBeCloseTo(Math.PI / 4, 9);
+    });
+
+    it('returns undefined for degenerate geometry', () => {
+      // Missing entities, operands of the wrong kind and a spec short of them
+      // all measure nothing, so there is no offset to place a dimension at.
+      expect(resolveOffset({ kind: 'distance', operands: [origin, 'nope'] }, index, 1)).toBeUndefined();
+      expect(resolveOffset({ kind: 'distance', operands: [line, line] }, index, 1)).toBeUndefined();
+      expect(resolveOffset({ kind: 'distance', operands: [origin] }, index, 1)).toBeUndefined();
+      expect(resolveOffset({ kind: 'radius', operands: [line] }, index, 1)).toBeUndefined();
+      expect(resolveOffset({ kind: 'angle', operands: [origin, far] }, index, 1)).toBeUndefined();
+      // Coincident points and a zero-length line have no direction either.
+      const b = new SketchBuilder();
+      const same = b.point(5, 5);
+      const twin = b.point(5, 5);
+      const short = b.line(same, twin);
+      const degenerate = indexEntities(b.build());
+      expect(resolveOffset({ kind: 'distance', operands: [same, twin] }, degenerate, 1)).toBeUndefined();
+      expect(resolveOffset({ kind: 'distance', operands: [same, short] }, degenerate, 1)).toBeUndefined();
+      expect(resolveOffset({ kind: 'angle', operands: [short, short] }, degenerate, 1)).toBeUndefined();
+    });
+  });
+});
+
+describe('dimensionText', () => {
+  /** A fixed format, so these read the same whatever locale the run uses. */
+  const one = (n: number) => n.toFixed(1);
+
+  it('prefixes a radius with R', () => {
+    expect(dimensionText(40, true, one)).toBe('R40.0');
+    expect(dimensionText(12.34, true, one)).toBe('R12.3');
+  });
+
+  it('shows the plain number for every other kind', () => {
+    expect(dimensionText(40, false, one)).toBe('40.0');
+    expect(dimensionText(12.34, false, one)).toBe('12.3');
+  });
+
+  it("leaves the number itself to the caller's format", () => {
+    // A locale's format, so the same value reads differently per locale and the
+    // prefix stays in front of whatever it produces.
+    const grouped = (n: number) => n.toLocaleString('en-US');
+    expect(dimensionText(1234.5, false, grouped)).toBe('1,234.5');
+    expect(dimensionText(1234.5, true, grouped)).toBe('R1,234.5');
   });
 });
 
