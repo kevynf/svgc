@@ -1,11 +1,12 @@
 import { constraintRefs, constraintValue } from '../core/edit';
 import type { Vec2 } from '../core/geometry';
 import type { Id } from '../core/model';
-import type { MenuItem, PointerInput } from '../editor/command';
+import type { EditRequest, MenuItem, PointerInput } from '../editor/command';
 import type { Editor } from '../editor/editor';
 import { AliasMatcher } from '../editor/aliases';
 import { LOCALES } from '../i18n/i18n';
 import type { Locale, Translator } from '../i18n/i18n';
+import { dimensionText } from '../render/dimensions';
 import { SketchView } from '../render/view';
 import { Browser } from './browser';
 import { icon } from './icons';
@@ -67,6 +68,8 @@ export class App {
   private readonly menu: MarkingMenu;
   private readonly canvas: SVGSVGElement;
   private readonly view: SketchView;
+  /** The stage the canvas and the marking menu sit in; the edit box is placed in it too. */
+  private readonly stage: HTMLElement;
   private readonly aliases: AliasMatcher;
   private readonly unsubscribe: () => void;
   private readonly settingsUnsubscribe: () => void;
@@ -74,6 +77,10 @@ export class App {
   private pendingMove: PointerInput | undefined;
   private pan: { pointer: number; x: number; y: number } | undefined;
   private menuGesture: { pointer: number; x: number; y: number } | undefined;
+  /** The inline value box the active command asked for, while it is open. */
+  private editInput: HTMLInputElement | undefined;
+  /** Whether the user has typed in the value box, i.e. edited the measurement. */
+  private editDirty = false;
   private readonly settingsDialog: ConstraintSettingsDialog;
 
   constructor({ editor, t, onLocaleChange }: AppOptions) {
@@ -94,13 +101,13 @@ export class App {
     this.canvas.setAttribute('tabindex', '0');
     this.view = new SketchView(this.canvas);
 
-    const stage = document.createElement('main');
-    stage.className = 'stage';
-    stage.append(this.canvas, this.menu.element);
+    this.stage = document.createElement('main');
+    this.stage.className = 'stage';
+    this.stage.append(this.canvas, this.menu.element);
 
     const workspace = document.createElement('div');
     workspace.className = 'workspace';
-    workspace.append(this.browser.element, stage);
+    workspace.append(this.browser.element, this.stage);
 
     this.properties = new PropertiesPanel(editor, t);
     workspace.append(this.properties.element);
@@ -129,7 +136,7 @@ export class App {
       (command) => editor.startCommand(command),
     );
 
-    this.bindCanvas(stage);
+    this.bindCanvas(this.stage);
     this.bindKeyboard();
     this.unsubscribe = editor.subscribe(() => this.schedule());
     // F8/F9 and the inference settings change outside the editor; re-render too.
@@ -152,6 +159,7 @@ export class App {
     this.settingsUnsubscribe();
     this.settingsDialog.close();
     this.aliases.reset();
+    this.closeEdit();
     if (this.frame !== undefined) cancelAnimationFrame(this.frame);
     this.element.remove();
   }
@@ -290,6 +298,9 @@ export class App {
     for (const c of e.sketch.constraints) {
       if (e.selection.has(c.id)) for (const id of constraintRefs(c)) selection.add(id);
     }
+    // One formatter for every dimension value the canvas draws: a radius reads
+    // "R40" the way Inventor draws it, the rest are bare numbers.
+    const format = (n: number) => this.t.number(n, 1);
     this.view.render({
       sketch: e.sketch,
       viewport: e.viewport,
@@ -302,10 +313,9 @@ export class App {
       dimensionLabel: (c) => {
         const value = constraintValue(c, e.sketch.params);
         if (value === undefined) return undefined;
-        // A radius reads "R40" the way Inventor draws it; the rest are bare numbers.
-        const text = this.t.number(value, 1);
-        return c.kind === 'radius' ? `R${text}` : text;
+        return dimensionText(value, c.kind === 'radius', format);
       },
+      formatNumber: format,
     });
     this.canvas.dataset['command'] = e.activeCommand.id;
     this.canvas.classList.toggle('panning', this.pan !== undefined);
@@ -313,6 +323,92 @@ export class App {
     this.browser.update();
     this.properties.update();
     this.status.update();
+    this.syncEdit();
+  }
+
+  // ── Inline value box ───────────────────────────────────────────────────
+
+  /**
+   * The inline value box a command asks for while it places something (a
+   * dimension): opened when the request appears, repositioned on every render
+   * so it follows the value text, and closed as soon as the request goes away.
+   */
+  private syncEdit(): void {
+    const request = this.editor.activeCommand.edit;
+    if (request === undefined) {
+      this.closeEdit();
+      return;
+    }
+    const input = this.editInput;
+    if (input !== undefined) {
+      // The box is already open: follow the anchor, but never overwrite what
+      // the user is typing, exactly like the properties panel refreshes.
+      const at = this.editor.viewport.toScreen(request.at);
+      input.style.left = `${at.x}px`;
+      input.style.top = `${at.y}px`;
+      return;
+    }
+    this.openEdit(request);
+  }
+
+  /** Opens the box over the value text's anchor, pre-filled with the measurement. */
+  private openEdit(request: EditRequest): void {
+    const input = document.createElement('input');
+    input.className = 'dimension-edit';
+    input.type = 'text';
+    input.inputMode = 'decimal';
+    input.autocomplete = 'off';
+    input.spellcheck = false;
+    input.setAttribute('aria-label', this.t.t(request.label.key));
+    input.addEventListener('keydown', (event) => {
+      if (event.key === 'Enter') {
+        event.preventDefault();
+        this.commitEditBox();
+      } else if (event.key === 'Escape') {
+        event.preventDefault();
+        this.cancelEditBox();
+      }
+    });
+    // Blur applies the value, so clicking away from the box commits it. The
+    // canvas takes focus on pointerdown, which is what blurs the box.
+    input.addEventListener('blur', () => this.commitEditBox());
+    input.addEventListener('input', () => (this.editDirty = true));
+    input.value = this.t.number(request.value, 2);
+    this.editInput = input;
+    this.editDirty = false;
+    const at = this.editor.viewport.toScreen(request.at);
+    input.style.left = `${at.x}px`;
+    input.style.top = `${at.y}px`;
+    this.stage.append(input);
+    input.select();
+    input.focus();
+  }
+
+  /** Enter, or a blur: applies what the user typed. A rejection keeps the box open. */
+  private commitEditBox(): void {
+    const input = this.editInput;
+    const command = this.editor.activeCommand;
+    if (input === undefined || command.commitEdit === undefined) return;
+    // An unusable value or a solver rejection keeps the box open and focused,
+    // so the user can fix it, exactly like the properties panel does.
+    if (!command.commitEdit(input.value, this.editDirty)) {
+      input.focus();
+      input.select();
+    }
+  }
+
+  /** Esc: drops the entry; the command steps back to placing the dimension. */
+  private cancelEditBox(): void {
+    this.editor.activeCommand.cancelEdit?.();
+  }
+
+  private closeEdit(): void {
+    const input = this.editInput;
+    this.editInput = undefined;
+    this.editDirty = false;
+    // The field is cleared before the element goes: removing a focused input
+    // blurs it, and the blur handler must then find no box left to commit.
+    input?.remove();
   }
 
   // 鈹€鈹€ Canvas input 鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€
@@ -379,6 +475,9 @@ export class App {
           return;
         }
         if (event.button !== 0 || this.menu.isOpen) return;
+        // Focusing here blurs the inline value box, which commits it: clicking
+        // away from the box is "apply the value", so canvas input is not gated
+        // while it is open. (The command ignores pointer input until then.)
         c.focus();
         c.setPointerCapture(event.pointerId);
         this.flushMove();

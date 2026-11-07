@@ -550,6 +550,40 @@ body,
   overflow: hidden;
 }
 
+/* The inline value box of a dimension being placed. It is absolutely
+   positioned in the stage and centered on the value text's anchor by the
+   transform, so it tracks the dimension as the cursor moves. It sits above the
+   canvas and the marking menu (z-index 20), and borrows the properties
+   panel's input styling so a value typed on the canvas reads the same. */
+.dimension-edit {
+  position: absolute;
+  width: 76px;
+  height: 22px;
+  margin: 0;
+  padding: 2px 4px;
+  font-family: var(--font-mono);
+  font-size: var(--fs-ui);
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+  color: var(--text);
+  background: var(--bg-chrome-raised);
+  border: 1px solid var(--border-subtle);
+  border-radius: 3px;
+  transform: translate(-50%, -50%);
+  z-index: 30;
+}
+
+.dimension-edit:hover {
+  border-color: var(--text-disabled);
+}
+
+/* An accent ring, so the box reads as the active control over the canvas. */
+.dimension-edit:focus-visible {
+  border-color: var(--accent);
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
 /* 鈹€鈹€ Canvas 鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€ */
 
 .canvas {

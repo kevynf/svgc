@@ -9,8 +9,8 @@ import { artboardElements, artboardHandles } from './artboard';
 import { constraintElements, constraintPlacements, hitConstraint } from './constraints';
 import { constraintIcon } from '../ui/constraint-icons';
 import type { ConstraintGlyph } from '../ui/constraint-icons';
-import { dimensionLayout, isDimensionKind } from './dimensions';
-import type { DimensionArrow, DimensionArc } from './dimensions';
+import { dimensionLayout, dimensionText, isDimensionKind } from './dimensions';
+import type { DimensionArrow, DimensionArc, DimensionLayout } from './dimensions';
 import { pointLookup } from '../editor/hit';
 import type { PointLookup } from '../editor/hit';
 import type { Viewport } from '../editor/viewport';
@@ -50,6 +50,8 @@ export interface ViewState {
   readonly showConstraints: boolean;
   /** Value text of a dimension constraint, e.g. "R40" or "120.5"; undefined draws no text. */
   readonly dimensionLabel?: (constraint: Constraint) => string | undefined;
+  /** Formats a dimension's value text; the app supplies its locale's number format. */
+  readonly formatNumber?: (n: number) => string;
 }
 
 /** Point radius on screen, by role. */
@@ -124,7 +126,10 @@ export class SketchView {
       }),
     );
 
-    this.overlay.replaceChildren(...state.overlay.flatMap((shape) => overlayElements(shape, sketch, s, vp.scale, vp)));
+    // A dimension being placed formats its value the way the committed one is
+    // labelled; the fallback is for callers that supply no formatter.
+    const format = state.formatNumber ?? ((n: number) => n.toFixed(1));
+    this.overlay.replaceChildren(...state.overlay.flatMap((shape) => overlayElements(shape, sketch, s, vp.scale, vp, format)));
   }
 
   private renderConstraints(state: ViewState, s: (p: Vec2) => Vec2): void {
@@ -194,7 +199,14 @@ const INFERRED_GLYPH: Record<InferredConstraint['kind'], ConstraintGlyph> = {
 };
 const GLYPH_PX = 16;
 
-function overlayElements(shape: OverlayShape, sketch: Sketch, s: (p: Vec2) => Vec2, scale: number, vp: Viewport): SVGElement[] {
+function overlayElements(
+  shape: OverlayShape,
+  sketch: Sketch,
+  s: (p: Vec2) => Vec2,
+  scale: number,
+  vp: Viewport,
+  format: (n: number) => string,
+): SVGElement[] {
   switch (shape.kind) {
     case 'highlight':
       // Drawn by folding these ids into the geometry classes in `render`: the
@@ -243,6 +255,16 @@ function overlayElements(shape: OverlayShape, sketch: Sketch, s: (p: Vec2) => Ve
     }
     case 'artboardHandles':
       return artboardHandles(shape.artboard, vp);
+    case 'dimension': {
+      // No hover/selected/data-constraint: this is a dimension being placed,
+      // not a constraint in the sketch. With no value the inline edit box
+      // carries it, so the text is left off rather than drawn under the box.
+      const label =
+        shape.value === undefined ? undefined : dimensionText(shape.value, shape.radius === true, format);
+      const g = svgElement('g', { class: 'dimension' });
+      g.append(...dimensionParts(shape.layout, s, label));
+      return [g];
+    }
   }
 }
 
@@ -308,13 +330,52 @@ const ARROW_LENGTH_PX = 7;
 const ARROW_HALF_WIDTH_PX = 3;
 
 /**
- * One dimension's graphics: the measured value a `distance`, `radius` or
- * `angle` constraint carries, drawn the way a CAD system does — a dimension
- * line, witness lines, arrowheads, an arc for an angle, and the value text.
- * `dimensions.ts` lays all of it out in world coordinates; it is mapped
- * through `s` here so the strokes keep a constant on-screen weight at any
- * zoom, like the rest of the canvas. Returns undefined for degenerate
- * geometry, which the caller then skips.
+ * Lines, arc, arrowheads and (when given) the value text of one laid-out
+ * dimension. Shared by a committed constraint and a dimension being placed, so
+ * the two read identically on the canvas.
+ */
+function dimensionParts(layout: DimensionLayout, s: (p: Vec2) => Vec2, label?: string): SVGElement[] {
+  const parts: SVGElement[] = [];
+  // A radius's leader is the whole dimension, and the only layout with a single
+  // line: a distance draws its dimension line first and its witness lines after
+  // it, and an angle has no lines, just the arc.
+  const leader = layout.lines.length === 1 ? 'dimension-leader' : undefined;
+  for (let i = 0; i < layout.lines.length; i++) {
+    const seg = layout.lines[i];
+    if (seg === undefined) continue;
+    const a = s(seg[0]);
+    const b = s(seg[1]);
+    parts.push(
+      svgElement('line', {
+        class: leader ?? (i === 0 ? 'dimension-line' : 'dimension-witness'),
+        x1: a.x,
+        y1: a.y,
+        x2: b.x,
+        y2: b.y,
+      }),
+    );
+  }
+  if (layout.arc !== undefined) parts.push(dimensionArc(layout.arc, s));
+  for (const arrow of layout.arrows) parts.push(dimensionArrow(arrow, s));
+  if (label !== undefined) {
+    const at = s(layout.textAt);
+    const text = svgElement('text', {
+      class: 'dimension-text',
+      x: at.x,
+      y: at.y,
+      'text-anchor': 'middle',
+      'dominant-baseline': 'middle',
+    });
+    text.textContent = label;
+    parts.push(text);
+  }
+  return parts;
+}
+
+/**
+ * One dimension constraint's graphics: a `<g class="dimension">` carrying the
+ * laid-out parts, plus the hover and selected classes the editor's picking
+ * needs. Returns undefined for degenerate geometry, which the caller skips.
  */
 function dimensionElement(
   c: Constraint,
@@ -328,39 +389,7 @@ function dimensionElement(
   const g = svgElement('g', { class: 'dimension', 'data-constraint': c.id });
   if (state.hovered) g.classList.add('hover');
   if (state.selected) g.classList.add('selected');
-
-  // A distance draws its dimension line first and its witness lines after it; a
-  // radius's leader is the whole dimension; an angle has no lines, just the arc.
-  const leader = c.kind === 'radius' ? 'dimension-leader' : undefined;
-  for (let i = 0; i < layout.lines.length; i++) {
-    const seg = layout.lines[i];
-    if (seg === undefined) continue;
-    const a = s(seg[0]);
-    const b = s(seg[1]);
-    g.append(
-      svgElement('line', {
-        class: leader ?? (i === 0 ? 'dimension-line' : 'dimension-witness'),
-        x1: a.x,
-        y1: a.y,
-        x2: b.x,
-        y2: b.y,
-      }),
-    );
-  }
-  if (layout.arc !== undefined) g.append(dimensionArc(layout.arc, s));
-  for (const arrow of layout.arrows) g.append(dimensionArrow(arrow, s));
-  if (state.label !== undefined) {
-    const at = s(layout.textAt);
-    const text = svgElement('text', {
-      class: 'dimension-text',
-      x: at.x,
-      y: at.y,
-      'text-anchor': 'middle',
-      'dominant-baseline': 'middle',
-    });
-    text.textContent = state.label;
-    g.append(text);
-  }
+  g.append(...dimensionParts(layout, s, state.label));
   return g;
 }
 
