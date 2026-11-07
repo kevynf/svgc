@@ -66,8 +66,8 @@ export interface HitOptions {
 }
 
 /**
- * The entity under `p`. Points win over curves when both are within
- * tolerance, so endpoints stay grabbable where curves meet.
+ * The entity under `p`. Points win over curves when both are within tolerance, so endpoints stay
+ * grabbable where curves meet.
  */
 export function hitTest(
   sketch: Sketch,
@@ -145,8 +145,8 @@ function curveSamples(entity: Entity, pt: PointLookup): Vec2[] {
 }
 
 /**
- * Window selection keeps entities fully inside the box; crossing selection
- * also keeps entities that touch it (Inventor: left-to-right vs right-to-left).
+ * Window selection keeps entities fully inside the box; crossing selection also keeps entities that
+ * touch it (Inventor: left-to-right vs right-to-left).
  */
 export function boxSelect(sketch: Sketch, box: Box, mode: 'window' | 'crossing'): Id[] {
   const pt = pointLookup(sketch);

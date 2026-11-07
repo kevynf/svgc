@@ -21,7 +21,6 @@ describe('perpendicularDistance', () => {
   });
 
   it('measures to a diagonal line', () => {
-    // On the line y = x, the point (2, 0) sits √2 away.
     expect(perpendicularDistance({ x: 2, y: 0 }, { x: 0, y: 0 }, { x: 10, y: 10 })).toBeCloseTo(
       Math.SQRT2,
       12,
@@ -136,7 +135,6 @@ describe('directionDeg', () => {
 
 describe('lineAngleDeg', () => {
   it('measures counterclockwise on screen from the first line to the second', () => {
-    // A horizontal base and an arm pointing up the screen: 90°.
     expect(lineAngleDeg({ x: 0, y: 0 }, { x: 10, y: 0 }, { x: 0, y: 0 }, { x: 0, y: -10 })).toBe(
       90,
     );
@@ -149,7 +147,6 @@ describe('lineAngleDeg', () => {
   });
 
   it('wraps a clockwise turn past zero', () => {
-    // An arm pointing down the screen is a 270° counterclockwise turn.
     expect(lineAngleDeg({ x: 0, y: 0 }, { x: 10, y: 0 }, { x: 0, y: 0 }, { x: 0, y: 10 })).toBe(
       270,
     );

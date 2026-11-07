@@ -1,9 +1,8 @@
 /**
- * Saving text to a file. Where the browser has the File System Access API the
- * picker chooses a location once and every later save overwrites that same
- * file; everywhere else each save is a download. The DOM is only touched when
- * a save runs, so this module imports cleanly under Node (where `window` and
- * `document` are absent) and stays testable.
+ * Saving text to a file. Where the browser has the File System Access API the picker chooses a
+ * location once and every later save overwrites that same file; everywhere else each save is a
+ * download. The DOM is only touched when a save runs, so this module imports cleanly under Node
+ * (where `window` and `document` are absent) and stays testable.
  */
 
 /** The picker's options, as far as this module uses them. */
@@ -16,9 +15,9 @@ interface SaveFilePickerOptions {
 }
 
 /**
- * The File System Access API's picker. The DOM lib declares the handles it
- * returns but not the picker itself, so the one function is declared here and
- * reached through a cast — browsers without it simply lack the property.
+ * The File System Access API's picker. The DOM lib declares the handles it returns but not the
+ * picker itself, so the one function is declared here and reached through a cast — browsers without
+ * it simply lack the property.
  */
 interface SavePickerWindow {
   showSaveFilePicker?(options?: SaveFilePickerOptions): Promise<FileSystemFileHandle>;
@@ -44,7 +43,6 @@ function download(filename: string, mime: string, text: string): void {
   const link = document.createElement('a');
   link.href = url;
   link.download = filename;
-  // Firefox only honors a click on a link that is in the document.
   document.body.append(link);
   link.click();
   link.remove();
@@ -71,14 +69,10 @@ export function createFileSaver(): FileSaver {
               types: [{ description: mime, accept: acceptMap(filename, mime) }],
             });
           } catch (error) {
-            // A dismissed picker is not a failure: nothing was saved and the
-            // document keeps whatever it had.
             if (dismissed(error)) return '';
             throw error;
           }
         }
-        // A fresh writable discards what the file held, so a later save
-        // replaces it instead of leaving the old tail behind.
         const writable = await handle.createWritable();
         await writable.write(text);
         await writable.close();

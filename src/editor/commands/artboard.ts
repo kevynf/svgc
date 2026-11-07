@@ -39,11 +39,10 @@ type Drag =
 type Editing = Exclude<Drag, { kind: 'none' }>;
 
 /**
- * Inventor-style artboard command (the exported SVG page). With no artboard
- * the first drag draws one from two corners; with one, drag a grip to resize,
- * the interior to move. The artboard is not geometry: it never touches the
- * solver, hit testing or the browser, and each completed drag commits as a
- * single undo step.
+ * Inventor-style artboard command (the exported SVG page). With no artboard the first drag draws
+ * one from two corners; with one, drag a grip to resize, the interior to move. The artboard is not
+ * geometry: it never touches the solver, hit testing or the browser, and each completed drag
+ * commits as a single undo step.
  */
 export class ArtboardCommand implements Command {
   readonly id = 'artboard';
@@ -121,7 +120,6 @@ export class ArtboardCommand implements Command {
 
   cancel(): boolean {
     if (this.drag.kind === 'none') return false;
-    // Nothing was committed during the drag, so dropping the preview restores the artboard.
     this.drag = { kind: 'none' };
     this.editor.viewChanged();
     return true;

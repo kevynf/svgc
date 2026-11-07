@@ -8,11 +8,10 @@ import type { DimensionSpec } from '../../render/dimensions';
 import type { Operand, OperandKind, OperandSpec } from './constrain';
 
 /**
- * What the driving and the driven dimension share: the operands they take and
- * the measurement those operands add up to. Both commands lay the dimension out
- * and draw it the same way; what differs is only what placing it commits — a
- * driving dimension carries a value the user types, a driven one the measurement
- * itself, flagged so the solver never enforces it.
+ * What the driving and the driven dimension share: the operands they take and the measurement those
+ * operands add up to. Both commands lay the dimension out and draw it the same way; what differs is
+ * only what placing it commits — a driving dimension carries a value the user types, a driven one
+ * the measurement itself, flagged so the solver never enforces it.
  */
 
 /** Every kind is pickable: the constraint follows from what the user picked. */
@@ -40,11 +39,10 @@ type PointDistance = Extract<ConstraintInput, { kind: 'distance' }>;
 type LineAngle = Extract<ConstraintInput, { kind: 'angle' }>;
 
 /**
- * What the picked operands measure: a circle or arc its radius, a line alone the
- * distance between its ends, two points a distance, a point and a line the
- * distance between them, and two lines the angle between them. Undefined when
- * they measure nothing, which leaves the pick pending: a line with no length has
- * no direction to lay a dimension along, and a curve never takes a second pick.
+ * What the picked operands measure: a circle or arc its radius, a line alone the distance between
+ * its ends, two points a distance, a point and a line the distance between them, and two lines the
+ * angle between them. Undefined when they measure nothing, which leaves the pick pending: a line
+ * with no length has no direction to lay a dimension along, and a curve never takes a second pick.
  */
 export function measure(
   sketch: Sketch,
@@ -53,10 +51,7 @@ export function measure(
   const index = indexEntities(sketch);
   const [first, second] = picks;
   if (first === undefined) return undefined;
-  // A curve carries its own dimension, so it completes on the first pick.
   if (isCurve(first.kind)) return radius(index, first.id);
-  // So does a line on its own: the length of one is the distance between its
-  // ends, so a single pick is the whole dimension.
   if (first.kind === 'line' && second === undefined) return length(index, first.id);
   if (second === undefined) return undefined;
   switch (second.kind) {
@@ -104,10 +99,9 @@ function radius(index: EntityIndex, curve: Id): DimensionConstraint | undefined 
 }
 
 /**
- * Length of a line: the distance between its two ends, measured end to end. It
- * is a point-to-point distance, so the dimension is laid out parallel to the
- * line with witness lines reaching to its ends. A zero-length line has no
- * direction to lay one along, so it measures nothing at all.
+ * Length of a line: the distance between its two ends, measured end to end. It is a point-to-point
+ * distance, so the dimension is laid out parallel to the line with witness lines reaching to its
+ * ends. A zero-length line has no direction to lay one along, so it measures nothing at all.
  */
 function length(index: EntityIndex, line: Id): PointDistance | undefined {
   const e = index.get(line);
@@ -139,8 +133,8 @@ function angle(index: EntityIndex, a: Id, b: Id): LineAngle | undefined {
 }
 
 /**
- * Where an entity sits now. The editor holds the solved sketch, so these
- * positions already account for every constraint applied so far.
+ * Where an entity sits now. The editor holds the solved sketch, so these positions already account
+ * for every constraint applied so far.
  */
 function pointAt(index: EntityIndex, id: Id): Vec2 | undefined {
   const e = index.get(id);

@@ -181,7 +181,6 @@ function horizontalLine(b: SketchBuilder): { a: Id; c: Id; line: Id } {
 describe('offset', () => {
   it('asks for a curve, and a point is no pick', () => {
     const b = new SketchBuilder();
-    // A point on the line, where the line is at least as close to the cursor.
     const p = b.point(30, 0);
     const { line } = horizontalLine(b);
     const editor = editorWith(b.build());
@@ -189,13 +188,11 @@ describe('offset', () => {
     expect(editor.activeCommand.prompt()).toEqual({ key: 'prompts.offset' });
     expect(editor.activeCommand.overlay?.()).toEqual([]);
     expect(editor.activeCommand.edit).toBeUndefined();
-    // A point wins the hit test over any curve through it, so it is no pick.
     clickEntity(editor, p);
     expect(editor.activeCommand.prompt()).toEqual({ key: 'prompts.offset' });
     expect(editor.activeCommand.overlay?.()).toEqual([]);
     expect(editor.sketch.constraints).toEqual([]);
     expect(editor.activeCommand.id).toBe('offset');
-    // The line itself is.
     clickCurve(editor, line);
     expect(editor.activeCommand.prompt()).toEqual({ key: 'prompts.offsetPlace' });
   });
@@ -209,27 +206,23 @@ describe('offset', () => {
     expect(editor.activeCommand.prompt()).toEqual({ key: 'prompts.offsetPlace' });
     expect(editor.activeCommand.edit).toBeUndefined();
     expect(highlightIds(editor)).toEqual([line]);
-    // The click landed on the line, so the copy sits the minimum distance off it.
     expect(previewLine(editor)).toEqual({
       kind: 'previewLine',
       from: { x: 0, y: -14 },
       to: { x: 100, y: -14 },
     });
-    // The cursor picks the side and the distance: below the line, 50 away…
     editor.activeCommand.pointerMove?.(at(50, 50));
     expect(previewLine(editor)).toEqual({
       kind: 'previewLine',
       from: { x: 0, y: 50 },
       to: { x: 100, y: 50 },
     });
-    // …and above it, mirrored, at whatever distance the cursor is.
     editor.activeCommand.pointerMove?.(at(50, -30));
     expect(previewLine(editor)).toEqual({
       kind: 'previewLine',
       from: { x: 0, y: -30 },
       to: { x: 100, y: -30 },
     });
-    // Nothing is committed while the copy follows the cursor.
     expect(editor.sketch.constraints).toEqual([]);
     expect(editor.sketch.entities).toHaveLength(3);
   });
@@ -243,13 +236,11 @@ describe('offset', () => {
     editor.activeCommand.pointerMove?.(at(50, 50));
     click(editor, 50, 50);
     expect(editor.activeCommand.prompt()).toEqual({ key: 'prompts.offsetValue' });
-    // The box opens on the copy's middle, carrying the distance the cursor measured.
     expect(editor.activeCommand.edit).toEqual({
       at: { x: 50, y: 50 },
       value: 50,
       label: { key: 'prompts.offsetValue' },
     });
-    // The copy is still only a preview: nothing is committed until it is valued.
     expect(editor.sketch.constraints).toEqual([]);
   });
 
@@ -263,7 +254,6 @@ describe('offset', () => {
     click(editor, 50, 50);
     const before = snapshot(editor);
     expect(commitEdit(editor, '', false)).toBe(true);
-    // A parallel copy, one of its ends a measured distance from the original.
     const added = editor.sketch.constraints.slice(-2);
     expect(added.map((x) => x.kind)).toEqual(['parallel', 'distance']);
     const [parallel, offset] = added;
@@ -275,7 +265,6 @@ describe('offset', () => {
     expect(offset.a).toBe(copy.p1);
     expect(offset.b).toBe(line);
     expect(offset.value).toBe(50);
-    // The copy is a full parallel line 50 below the original, its own length kept.
     expectPoint(editor, copy.p1, 0, 50);
     expectPoint(editor, copy.p2, 100, 50);
     expect(distance(pointOf(editor, copy.p1), pointOf(editor, copy.p2))).toBeCloseTo(100, 9);
@@ -283,7 +272,6 @@ describe('offset', () => {
       perpendicularDistance(pointOf(editor, copy.p1), pointOf(editor, a), pointOf(editor, c)),
     ).toBeCloseTo(50, 9);
     expectUnmoved(editor, before);
-    // The command stays active, ready for the next offset.
     expect(editor.activeCommand.id).toBe('offset');
     expect(editor.activeCommand.edit).toBeUndefined();
     expect(editor.activeCommand.prompt()).toEqual({ key: 'prompts.offset' });
@@ -300,7 +288,6 @@ describe('offset', () => {
     editor.activeCommand.pointerMove?.(at(50, 50));
     click(editor, 50, 50);
     expect(commitEdit(editor, '40', true)).toBe(true);
-    // The copy keeps the side it was placed on and takes the typed distance.
     const copy = copyLine(editor);
     expectPoint(editor, copy.p1, 0, 40);
     expectPoint(editor, copy.p2, 100, 40);
@@ -308,7 +295,6 @@ describe('offset', () => {
       perpendicularDistance(pointOf(editor, copy.p1), pointOf(editor, a), pointOf(editor, c)),
     ).toBeCloseTo(40, 9);
     expect(last(editor)).toMatchObject({ kind: 'distance', a: copy.p1, b: line, value: 40 });
-    // The original never moved.
     expectPoint(editor, a, 0, 0);
     expectPoint(editor, c, 100, 0);
   });
@@ -337,20 +323,17 @@ describe('offset', () => {
     editor.startCommand('offset');
     clickCurve(editor, circle);
     expect(highlightIds(editor)).toEqual([circle]);
-    // The click landed on the rim, so the copy is the minimum distance outside it.
     expect(previewCircle(editor)).toEqual({
       kind: 'previewCircle',
       center: { x: 50, y: 50 },
       radius: 44,
     });
-    // The cursor measures from the centre: 20 from it, inside a circle of 30.
     editor.activeCommand.pointerMove?.(at(50, 30));
     expect(previewCircle(editor)).toEqual({
       kind: 'previewCircle',
       center: { x: 50, y: 50 },
       radius: 16,
     });
-    // …and outside it, where the distance is taken as it stands.
     editor.activeCommand.pointerMove?.(at(50, 150));
     expect(previewCircle(editor)).toEqual({
       kind: 'previewCircle',
@@ -360,13 +343,11 @@ describe('offset', () => {
     click(editor, 50, 150);
     const before = snapshot(editor);
     expect(commitEdit(editor, '', false)).toBe(true);
-    // The copy shares the original's centre, so it follows it as it moves.
     const copy = copyCurve(editor);
     if (copy.kind !== 'circle') throw new Error('not a circle');
     expect(copy.center).toBe(center);
     expect(radiusOf(editor, copy.id)).toBeCloseTo(100, 9);
     expect(radiusOf(editor, circle)).toBeCloseTo(30, 9);
-    // A radius carries the copy, and nothing else is constrained.
     expect(editor.sketch.constraints.map((x) => x.kind)).toEqual(['radius']);
     expect(last(editor)).toMatchObject({ kind: 'radius', curve: copy.id, value: 100 });
     expectUnmoved(editor, before);
@@ -404,7 +385,6 @@ describe('offset', () => {
       center: { x: 0, y: 0 },
       radius: 64,
     });
-    // The cursor measures from the centre: 80 from it puts the copy outside the arc.
     editor.activeCommand.pointerMove?.(at(80, 0));
     expect(previewCircle(editor)).toEqual({
       kind: 'previewCircle',
@@ -415,7 +395,6 @@ describe('offset', () => {
     expect(commitEdit(editor, '', false)).toBe(true);
     const copy = copyCurve(editor);
     if (copy.kind !== 'arc') throw new Error('not an arc');
-    // The copy is concentric with the original and keeps its start and end angles.
     expect(copy.center).toBe(center);
     const original = anglesOf(editor, arc);
     const copied = anglesOf(editor, copy.id);
@@ -423,7 +402,6 @@ describe('offset', () => {
     expect(copied.endAngle).toBeCloseTo(original.endAngle, 9);
     expect(radiusOf(editor, copy.id)).toBeCloseTo(80, 9);
     expect(radiusOf(editor, arc)).toBeCloseTo(50, 9);
-    // Two new ends at the new radius, and a radius to hold it.
     expect(editor.sketch.entities.filter((e) => e.kind === 'point')).toHaveLength(5);
     expect(last(editor)).toMatchObject({ kind: 'radius', curve: copy.id, value: 80 });
     expectUnmoved(editor, before);
@@ -456,8 +434,6 @@ describe('offset', () => {
     const editor = editorWith(b.build());
     editor.startCommand('offset');
     clickCurve(editor, circle);
-    // The cursor is on the centre, less than the minimum offset away: the copy
-    // would be a negative radius, so nothing is drawn and the click places nothing.
     editor.activeCommand.pointerMove?.(at(50, 50));
     expect(previewCircle(editor)).toBeUndefined();
     expect(highlightIds(editor)).toEqual([circle]);
@@ -465,7 +441,6 @@ describe('offset', () => {
     expect(editor.activeCommand.edit).toBeUndefined();
     expect(editor.activeCommand.prompt()).toEqual({ key: 'prompts.offsetPlace' });
     expect(editor.sketch.entities).toHaveLength(2);
-    // Clear of the centre the copy is placed again.
     editor.activeCommand.pointerMove?.(at(50, 20));
     expect(previewCircle(editor)).toEqual({
       kind: 'previewCircle',
@@ -484,18 +459,14 @@ describe('offset', () => {
     clickCurve(editor, line);
     editor.activeCommand.pointerMove?.(at(50, 50));
     click(editor, 50, 50);
-    // A negative distance makes the solver throw, so it is refused.
     expect(commitEdit(editor, '-10', true)).toBe(false);
     expect(editor.sketch.constraints).toEqual([]);
     expect(editor.activeCommand.edit).toBeDefined();
-    // So is text that is not a value at all.
     expect(commitEdit(editor, 'abc', true)).toBe(false);
     expect(commitEdit(editor, '   ', true)).toBe(false);
     expect(editor.sketch.constraints).toEqual([]);
     expect(editor.activeCommand.edit).toBeDefined();
-    // The rejection surfaces as the command's prompt.
     expect(editor.activeCommand.prompt()).toEqual({ key: 'properties.invalid' });
-    // The measurement still applies once the box holds a usable value.
     expect(commitEdit(editor, '30', true)).toBe(true);
     expect(last(editor)).toMatchObject({ kind: 'distance', value: 30 });
   });
@@ -509,7 +480,6 @@ describe('offset', () => {
     clickCurve(editor, circle);
     editor.activeCommand.pointerMove?.(at(50, 150));
     click(editor, 50, 150);
-    // A zero or negative radius makes the solver throw, so it is refused.
     expect(commitEdit(editor, '0', true)).toBe(false);
     expect(commitEdit(editor, '-5', true)).toBe(false);
     expect(editor.sketch.entities).toHaveLength(2);
@@ -527,7 +497,6 @@ describe('offset', () => {
     clickCurve(editor, line);
     editor.activeCommand.pointerMove?.(at(50, 50));
     click(editor, 50, 50);
-    // The value box: back to placing, with the copy where it was put.
     editor.escape();
     expect(editor.activeCommand.edit).toBeUndefined();
     expect(editor.activeCommand.prompt()).toEqual({ key: 'prompts.offsetPlace' });
@@ -537,13 +506,11 @@ describe('offset', () => {
       to: { x: 100, y: 50 },
     });
     expect(editor.sketch.constraints).toEqual([]);
-    // The placement: back to picking, with nothing left to draw.
     editor.escape();
     expect(editor.activeCommand.prompt()).toEqual({ key: 'prompts.offset' });
     expect(editor.activeCommand.overlay?.()).toEqual([]);
     expect(editor.sketch.constraints).toEqual([]);
     expect(editor.activeCommand.id).toBe('offset');
-    // The pick: the command ends.
     editor.escape();
     expect(editor.activeCommand.id).toBe('select');
   });
@@ -560,7 +527,6 @@ describe('offset', () => {
     expect(editor.activeCommand.edit).toBeUndefined();
     expect(editor.activeCommand.prompt()).toEqual({ key: 'prompts.offsetPlace' });
     expect(editor.sketch.constraints).toEqual([]);
-    // The copy follows the cursor again, and can still be placed.
     editor.activeCommand.pointerMove?.(at(50, 20));
     click(editor, 50, 20);
     expect(editor.activeCommand.edit).toEqual({
@@ -578,7 +544,6 @@ describe('offset', () => {
     clickCurve(editor, line);
     editor.activeCommand.pointerMove?.(at(50, 60));
     expect(editor.activeCommand.keyDown!({ key: 'Enter' } as unknown as KeyboardEvent)).toBe(true);
-    // The box opens where the copy was following the cursor.
     expect(editor.activeCommand.edit).toEqual({
       at: { x: 50, y: 60 },
       value: 60,

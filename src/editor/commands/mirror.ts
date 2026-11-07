@@ -10,12 +10,11 @@ import type { PointLookup } from '../hit';
 import { HIT_PX } from './select';
 
 /**
- * Inventor's MIRROR command. It runs in two phases: pick the curves to mirror
- * (each click toggles one into the set, Esc clears the set), Enter, then pick
- * the line to mirror them about. Every picked curve is copied across that axis
- * in a single step, and each copy is held in place by `symmetric` constraints
- * tying it to the curve it mirrors — so editing the original later drags its
- * mirror along with it. Sketch points are never mirrored.
+ * Inventor's MIRROR command. It runs in two phases: pick the curves to mirror (each click toggles
+ * one into the set, Esc clears the set), Enter, then pick the line to mirror them about. Every
+ * picked curve is copied across that axis in a single step, and each copy is held in place by
+ * `symmetric` constraints tying it to the curve it mirrors — so editing the original later drags
+ * its mirror along with it. Sketch points are never mirrored.
  */
 export class MirrorCommand implements Command {
   readonly id = 'mirror';
@@ -40,9 +39,6 @@ export class MirrorCommand implements Command {
   }
 
   keyDown(event: KeyboardEvent): boolean {
-    // Enter belongs to this command in both phases: with nothing picked there
-    // is nothing to confirm, and in the line phase letting it through would
-    // restart the command and drop the set.
     if (event.key !== 'Enter') return false;
     if (this.phase === 'pick' && this.picked.length > 0) this.phase = 'line';
     this.editor.viewChanged();
@@ -62,8 +58,6 @@ export class MirrorCommand implements Command {
   }
 
   overlay(): readonly OverlayShape[] {
-    // The highlight is all the feedback either phase needs: the axis is
-    // already drawn as geometry, so a preview line would only repeat it.
     return this.picked.length === 0 ? [] : [{ kind: 'highlight', ids: this.picked }];
   }
 
@@ -83,8 +77,6 @@ export class MirrorCommand implements Command {
   /** Copies every picked curve across `axis` and commits the lot as one step. */
   private mirrorAbout(axisId: Id | undefined): void {
     const axis = axisId === undefined ? undefined : this.axisAt(axisId);
-    // The axis is one of the picked curves: mirroring a line about itself would
-    // only lay a copy on top of it.
     if (axis === undefined || this.picked.length === 0 || this.picked.includes(axis.id)) return;
     const pt = pointLookup(this.editor.sketch);
     const draft = new Draft(this.editor.sketch);
@@ -95,8 +87,6 @@ export class MirrorCommand implements Command {
       const copy = mirrorCurve(draft, curve, pt, axis);
       if (curve.construction === true) construction.add(copy);
     }
-    // A rejected solve leaves the sketch as it is and raises the notice; the
-    // command stays on the axis, so another line can be tried.
     if (!this.editor.commit(carryConstruction(draft.sketch, construction))) return;
     this.picked = [];
     this.phase = 'pick';
@@ -107,8 +97,6 @@ export class MirrorCommand implements Command {
     const hit = hitTest(this.editor.sketch, world, {
       tolerance: this.editor.viewport.toWorldLength(HIT_PX),
     });
-    // Points win the hit test everywhere else; here they are simply not
-    // mirrorable, so a click that lands on one picks nothing at all.
     const entity = this.editor.sketch.entities.find((e) => e.id === hit);
     return entity !== undefined && kinds.includes(entity.kind) ? entity.id : undefined;
   }
@@ -120,7 +108,6 @@ export class MirrorCommand implements Command {
     const pt = pointLookup(this.editor.sketch);
     const from = pt(line.p1);
     const to = pt(line.p2);
-    // A line whose ends coincide has no normal to mirror about.
     return distance(from, to) === 0 ? undefined : { id: line.id, from, to };
   }
 }
@@ -128,7 +115,10 @@ export class MirrorCommand implements Command {
 /** The two phases of the command: what to mirror, then what to mirror it about. */
 type Phase = 'pick' | 'line';
 
-/** What a click may pick in each phase. Sketch points are never mirrored, so 'pick' takes curves only. */
+/**
+ * What a click may pick in each phase. Sketch points are never mirrored, so 'pick' takes curves
+ * only.
+ */
 const CURVES: readonly EntityKind[] = ['line', 'circle', 'arc'];
 const AXIS: readonly EntityKind[] = ['line'];
 
@@ -140,9 +130,8 @@ interface Axis {
 }
 
 /**
- * Reflects `p` about the line through `a` and `b`. A line whose ends coincide
- * has no normal; the command refuses such an axis, and here the point simply
- * comes back unchanged.
+ * Reflects `p` about the line through `a` and `b`. A line whose ends coincide has no normal; the
+ * command refuses such an axis, and here the point simply comes back unchanged.
  */
 export function reflectPoint(p: Vec2, a: Vec2, b: Vec2): Vec2 {
   const dx = b.x - a.x;
@@ -155,8 +144,8 @@ export function reflectPoint(p: Vec2, a: Vec2, b: Vec2): Vec2 {
 }
 
 /**
- * Adds the mirror image of `curve`, reflected about `axis`, together with the
- * constraints that hold it there. Returns the new curve.
+ * Adds the mirror image of `curve`, reflected about `axis`, together with the constraints that hold
+ * it there. Returns the new curve.
  */
 function mirrorCurve(draft: Draft, curve: Line | Circle | Arc, pt: PointLookup, axis: Axis): Id {
   const copyPoint = (id: Id): Id => draft.point(reflectPoint(pt(id), axis.from, axis.to));
@@ -177,16 +166,10 @@ function mirrorCurve(draft: Draft, curve: Line | Circle | Arc, pt: PointLookup, 
       const center = copyPoint(curve.center);
       const copy = draft.circle(center, curve.radius);
       keep(center, curve.center);
-      // The reflected centre carries the copy across; the radius comes with it
-      // and is kept equal to the original's.
       draft.constrain({ kind: 'equal', a: curve.id, b: copy });
       return copy;
     }
     case 'arc': {
-      // A reflection reverses orientation, and the model stores an arc running
-      // clockwise on screen from start to end, so the copy's ends are the
-      // reflected originals the other way round. Its radius follows from the
-      // three reflected points, so it needs no constraint of its own.
       const center = copyPoint(curve.center);
       const start = copyPoint(curve.end);
       const end = copyPoint(curve.start);
@@ -199,9 +182,9 @@ function mirrorCurve(draft: Draft, curve: Line | Circle | Arc, pt: PointLookup, 
 }
 
 /**
- * Inventor mirrors the construction flag, so the copy of a construction curve
- * is construction itself. `Draft` builds plain geometry, so the flag is
- * carried over here, once, on the curves the mirror just created.
+ * Inventor mirrors the construction flag, so the copy of a construction curve is construction
+ * itself. `Draft` builds plain geometry, so the flag is carried over here, once, on the curves the
+ * mirror just created.
  */
 function carryConstruction(sketch: Sketch, ids: ReadonlySet<Id>): Sketch {
   if (ids.size === 0) return sketch;

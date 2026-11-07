@@ -22,9 +22,9 @@ type State =
   | { readonly kind: 'boxing'; readonly from: Vec2; to: Vec2; readonly additive: boolean };
 
 /**
- * The default command. Click selects (Shift/Ctrl toggles), dragging a point
- * moves it under the constraints, dragging empty space draws a selection box:
- * left-to-right is a window, right-to-left a crossing selection.
+ * The default command. Click selects (Shift/Ctrl toggles), dragging a point moves it under the
+ * constraints, dragging empty space draws a selection box: left-to-right is a window, right-to-left
+ * a crossing selection.
  */
 export class SelectCommand implements Command {
   readonly id = 'select';

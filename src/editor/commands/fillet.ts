@@ -11,11 +11,10 @@ import { hitTest } from '../hit';
 import { HIT_PX } from './select';
 
 /**
- * The two lines resolved at their shared vertex: where they cross, the unit
- * direction of each running from the vertex toward the endpoint the fillet
- * keeps (its far end), and which endpoint each line has at the vertex (its near
- * end, the one the fillet trims away). `half` is half the angle between the two
- * directions — the wedge the fillet rounds.
+ * The two lines resolved at their shared vertex: where they cross, the unit direction of each
+ * running from the vertex toward the endpoint the fillet keeps (its far end), and which endpoint
+ * each line has at the vertex (its near end, the one the fillet trims away). `half` is half the
+ * angle between the two directions — the wedge the fillet rounds.
  */
 interface Vertex {
   readonly v: Vec2;
@@ -79,20 +78,17 @@ interface Entering {
 type Phase = Picking | Placing | Entering;
 
 /**
- * The fillet command, Inventor's way: pick two lines that meet at a corner,
- * move the cursor to set the radius, click to place, then type the radius —
- * pre-filled with the measurement, so accepting it rounds the corner where the
- * cursor put it while a typed value drives it.
+ * The fillet command, Inventor's way: pick two lines that meet at a corner, move the cursor to set
+ * the radius, click to place, then type the radius — pre-filled with the measurement, so accepting
+ * it rounds the corner where the cursor put it while a typed value drives it.
  *
- * The construction: at the vertex V the two lines form an angle θ. A fillet of
- * radius r touches each line a tangent length `d = r / tan(θ/2)` from V, at the
- * tangent points T1 and T2. Its centre sits on the bisector of the two
- * directions, `r / sin(θ/2)` from V, so it is r from both tangent points. Each
- * line is trimmed by replacing its endpoint at V with the tangent point, and
- * the arc is built from the two tangent points — so it shares an endpoint with
- * each line. That makes each tangency a shared-endpoint one, which the solver
- * expresses as the angle between the curve normals through the shared point
- * (see solver/translate.ts), the same topology a hand-built rounded corner
+ * The construction: at the vertex V the two lines form an angle θ. A fillet of radius r touches
+ * each line a tangent length `d = r / tan(θ/2)` from V, at the tangent points T1 and T2. Its centre
+ * sits on the bisector of the two directions, `r / sin(θ/2)` from V, so it is r from both tangent
+ * points. Each line is trimmed by replacing its endpoint at V with the tangent point, and the arc
+ * is built from the two tangent points — so it shares an endpoint with each line. That makes each
+ * tangency a shared-endpoint one, which the solver expresses as the angle between the curve normals
+ * through the shared point (see solver/translate.ts), the same topology a hand-built rounded corner
  * uses. The vertex the fillet consumes is dropped once nothing else needs it.
  */
 export class FilletCommand implements Command {
@@ -113,8 +109,6 @@ export class FilletCommand implements Command {
 
   pointerMove(input: PointerInput): void {
     const phase = this.phase;
-    // The fillet follows the cursor while it is being placed; the value box owns
-    // the pointer once it is open.
     if (phase.kind !== 'placing') return;
     phase.cursor = input.world;
     this.editor.viewChanged();
@@ -123,8 +117,6 @@ export class FilletCommand implements Command {
   pointerUp(input: PointerInput): void {
     this.status = undefined;
     const phase = this.phase;
-    // A click places the fillet where the cursor resolved it and opens the value
-    // box; while a line is being picked it takes the line under the cursor.
     if (phase.kind === 'placing') {
       this.place(input.world);
       return;
@@ -146,12 +138,8 @@ export class FilletCommand implements Command {
   }
 
   cancel(): boolean {
-    // Esc backs out one step at a time: the value box, the placement, the
-    // pending pick, and only then the command itself.
     const phase = this.phase;
     if (phase.kind === 'entering') {
-      // Back to placing, with the fillet where it was put. A rejection recorded
-      // while the box was open is stale now, so it goes too.
       this.status = undefined;
       this.phase = {
         kind: 'placing',
@@ -163,7 +151,6 @@ export class FilletCommand implements Command {
       return true;
     }
     if (phase.kind === 'placing') {
-      // Back to picking, keeping the first line so only the second is re-picked.
       this.phase = { kind: 'pick', first: phase.line1 };
       this.editor.viewChanged();
       return true;
@@ -180,8 +167,6 @@ export class FilletCommand implements Command {
     const highlight: OverlayShape = { kind: 'highlight', ids: [phase.line1, phase.line2] };
     const vertex = this.vertex(phase.line1, phase.line2);
     if (vertex === undefined) return [highlight];
-    // While placing the radius follows the cursor, clamped; once placed it is
-    // the value the box carries.
     const radius =
       phase.kind === 'placing'
         ? phase.cursor !== undefined
@@ -205,26 +190,21 @@ export class FilletCommand implements Command {
   }
 
   /**
-   * Applies what the user typed. Accepting the measurement untouched (`edited`
-   * false) rounds the corner exactly where the cursor put it; otherwise the text
-   * is a parameter name or an expression and the radius drives the fillet to it.
-   * An unusable value, or one the solver rejects, keeps the box open so it can
-   * be fixed.
+   * Applies what the user typed. Accepting the measurement untouched (`edited` false) rounds the
+   * corner exactly where the cursor put it; otherwise the text is a parameter name or an expression
+   * and the radius drives the fillet to it. An unusable value, or one the solver rejects, keeps the
+   * box open so it can be fixed.
    */
   commitEdit(text: string, edited: boolean): boolean {
     const phase = this.phase;
     if (phase.kind !== 'entering') return false;
     const value = edited ? this.parse(text) : phase.value;
     if (value === undefined) return false;
-    // A parameter name binds the name itself, so the fillet tracks it; anything
-    // else is a number. Either way the radius must be finite and positive for
-    // the solver to take it.
     const radius = typeof value === 'number' ? value : this.editor.sketch.params[value];
     if (radius === undefined || !Number.isFinite(radius) || !(radius > 0)) return false;
     const vertex = this.vertex(phase.line1, phase.line2);
     if (vertex === undefined) return false;
     const next = this.build(vertex, radius, value);
-    // A sketch the solver rejects is not committed and the box stays open.
     if (next === undefined || !this.editor.commit(next)) return false;
     this.reset();
     return true;
@@ -233,8 +213,6 @@ export class FilletCommand implements Command {
   dispose(): void {
     this.phase = { kind: 'pick', first: undefined };
   }
-
-  // ── Picking ──────────────────────────────────────────────────────────────
 
   /** Takes the line under `world`; a non-line is no pick, and so is the first line again. */
   private pick(world: Vec2): void {
@@ -245,7 +223,6 @@ export class FilletCommand implements Command {
     });
     const entity =
       hit === undefined ? undefined : this.editor.sketch.entities.find((e) => e.id === hit);
-    // Only a line can be filleted; a point, circle or arc is no pick.
     if (entity?.kind !== 'line') return;
     const first = phase.first;
     if (first === undefined) {
@@ -253,11 +230,8 @@ export class FilletCommand implements Command {
       this.editor.viewChanged();
       return;
     }
-    // The same line twice is no second pick.
     if (first === entity.id) return;
     if (this.vertex(first, entity.id) === undefined) {
-      // Parallel lines share no vertex, so there is no corner to round: the pick
-      // is refused and the first one is kept.
       this.editor.setMessage({ key: 'prompts.incompatible' });
       this.editor.viewChanged();
       return;
@@ -266,8 +240,6 @@ export class FilletCommand implements Command {
     this.editor.viewChanged();
   }
 
-  // ── Placing ──────────────────────────────────────────────────────────────
-
   /** Puts the fillet where the cursor resolved it and opens the value box on it. */
   private place(cursor: Vec2): void {
     const phase = this.phase;
@@ -275,8 +247,6 @@ export class FilletCommand implements Command {
     const vertex = this.vertex(phase.line1, phase.line2);
     if (vertex === undefined) return;
     const preview = this.preview(vertex, this.clampRadius(vertex, cursor));
-    // A fillet the cursor cannot resolve — a zero radius at the vertex — is not
-    // placed, and the command stays where it is.
     if (preview === undefined) return;
     this.phase = {
       kind: 'entering',
@@ -288,8 +258,6 @@ export class FilletCommand implements Command {
     };
     this.editor.viewChanged();
   }
-
-  // ── Geometry ─────────────────────────────────────────────────────────────
 
   private pointAt(id: Id): Vec2 | undefined {
     const entity = this.editor.sketch.entities.find((e) => e.id === id);
@@ -313,7 +281,6 @@ export class FilletCommand implements Command {
     if (a1 === undefined || a2 === undefined || b1 === undefined || b2 === undefined)
       return undefined;
     const v = lineIntersection(a1, a2, b1, b2);
-    // No intersection means the lines are parallel: there is no corner to fillet.
     if (v === undefined) return undefined;
     const rayA = rayFrom(line1, a1, a2, v);
     const rayB = rayFrom(line2, b1, b2, v);
@@ -335,9 +302,9 @@ export class FilletCommand implements Command {
   }
 
   /**
-   * The radius the cursor asks for, clamped so the tangent length `d` never runs
-   * past either line's far endpoint: the shorter line caps how far from the
-   * vertex the fillet may reach, and the radius is rebuilt from the capped `d`.
+   * The radius the cursor asks for, clamped so the tangent length `d` never runs past either line's
+   * far endpoint: the shorter line caps how far from the vertex the fillet may reach, and the
+   * radius is rebuilt from the capped `d`.
    */
   private clampRadius(vertex: Vertex, cursor: Vec2): number {
     const { half, v } = vertex;
@@ -361,9 +328,9 @@ export class FilletCommand implements Command {
     return { centre, radius, t1, t2, midpoint };
   }
 
-  // ── Committing ───────────────────────────────────────────────────────────
-
-  /** Builds the filleted sketch: the two trimmed lines, the new points, the arc and its constraints. */
+  /**
+   * Builds the filleted sketch: the two trimmed lines, the new points, the arc and its constraints.
+   */
   private build(vertex: Vertex, radius: number, value: Value): Sketch | undefined {
     const preview = this.preview(vertex, radius);
     if (preview === undefined) return undefined;

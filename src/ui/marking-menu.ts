@@ -10,8 +10,8 @@ const RADIUS_PX = 96;
 const GESTURE_PX = 24;
 
 /**
- * Radial marking menu. Right-click opens it at the cursor; click an item, or
- * right-drag toward one and release (gesture). Esc or clicking outside closes.
+ * Radial marking menu. Right-click opens it at the cursor; click an item, or right-drag toward one
+ * and release (gesture). Esc or clicking outside closes.
  */
 export class MarkingMenu {
   readonly element = document.createElement('div');

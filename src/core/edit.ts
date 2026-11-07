@@ -38,10 +38,9 @@ export function constraintRefs(c: Constraint): Id[] {
 }
 
 /**
- * Deletes entities and constraints by id, with the cascade a CAD user expects:
- * deleting a point deletes the curves built on it; deleting a curve also
- * deletes its points unless another curve still uses them; constraints
- * referring to anything deleted go too.
+ * Deletes entities and constraints by id, with the cascade a CAD user expects: deleting a point
+ * deletes the curves built on it; deleting a curve also deletes its points unless another curve
+ * still uses them; constraints referring to anything deleted go too.
  */
 export function deleteItems(sketch: Sketch, ids: Iterable<Id>): Sketch {
   const requested = new Set(ids);
@@ -76,9 +75,8 @@ export function deleteItems(sketch: Sketch, ids: Iterable<Id>): Sketch {
 }
 
 /**
- * Toggles construction on the given curves. If any is normal geometry, all
- * become construction; otherwise all become normal (Inventor's behavior for a
- * mixed selection).
+ * Toggles construction on the given curves. If any is normal geometry, all become construction;
+ * otherwise all become normal (Inventor's behavior for a mixed selection).
  */
 export function toggleConstruction(sketch: Sketch, ids: Iterable<Id>): Sketch {
   const targets = new Set(ids);
@@ -102,9 +100,9 @@ function isDimension(c: Constraint): c is DimensionConstraint {
 }
 
 /**
- * Numeric value of a dimension constraint (distance, radius or angle), with
- * named parameters resolved against `params`. Undefined for any other kind
- * and for a name the sketch does not define.
+ * Numeric value of a dimension constraint (distance, radius or angle), with named parameters
+ * resolved against `params`. Undefined for any other kind and for a name the sketch does not
+ * define.
  */
 export function constraintValue(
   c: Constraint,
@@ -115,9 +113,8 @@ export function constraintValue(
 }
 
 /**
- * Sets the value of a dimension constraint (distance, radius, angle). Other
- * kinds have no value and are returned untouched, as are unknown ids and
- * values that are already set.
+ * Sets the value of a dimension constraint (distance, radius, angle). Other kinds have no value and
+ * are returned untouched, as are unknown ids and values that are already set.
  */
 export function setConstraintValue(sketch: Sketch, id: Id, value: Value): Sketch {
   const current = sketch.constraints.find((c) => c.id === id);

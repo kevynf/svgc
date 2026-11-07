@@ -161,8 +161,8 @@ describe('ArtboardCommand — undo and escape', () => {
   it('commits each completed drag as a single undo step', () => {
     const editor = editorWith(withArtboard({ x: 0, y: 0, width: 100, height: 100 }));
     editor.startCommand('artboard');
-    drag(editor, [100, 50], [150, 50]); // resize → {0,0,150,100}
-    drag(editor, [75, 50], [85, 60]); // move → {10,10,150,100}
+    drag(editor, [100, 50], [150, 50]);
+    drag(editor, [75, 50], [85, 60]);
     expect(artboard(editor)).toEqual({ x: 10, y: 10, width: 150, height: 100 });
     editor.undo();
     expect(artboard(editor)).toEqual({ x: 0, y: 0, width: 150, height: 100 });
@@ -176,7 +176,7 @@ describe('ArtboardCommand — undo and escape', () => {
     editor.startCommand('artboard');
     editor.activeCommand.pointerDown!(at(100, 50));
     editor.activeCommand.pointerMove!(at(180, 50));
-    expect(artboard(editor)).toEqual({ x: 0, y: 0, width: 100, height: 100 }); // never committed mid-drag
+    expect(artboard(editor)).toEqual({ x: 0, y: 0, width: 100, height: 100 });
 
     editor.escape();
     expect(editor.activeCommand.id).toBe('artboard');

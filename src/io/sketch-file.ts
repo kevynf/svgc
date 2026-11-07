@@ -2,10 +2,10 @@ import type { Constraint, Entity, Id, Value } from '../core/model';
 import type { Artboard, Sketch } from '../core/sketch';
 
 /**
- * The sketch file: a JSON document carrying the format tag, the version and the
- * sketch itself. Writing is a straight dump of the immutable sketch; reading is
- * defensive — a document is either a sketch or the reason it is not one — so a
- * truncated, corrupt or foreign file never reaches the editor.
+ * The sketch file: a JSON document carrying the format tag, the version and the sketch itself.
+ * Writing is a straight dump of the immutable sketch; reading is defensive — a document is either a
+ * sketch or the reason it is not one — so a truncated, corrupt or foreign file never reaches the
+ * editor.
  */
 
 /** The format tag every sketch file carries. */
@@ -21,11 +21,10 @@ export type SketchFileResult =
   | { readonly ok: true; readonly sketch: Sketch }
   | { readonly ok: false; readonly error: SketchFileError };
 
-// ---------------------------------------------------------------------------
-// Writing
-// ---------------------------------------------------------------------------
-
-/** A sketch as a JSON document: the format tag, the version and the sketch. Pretty-printed (2 spaces). */
+/**
+ * A sketch as a JSON document: the format tag, the version and the sketch. Pretty-printed (2
+ * spaces).
+ */
 export function serializeSketch(sketch: Sketch): string {
   return JSON.stringify(
     {
@@ -35,8 +34,6 @@ export function serializeSketch(sketch: Sketch): string {
         entities: sketch.entities,
         constraints: sketch.constraints,
         params: sketch.params,
-        // An absent section stays absent, so a file reads like the sketch it
-        // came from and an empty record is never mistaken for a defined one.
         ...(sketch.expressions === undefined ? {} : { expressions: sketch.expressions }),
         ...(sketch.artboard === undefined ? {} : { artboard: sketch.artboard }),
       },
@@ -46,11 +43,10 @@ export function serializeSketch(sketch: Sketch): string {
   );
 }
 
-// ---------------------------------------------------------------------------
-// Reading
-// ---------------------------------------------------------------------------
-
-/** Parses a sketch file. Unknown EXTRA fields are ignored (forward compatibility); anything malformed is refused with a reason. */
+/**
+ * Parses a sketch file. Unknown EXTRA fields are ignored (forward compatibility); anything
+ * malformed is refused with a reason.
+ */
 export function parseSketch(text: string): SketchFileResult {
   let document: unknown;
   try {
@@ -58,8 +54,6 @@ export function parseSketch(text: string): SketchFileResult {
   } catch {
     return { ok: false, error: 'invalidJson' };
   }
-  // A document that is not an object — an array, a number, a bare string — has
-  // nowhere to carry the format tag, so it is not a sketch file at all.
   if (!isRecord(document)) return { ok: false, error: 'invalidJson' };
   if (document.format !== SKETCH_FILE_FORMAT) return { ok: false, error: 'unknownFormat' };
   if (!isVersion(document.version)) return { ok: false, error: 'unsupportedVersion' };
@@ -69,9 +63,9 @@ export function parseSketch(text: string): SketchFileResult {
 }
 
 /**
- * A version this reader accepts: a number, and no newer than the one it writes.
- * An older file is taken at face value — the sketch shape has not changed —
- * while a newer one may carry fields this build knows nothing about.
+ * A version this reader accepts: a number, and no newer than the one it writes. An older file is
+ * taken at face value — the sketch shape has not changed — while a newer one may carry fields this
+ * build knows nothing about.
  */
 function isVersion(raw: unknown): boolean {
   return typeof raw === 'number' && raw <= SKETCH_FILE_VERSION;
@@ -80,10 +74,9 @@ function isVersion(raw: unknown): boolean {
 /**
  * Reads the sketch itself, keeping only the fields `Sketch` declares.
  *
- * `entities`, `constraints` and `params` are the core: a file missing one of
- * them is refused rather than defaulted, because a sketch whose parameters
- * vanished would leave every dimension that names one dangling. The optional
- * sections are read only when the file carries them.
+ * `entities`, `constraints` and `params` are the core: a file missing one of them is refused rather
+ * than defaulted, because a sketch whose parameters vanished would leave every dimension that names
+ * one dangling. The optional sections are read only when the file carries them.
  */
 function readSketch(raw: unknown): Sketch | undefined {
   if (!isRecord(raw)) return undefined;
@@ -110,15 +103,10 @@ function readSketch(raw: unknown): Sketch | undefined {
   };
 }
 
-// ---------------------------------------------------------------------------
-// Entities
-// ---------------------------------------------------------------------------
-
 /**
- * Reads one entity, keeping only the fields its kind declares: a file written
- * by a newer build that added one cannot leak it into the in-memory sketch.
- * Every kind is spelled out, so a kind added to `Entity` shows up here as a
- * missing case rather than passing through unread.
+ * Reads one entity, keeping only the fields its kind declares: a file written by a newer build that
+ * added one cannot leak it into the in-memory sketch. Every kind is spelled out, so a kind added to
+ * `Entity` shows up here as a missing case rather than passing through unread.
  */
 function readEntity(raw: unknown): Entity | undefined {
   if (!isRecord(raw)) return undefined;
@@ -162,15 +150,9 @@ function readEntity(raw: unknown): Entity | undefined {
       return { kind: 'arc', id, center, start, end, ...construction };
     }
     default:
-      // An unknown kind is a sketch from a newer format. Refusing it is safer
-      // than dropping the entity and leaving its constraints dangling.
       return undefined;
   }
 }
-
-// ---------------------------------------------------------------------------
-// Constraints
-// ---------------------------------------------------------------------------
 
 /** Reads one constraint, keeping only the fields its kind declares. */
 function readConstraint(raw: unknown): Constraint | undefined {
@@ -273,10 +255,6 @@ function readConstraint(raw: unknown): Constraint | undefined {
   }
 }
 
-// ---------------------------------------------------------------------------
-// Fields
-// ---------------------------------------------------------------------------
-
 /** The artboard is four finite numbers; a missing or non-numeric one refuses the file. */
 function readArtboard(raw: unknown): Artboard | undefined {
   if (!isRecord(raw)) return undefined;
@@ -358,10 +336,9 @@ function isRecord(raw: unknown): raw is Record<string, unknown> {
 }
 
 /**
- * A name: an entity id, a reference to one, the parameter a dimension value
- * names, or a parameter's source. A non-empty string, kept verbatim — an empty
- * one is refused rather than read as "no name", which would silently collide
- * with every other empty name in the sketch.
+ * A name: an entity id, a reference to one, the parameter a dimension value names, or a parameter's
+ * source. A non-empty string, kept verbatim — an empty one is refused rather than read as "no
+ * name", which would silently collide with every other empty name in the sketch.
  */
 function readText(raw: unknown): string | undefined {
   return typeof raw === 'string' && raw !== '' ? raw : undefined;

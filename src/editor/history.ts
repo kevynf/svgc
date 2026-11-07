@@ -30,8 +30,8 @@ export class History<T> {
   }
 
   /**
-   * Starts a transaction: states set with `replace` until `end` collapse
-   * into a single undo step (e.g. a drag).
+   * Starts a transaction: states set with `replace` until `end` collapse into a single undo step
+   * (e.g. a drag).
    */
   begin(): void {
     this.end();
@@ -44,9 +44,9 @@ export class History<T> {
   }
 
   /**
-   * Starts a new document: `sketch` becomes the current state and both stacks
-   * are emptied, so nothing from the previous document can be reached — the
-   * first edit of the new one is the earliest undo step.
+   * Starts a new document: `sketch` becomes the current state and both stacks are emptied, so
+   * nothing from the previous document can be reached — the first edit of the new one is the
+   * earliest undo step.
    */
   reset(sketch: T): void {
     this.end();

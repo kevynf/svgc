@@ -2,8 +2,8 @@ import type { Entity, EntityKind, Id } from './model';
 import type { Constraint } from './model';
 
 /**
- * The exported page: SVG `viewBox` origin and size, in world px. Geometry
- * outside it still exists in the model but is clipped in the exported file.
+ * The exported page: SVG `viewBox` origin and size, in world px. Geometry outside it still exists
+ * in the model but is clipped in the exported file.
  */
 export interface Artboard {
   readonly x: number;
@@ -17,9 +17,8 @@ export interface Sketch {
   readonly constraints: readonly Constraint[];
   readonly params: Readonly<Record<string, number>>;
   /**
-   * Source expression of each parameter, as the user typed it. Absent for a
-   * plain value, whose source is its number. Presentation of intent only: the
-   * solver reads `params`.
+   * Source expression of each parameter, as the user typed it. Absent for a plain value, whose
+   * source is its number. Presentation of intent only: the solver reads `params`.
    */
   readonly expressions?: Readonly<Record<string, string>>;
   /** Absent until the user defines one; export then falls back to the geometry bounds. */

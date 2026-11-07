@@ -84,8 +84,6 @@ export class Ribbon {
     title.textContent = this.t.t(panel.label);
     group.setAttribute('aria-label', title.textContent);
 
-    // Small buttons fill a 2-row grid that wraps into columns (Inventor layout);
-    // large buttons keep their own row.
     const smalls: HTMLButtonElement[] = [];
     for (const def of panel.buttons) {
       const el = this.button(def);

@@ -151,7 +151,6 @@ describe('ArcCommand', () => {
     click(editor, 0, 0);
     const arc = editor.sketch.entities.find((e) => e.kind === 'arc');
     expect(arc).toBeDefined();
-    // The three points lie on a circle of radius ~70.7 about (50, 50).
     const center = editor.sketch.entities.find(
       (e) => e.kind === 'point' && Math.abs(e.x - 50) < 1e-6,
     );
@@ -161,8 +160,6 @@ describe('ArcCommand', () => {
   it('orients the arc clockwise from start to end', () => {
     const editor = editorWith();
     editor.startCommand('arc');
-    // Start right, end top, through the origin: sweeps through the origin, so
-    // the model stores it start→end the long way round.
     click(editor, 100, 0);
     click(editor, 0, 100);
     click(editor, 0, 0);
@@ -173,8 +170,6 @@ describe('ArcCommand', () => {
     const end = arc?.kind === 'arc' ? pt(arc.end) : undefined;
     expect(start?.kind).toBe('point');
     expect(end?.kind).toBe('point');
-    // The stored start is the one at the origin: the arc sweeps clockwise from
-    // there to (100, 0).
     expect(start?.kind === 'point' && start.x === 0).toBe(true);
   });
 });
@@ -186,7 +181,6 @@ describe('LineCommand tangent arc', () => {
     click(editor, 0, 0);
     click(editor, 100, 0);
     const command = editor.activeCommand as LineCommand;
-    // Grab the shared end point and drag downwards.
     command.pointerDown(at(100, 0));
     command.pointerMove(at(100, 60));
     command.pointerMove(at(100, 61));
@@ -207,7 +201,6 @@ describe('LineCommand tangent arc', () => {
     command.pointerMove(at(100, 62));
     editor.escape();
     expect(count(editor.sketch, 'arc')).toBe(0);
-    // Chain survives: one more segment still works.
     click(editor, 200, 0);
     expect(count(editor.sketch, 'line')).toBe(2);
   });

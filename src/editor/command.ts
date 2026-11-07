@@ -43,9 +43,9 @@ export type OverlayShape =
   /** The eight resize grips of an artboard, drawn while it is being edited. */
   | { readonly kind: 'artboardHandles'; readonly artboard: Artboard }
   /**
-   * A dimension being placed: its laid-out graphics. `value` present = also
-   * draw the measured value as text (it follows the cursor); absent = the
-   * inline edit box shows the value instead. `radius` prefixes the text with R.
+   * A dimension being placed: its laid-out graphics. `value` present = also draw the measured value
+   * as text (it follows the cursor); absent = the inline edit box shows the value instead. `radius`
+   * prefixes the text with R.
    */
   | {
       readonly kind: 'dimension';
@@ -72,10 +72,9 @@ export interface EditRequest {
 }
 
 /**
- * An interactive canvas command (Inventor style: pick the command first,
- * then the geometry). The editor routes pointer and key input to the
- * active command; panning, zooming and global shortcuts are handled before
- * input reaches it.
+ * An interactive canvas command (Inventor style: pick the command first, then the geometry). The
+ * editor routes pointer and key input to the active command; panning, zooming and global shortcuts
+ * are handled before input reaches it.
  */
 export interface Command {
   readonly id: string;
@@ -86,8 +85,8 @@ export interface Command {
   /** Returns true when the key was consumed. */
   keyDown?(event: KeyboardEvent): boolean;
   /**
-   * Esc. Returns true when the command backed out of an in-progress step
-   * and stays active; false lets the editor end the command.
+   * Esc. Returns true when the command backed out of an in-progress step and stays active; false
+   * lets the editor end the command.
    */
   cancel?(): boolean;
   overlay?(): readonly OverlayShape[];
@@ -96,9 +95,9 @@ export interface Command {
   /** Set while the command wants an inline value entry; the UI shows the box. */
   readonly edit?: EditRequest;
   /**
-   * Applies what the user typed. `edited` says the user actually typed
-   * (false = accept the measurement untouched). Returns false when the text is
-   * unusable or the solver rejected it, and the box stays open.
+   * Applies what the user typed. `edited` says the user actually typed (false = accept the
+   * measurement untouched). Returns false when the text is unusable or the solver rejected it, and
+   * the box stays open.
    */
   commitEdit?(text: string, edited: boolean): boolean;
   /** Drops the entry without committing. */

@@ -1,8 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
 
-// The dialog module imports the `settings` store, which reads `localStorage`
-// when it is constructed. Under the Node test runner that global is absent, so
-// provide a minimal in-memory one before the module under test is imported.
 vi.hoisted(() => {
   const map = new Map<string, string>();
   Object.defineProperty(globalThis, 'localStorage', {
@@ -30,8 +27,6 @@ const en = new Translator('en');
 
 const set = (...kinds: InferredKind[]): ReadonlySet<InferredKind> => new Set(kinds);
 
-// DOM behavior (focus trap, Esc, backdrop click) needs a real document and is
-// exercised in the browser preview; only the pure helpers are unit-tested here.
 describe('inferenceSummary', () => {
   it('reports a full set in both locales', () => {
     const all = set(...INFERRED_KINDS);

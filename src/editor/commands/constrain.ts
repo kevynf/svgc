@@ -44,10 +44,9 @@ const SECOND_OBJECT: OperandSpec = {
 const AXIS: readonly OperandSpec[] = [LINE_OR_POINT, SECOND_POINT];
 
 /**
- * Inventor's constraint commands: pick the command, then the operands. A
- * command stays active once it has applied a constraint, so a run of them can
- * be added without going back to the ribbon; Esc drops the pending operand and
- * only then ends the command.
+ * Inventor's constraint commands: pick the command, then the operands. A command stays active once
+ * it has applied a constraint, so a run of them can be added without going back to the ribbon; Esc
+ * drops the pending operand and only then ends the command.
  */
 export abstract class ConstraintCommand implements Command {
   abstract readonly id: string;
@@ -89,7 +88,6 @@ export abstract class ConstraintCommand implements Command {
     }
     const picks = [...this.picks, operand];
     const constraint = this.build(picks);
-    // A line completes horizontal/vertical on its own; the other commands need every operand.
     if (constraint === undefined) {
       this.picks = picks;
       this.editor.viewChanged();
@@ -118,9 +116,8 @@ export abstract class ConstraintCommand implements Command {
   protected abstract build(picks: readonly Operand[]): ConstraintInput | undefined;
 
   /**
-   * Called once the operands allow the constraint. The default applies it; a
-   * command that places and values the constraint first (the dimension
-   * command) overrides this.
+   * Called once the operands allow the constraint. The default applies it; a command that places
+   * and values the constraint first (the dimension command) overrides this.
    */
   protected complete(constraint: ConstraintInput): void {
     this.apply(constraint);
@@ -132,11 +129,10 @@ export abstract class ConstraintCommand implements Command {
   }
 
   /**
-   * Adds the constraint unless the solver rejects it. planegcs names whichever
-   * member of a conflicting or redundant group it likes — not necessarily the
-   * new constraint — so the diagnostics are compared with the sketch as it was
-   * before the pick. Nothing is committed on a rejection, so there is nothing
-   * to undo: the sketch is simply left as it is.
+   * Adds the constraint unless the solver rejects it. planegcs names whichever member of a
+   * conflicting or redundant group it likes — not necessarily the new constraint — so the
+   * diagnostics are compared with the sketch as it was before the pick. Nothing is committed on a
+   * rejection, so there is nothing to undo: the sketch is simply left as it is.
    */
   private apply(constraint: ConstraintInput): void {
     const next = this.admit(constraint);
@@ -148,9 +144,8 @@ export abstract class ConstraintCommand implements Command {
   }
 
   /**
-   * The sketch with `constraint` added, or undefined when the solver rejects it
-   * (a conflict or a redundancy) — recording the message the status bar shows,
-   * exactly as `apply` does today.
+   * The sketch with `constraint` added, or undefined when the solver rejects it (a conflict or a
+   * redundancy) — recording the message the status bar shows, exactly as `apply` does today.
    */
   protected admit(constraint: ConstraintInput): Sketch | undefined {
     const draft = new Draft(this.editor.sketch);

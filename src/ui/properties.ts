@@ -25,12 +25,12 @@ interface FocusState {
 }
 
 /**
- * Right-hand collapsible properties panel (Illustrator "Properties" /
- * Inventor property panel). Shows the current selection and edits it.
+ * Right-hand collapsible properties panel (Illustrator "Properties" / Inventor property panel).
+ * Shows the current selection and edits it.
  *
- * `update()` runs on every hover and mouse move, so the DOM is rebuilt only
- * when the selection or the sketch's structure changes; values are refreshed
- * in place, and an input the user is typing in is never replaced.
+ * `update()` runs on every hover and mouse move, so the DOM is rebuilt only when the selection or
+ * the sketch's structure changes; values are refreshed in place, and an input the user is typing in
+ * is never replaced.
  */
 export class PropertiesPanel {
   readonly element = document.createElement('aside');
@@ -88,8 +88,6 @@ export class PropertiesPanel {
     }
     this.refresh(model);
   }
-
-  // ── Model ──────────────────────────────────────────────────────────────
 
   private buildModel(): PropertiesModel {
     const editor = this.editor;

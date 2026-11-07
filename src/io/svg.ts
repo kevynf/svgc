@@ -19,11 +19,10 @@ export interface SvgOptions {
 }
 
 /**
- * The sketch as a standalone SVG document: one element per non-construction
- * curve, in world coordinates. Sketch points are not exported — they are
- * construction aids, not geometry. With an artboard the document is the page
- * the user defined and the geometry is clipped to it, so curves reaching
- * outside it still exist in the model but are cut off in the file.
+ * The sketch as a standalone SVG document: one element per non-construction curve, in world
+ * coordinates. Sketch points are not exported — they are construction aids, not geometry. With an
+ * artboard the document is the page the user defined and the geometry is clipped to it, so curves
+ * reaching outside it still exist in the model but are cut off in the file.
  */
 export function sketchToSvg(sketch: Sketch, options: SvgOptions = {}): string {
   const index = indexEntities(sketch);

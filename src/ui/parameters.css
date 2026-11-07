@@ -1,8 +1,3 @@
-/* Parameter dialog (Inventor's 参数): a modal card over a dimmed backdrop,
-   one row per sketch parameter. Imported by parameters.ts; every rule is
-   scoped under .parameters / .parameters-backdrop so it cannot leak into the
-   shell. Inputs follow .properties-input from properties.css. */
-
 :root {
   --parameters-width: 440px;
   --parameters-backdrop: rgb(0 0 0 / 0.5);
@@ -34,7 +29,6 @@
   box-shadow: var(--parameters-shadow);
 }
 
-/* The card is focused programmatically; the ring is for keyboard users only. */
 .parameters:focus {
   outline: none;
 }
@@ -103,7 +97,6 @@
   display: none;
 }
 
-/* Name | expression | value | remove, with the error on its own line below. */
 .parameters-row {
   display: flex;
   flex-wrap: wrap;
@@ -128,7 +121,6 @@
   border-radius: 3px;
 }
 
-/* The name column stays narrow; the expression takes the rest of the row. */
 .parameters-name {
   flex: none;
   width: 72px;

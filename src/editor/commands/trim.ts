@@ -26,7 +26,10 @@ interface Ends {
   readonly end: Id;
 }
 
-/** Where an end would land: the crossing nearest it, inside the span for a trim, beyond it for an extend. */
+/**
+ * Where an end would land: the crossing nearest it, inside the span for a trim, beyond it for an
+ * extend.
+ */
 type Target = (
   curve: Intersectable,
   end: End,
@@ -77,16 +80,15 @@ function positionOf(index: EntityIndex, id: Id): Vec2 | undefined {
 }
 
 /**
- * Inventor's trim (TR) and extend (X). This model has no trim state — a curve
- * is its points, and nothing records where it was cut — so both commands move
- * the clicked endpoint to the crossing they ask for: a trim shortens the curve
- * to the nearest crossing inside its span, an extend lengthens it to the
- * nearest one beyond it. A point can be shared, so the curves built on it
- * follow the move; that is the cost of a model without trim state, and it is
- * what makes a trim parametric — the solver keeps everything else put.
+ * Inventor's trim (TR) and extend (X). This model has no trim state — a curve is its points, and
+ * nothing records where it was cut — so both commands move the clicked endpoint to the crossing
+ * they ask for: a trim shortens the curve to the nearest crossing inside its span, an extend
+ * lengthens it to the nearest one beyond it. A point can be shared, so the curves built on it
+ * follow the move; that is the cost of a model without trim state, and it is what makes a trim
+ * parametric — the solver keeps everything else put.
  *
- * The command stays active once it has moved an end, as Inventor's TR does, so
- * a run of ends can be taken without going back to the ribbon.
+ * The command stays active once it has moved an end, as Inventor's TR does, so a run of ends can be
+ * taken without going back to the ribbon.
  */
 abstract class EndCommand implements Command {
   abstract readonly id: string;
@@ -99,35 +101,26 @@ abstract class EndCommand implements Command {
   ) {}
 
   prompt(): Message {
-    // A refusal is a transient message on the editor, which the status bar
-    // shows in place of this prompt until the next input.
     return { key: this.spec.prompt };
   }
 
   pointerMove(input: PointerInput): void {
     this.hover = this.hoverAt(input.world);
     this.editor.setHover(this.hover?.curve);
-    // The marker follows the cursor along the curve, so the view must repaint.
     this.editor.viewChanged();
   }
 
   pointerUp(input: PointerInput): void {
-    // The pick is taken from the click itself: the hover is only a preview, and
-    // the sketch may have changed since the cursor last moved.
     const pick = this.hoverAt(input.world)?.pick;
-    // Nothing under the cursor, or no end close enough to one: the command waits.
     if (pick === undefined) return;
     if (pick.target === undefined) {
       this.editor.setMessage({ key: this.spec.none });
       return;
     }
-    // One undo step: the solver re-solves under the constraints, so the curves
-    // built on a shared point are taken along.
     this.editor.setPointPosition(pick.point, pick.target.x, pick.target.y);
   }
 
   cancel(): boolean {
-    // There is no step to back out of, so Esc ends the command.
     return false;
   }
 
@@ -136,7 +129,6 @@ abstract class EndCommand implements Command {
     if (hover === undefined) return [];
     const highlight: OverlayShape = { kind: 'highlight', ids: [hover.curve] };
     const target = hover.pick?.target;
-    // The marker shows where the end would land, before a click commits it.
     return target === undefined ? [highlight] : [{ kind: 'snap', at: target }, highlight];
   }
 
@@ -150,16 +142,15 @@ abstract class EndCommand implements Command {
     const entity = this.curveAt(world);
     if (entity === undefined) return undefined;
     const ends = endsOf(entity);
-    // A circle has no ends to move, so it is hovered but never picked.
     if (ends === undefined) return { curve: entity.id, pick: undefined };
     const index = indexEntities(this.editor.sketch);
     return { curve: entity.id, pick: this.pickOn(entity, ends, index, world) };
   }
 
   /**
-   * The curve under `world`. A point wins the hit test, and a click on an
-   * endpoint is the most natural one here, so the nearest curve is taken when a
-   * point wins — exactly as a constraint command asking for a curve does.
+   * The curve under `world`. A point wins the hit test, and a click on an endpoint is the most
+   * natural one here, so the nearest curve is taken when a point wins — exactly as a constraint
+   * command asking for a curve does.
    */
   private curveAt(world: Vec2): Entity | undefined {
     const { sketch } = this.editor;
@@ -174,7 +165,6 @@ abstract class EndCommand implements Command {
       if (e.kind === 'point') continue;
       const d = distanceTo(e, world, pt);
       if (d > tolerance) continue;
-      // Ties keep the earlier entity, as the hit test does.
       if (best !== undefined && d >= best.d) continue;
       best = { entity: e, d };
     }
@@ -191,14 +181,11 @@ abstract class EndCommand implements Command {
       if (at === undefined) continue;
       const d = distance(at, world);
       if (d > near) continue;
-      // Ties keep the earlier end.
       if (best !== undefined && d >= best.d) continue;
       best = { end, point, d };
     }
-    // A cursor too far from either end is a click on the curve, not on an end.
     if (best === undefined) return undefined;
     const curve = curveOf(entity, index);
-    // A degenerate curve has no span to cross, or to be shortened along.
     if (curve === undefined) return undefined;
     return {
       end: best.end,
@@ -208,9 +195,8 @@ abstract class EndCommand implements Command {
   }
 
   /**
-   * Every curve in the sketch, degenerate ones dropped. The picked curve is
-   * among them: the target search skips a curve that matches by geometry, so
-   * its own ends are never targets.
+   * Every curve in the sketch, degenerate ones dropped. The picked curve is among them: the target
+   * search skips a curve that matches by geometry, so its own ends are never targets.
    */
   private curves(index: EntityIndex): readonly Intersectable[] {
     const out: Intersectable[] = [];

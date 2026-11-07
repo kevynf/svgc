@@ -19,9 +19,8 @@ interface ParamFailure {
 type ParamEdit = { readonly ok: true } | ParamFailure;
 
 /**
- * The next free default parameter name: d0, d1, … — the lowest index whose
- * `d<i>` the sketch does not already define. Only the canonical spelling
- * counts, so an existing `d00` does not block `d0`.
+ * The next free default parameter name: d0, d1, … — the lowest index whose `d<i>` the sketch does
+ * not already define. Only the canonical spelling counts, so an existing `d00` does not block `d0`.
  */
 export function nextParamName(params: Readonly<Record<string, number>>): string {
   for (let i = 0; ; i++) {

@@ -1,20 +1,16 @@
-﻿/* Dark theme. All colors are tokens so a light theme can be added by overriding them. */
-:root {
+﻿:root {
   color-scheme: dark;
   --font: 'Segoe UI', 'Microsoft YaHei UI', 'PingFang SC', system-ui, sans-serif;
   --font-mono: 'Cascadia Mono', Consolas, ui-monospace, monospace;
 
-  /* Spacing scale (4 / 8 px). */
   --sp-1: 4px;
   --sp-2: 8px;
   --sp-3: 12px;
   --sp-4: 16px;
 
-  /* Type scale: 12 px UI, 11 px captions. */
   --fs-ui: 12px;
   --fs-caption: 11px;
 
-  /* Surfaces, from deepest to most raised. */
   --bg-app: #16191c;
   --bg-chrome: #23272b;
   --bg-chrome-raised: #2f343a;
@@ -24,21 +20,17 @@
   --border: #0e1114;
   --border-subtle: #363c44;
 
-  /* Text. --text-muted (6.6:1) and --text-disabled (3.2:1) are tuned against --bg-chrome. */
   --text: #e9ecef;
   --text-muted: #a4adb5;
   --text-disabled: #6c757d;
   --accent: #3d9be9;
   --focus: #5cb3ff;
 
-  /* Grid. */
   --grid-minor: #222a32;
   --grid-major: #2b3540;
   --axis-x: #8a4442;
   --axis-y: #3f6f4a;
 
-  /* Sketch geometry, following Inventor's dark scheme: under-constrained
-     geometry is bright, fully constrained geometry turns a calmer blue. */
   --geom: #eaeff4;
   --geom-constrained: #4ea3e0;
   --geom-construction: #d6a64c;
@@ -46,7 +38,6 @@
   --geom-selected: #2fc4e8;
   --point: #eaeff4;
 
-  /* Status tones. */
   --ok: #5fce77;
   --error: #ff6b6b;
   --pending: #8b959d;
@@ -75,7 +66,6 @@ body,
   margin: 0;
 }
 
-/* Dark scrollbars everywhere. */
 * {
   scrollbar-width: thin;
   scrollbar-color: var(--border-subtle) transparent;
@@ -119,8 +109,6 @@ body,
   flex: none;
 }
 
-/* 鈹€鈹€ Shell 鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€ */
-
 .app {
   display: grid;
   grid-template-rows: auto auto 1fr auto;
@@ -128,7 +116,6 @@ body,
   overflow: hidden;
 }
 
-/* Row 1: app name, ribbon tabs and language 鈥?one 30px strip. */
 .titlebar {
   display: flex;
   align-items: stretch;
@@ -156,7 +143,6 @@ body,
   color: var(--text-muted);
 }
 
-/* The tab row lives in the header strip; the selected tab meets the ribbon. */
 .ribbon-tabs {
   display: flex;
   align-items: stretch;
@@ -209,10 +195,6 @@ body,
   padding: 2px 6px;
 }
 
-/* 鈹€鈹€ Ribbon 鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€ */
-
-/* One flex row of panels. Collapsing removes the whole row, chrome included,
-   so no empty strip is left under the header. */
 .ribbon {
   display: flex;
   align-items: stretch;
@@ -238,8 +220,6 @@ body,
   border-right: 0;
 }
 
-/* Button area = a large button (24px icon + 4px gap + 16px label + padding)
-   or one row of 18px small buttons, centered so mixed panels line up. */
 .ribbon-buttons {
   display: flex;
   align-items: center;
@@ -249,12 +229,6 @@ body,
   padding: 4px 3px;
 }
 
-/*
- * Small buttons form a 2-row grid that wraps into columns. Filling the panel
- * height, a group of them matches one large button — the Inventor look, where
- * e.g. the constraint panel reads as one big Dimension button beside a 2x2
- * block of geometric constraints.
- */
 .ribbon-smalls {
   display: grid;
   grid-template-rows: repeat(2, 1fr);
@@ -278,12 +252,6 @@ body,
   border-top: 1px solid var(--border-subtle);
 }
 
-/*
- * Ribbon button tiers. Two sizes only, clearly different, so the hierarchy
- * reads at a glance: large = primary commands (create, dimension),
- * small = secondary (constraints, modify, format, edit, view).
- * All buttons stack the icon above the label, as in Inventor's ribbon.
- */
 .ribbon-button {
   display: flex;
   flex-direction: column;
@@ -354,8 +322,6 @@ body,
   color: var(--text-disabled);
   cursor: default;
 }
-
-/* 鈹€鈹€ Workspace 鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€ */
 
 .workspace {
   display: grid;
@@ -467,8 +433,6 @@ body,
   cursor: pointer;
 }
 
-/* Fixed-width icon column keeps labels at the same x across rows. The
-   half-pixel nudge aligns the icon's ink center with the label's ink center. */
 .browser-item .icon {
   flex: none;
   width: 16px;
@@ -495,7 +459,6 @@ body,
   color: var(--text);
 }
 
-/* Construction geometry: muted label with an amber type icon. */
 .browser-item.construction {
   color: var(--text-muted);
 }
@@ -550,11 +513,6 @@ body,
   overflow: hidden;
 }
 
-/* The inline value box of a dimension being placed. It is absolutely
-   positioned in the stage and centered on the value text's anchor by the
-   transform, so it tracks the dimension as the cursor moves. It sits above the
-   canvas and the marking menu (z-index 20), and borrows the properties
-   panel's input styling so a value typed on the canvas reads the same. */
 .dimension-edit {
   position: absolute;
   width: 76px;
@@ -577,14 +535,11 @@ body,
   border-color: var(--text-disabled);
 }
 
-/* An accent ring, so the box reads as the active control over the canvas. */
 .dimension-edit:focus-visible {
   border-color: var(--accent);
   outline: 2px solid var(--accent);
   outline-offset: 1px;
 }
-
-/* 鈹€鈹€ Canvas 鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€ */
 
 .canvas {
   display: block;
@@ -646,7 +601,6 @@ body,
   stroke: var(--geom-constrained);
 }
 
-/* Construction overrides the constrained tone: always dashed amber. */
 .curve.construction {
   stroke: var(--geom-construction);
   stroke-width: 1;
@@ -742,8 +696,6 @@ body,
   stroke-dasharray: 5 3;
 }
 
-/* 鈹€鈹€ Marking menu 鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€ */
-
 .marking-menu {
   position: absolute;
   width: 0;
@@ -830,8 +782,6 @@ body,
 .marking-menu-item:disabled .icon {
   opacity: 0.5;
 }
-
-/* 鈹€鈹€ Status bar 鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€ */
 
 .statusbar {
   display: flex;

@@ -30,7 +30,6 @@ afterAll(() => {
 const commands = new Map<string, CommandFactory>([
   ['select', (e) => new SelectCommand(e)],
   ['driven', (e) => new DrivenDimensionCommand(e)],
-  // The driving dimension, for the degrees of freedom a driven one leaves alone.
   ['dimension', (e) => new DimensionCommand(e)],
 ]);
 
@@ -93,17 +92,16 @@ function clickCurve(editor: Editor, id: Id): void {
 }
 
 /**
- * A driven dimension command handed its picks by the test. The angle between
- * two lines is the one dimension no click can reach here: a line completes on
- * its own first pick, and a driven dimension has no second line to convert that
- * length into an angle — so such a pick is delivered the way a click would.
+ * A driven dimension command handed its picks by the test. The angle between two lines is the one
+ * dimension no click can reach here: a line completes on its own first pick, and a driven dimension
+ * has no second line to convert that length into an angle — so such a pick is delivered the way a
+ * click would.
  */
 class Handed extends DrivenDimensionCommand {
   /** Picks `operands` together, exactly as consecutive clicks on them would. */
   hand(...operands: Operand[]): void {
     const picks = [...this.picks, ...operands];
     const constraint = this.build(picks);
-    // An operand the command cannot dimension from leaves the pick pending.
     if (constraint === undefined) {
       this.picks = picks;
       this.editor.viewChanged();

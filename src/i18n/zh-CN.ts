@@ -2,8 +2,8 @@ import { plural } from './types';
 import type { MessageTree } from './types';
 
 /**
- * Source catalog. Every other locale must provide the same keys. Wording
- * follows the zh-CN edition of Autodesk Inventor where a term exists.
+ * Source catalog. Every other locale must provide the same keys. Wording follows the zh-CN edition
+ * of Autodesk Inventor where a term exists.
  */
 export const zhCN = {
   app: {

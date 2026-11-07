@@ -81,7 +81,6 @@ describe('curveOf', () => {
   });
 
   it('reads an arc with the angles arcParams gives it', () => {
-    // From (10, 50) round to (0, 60) is a quarter turn clockwise on screen.
     expect(curveOf(entityAt(index, arcId), index)).toEqual({
       kind: 'arc',
       center: at(0, 50),
@@ -140,8 +139,6 @@ describe('curveOf', () => {
   });
 
   it('drives the crossing search straight off a sketch', () => {
-    // The pipeline the trim and extend commands run: read the curves out of the
-    // sketch, then ask where they cross.
     const s = new SketchBuilder();
     const a = s.point(0, 0);
     const c = s.point(20, 0);
@@ -154,7 +151,6 @@ describe('curveOf', () => {
       if (curve === undefined) throw new Error(`"${id}" is not a curve`);
       return curve;
     };
-    // The circle is centred on the middle of the line, meeting it at its two ends.
     expectPoints(intersections(read(lineId), read(circleId)), [at(0, 0), at(20, 0)]);
   });
 });
@@ -162,7 +158,6 @@ describe('curveOf', () => {
 describe('intersections', () => {
   describe('line × line', () => {
     it('crosses two infinite lines, outside both segments', () => {
-      // The vertical line x = 20 meets the x axis at (20, 0), past the end of both.
       expectPoints(intersections(line(at(0, 0), at(10, 0)), vertical(20)), [at(20, 0)]);
     });
 
@@ -191,16 +186,12 @@ describe('intersections', () => {
 
   describe('line × arc', () => {
     it('crosses only inside the sweep', () => {
-      // The diagonal y = x meets the quarter turn at 45°, and the rest of the
-      // circle at 225°, which the sweep does not reach.
       expectPoints(intersections(line(at(-10, -10), at(10, 10)), quarter), [
         at(5 * Math.SQRT2, 5 * Math.SQRT2),
       ]);
     });
 
     it('counts a crossing on the end of the sweep', () => {
-      // The x axis meets the quarter turn at its start point (10, 0), and the
-      // rest of the circle at (-10, 0), outside the sweep.
       expectPoints(intersections(horizontal(0), quarter), [at(10, 0)]);
     });
   });
@@ -219,7 +210,6 @@ describe('intersections', () => {
 
     it('is empty for concentric circles', () => {
       expect(intersections(circle(at(0, 0), 10), circle(at(0, 0), 5))).toEqual([]);
-      // One circle lying on the other meets everywhere, so it has no crossing.
       expect(intersections(circle(at(0, 0), 10), circle(at(0, 0), 10))).toEqual([]);
     });
 
@@ -231,8 +221,6 @@ describe('intersections', () => {
   });
 
   describe('circle × arc', () => {
-    // The circle at the origin and the one centred at (20, 0) are tangent at
-    // (10, 0), which lies at 180° from that second centre.
     it('crosses when the tangent point is inside the sweep', () => {
       const through = arcThrough(at(20, 0), at(20, 10), at(20, -10));
       expectPoints(intersections(circle(at(0, 0), 10), through), [at(10, 0)]);
@@ -245,8 +233,6 @@ describe('intersections', () => {
   });
 
   describe('arc × arc', () => {
-    // Radius 10 arcs centred at the origin and at (0, 10): the circles cross at
-    // 30° and 150° from the first centre, at 210° and 330° from the second.
     const left = arcThrough(at(0, 0), at(10, 0), at(-10, 0));
     const right = arcThrough(at(0, 10), at(-10, 10), at(10, 10));
 
@@ -279,7 +265,6 @@ describe('intersections', () => {
 });
 
 describe('trimTarget', () => {
-  // A line along the x axis, crossed at x = 3 and at x = 7.
   const span = line(at(0, 0), at(10, 0));
   const at7 = vertical(7);
   const at3 = vertical(3);
@@ -304,16 +289,11 @@ describe('trimTarget', () => {
   });
 
   it('ignores a crossing on an arc endpoint', () => {
-    // y = 10 is tangent to the circle at (0, 10), where the quarter turn ends:
-    // trimming to where the arc already ends changes nothing, and from the
-    // start that point is the far end, out of reach.
     expect(trimTarget(quarter, 'end', [horizontal(10)])).toBeUndefined();
     expect(trimTarget(quarter, 'start', [horizontal(10)])).toBeUndefined();
   });
 
   it('picks the nearest crossing of an arc, measured along the sweep', () => {
-    // The half turn is crossed at 60° by the line x = 5 and at 120° by x = -5;
-    // each of those lines also crosses the circle outside the sweep.
     expectAt(trimTarget(half, 'start', [vertical(5), vertical(-5)]), at(5, Math.sqrt(75)));
     expectAt(trimTarget(half, 'end', [vertical(5), vertical(-5)]), at(-5, Math.sqrt(75)));
   });
@@ -334,7 +314,6 @@ describe('trimTarget', () => {
   it('never returns the curve itself, however it is passed back', () => {
     expect(trimTarget(span, 'end', [span])).toBeUndefined();
     expect(trimTarget(span, 'start', [span, at7, at3])).toEqual(at(3, 0));
-    // The same segment the other way round is still the same curve.
     expect(trimTarget(span, 'end', [line(at(10, 0), at(0, 0))])).toBeUndefined();
     expect(trimTarget(half, 'start', [half])).toBeUndefined();
     expect(trimTarget(half, 'end', [half])).toBeUndefined();
@@ -355,7 +334,6 @@ describe('extendTarget', () => {
   it('ignores a crossing on the endpoint itself', () => {
     expect(extendTarget(span, 'end', [vertical(10)])).toBeUndefined();
     expect(extendTarget(span, 'start', [vertical(0)])).toBeUndefined();
-    // y = 10 is tangent to the circle at (0, 10), where the quarter turn ends.
     expect(extendTarget(quarter, 'end', [horizontal(10)])).toBeUndefined();
   });
 
@@ -365,16 +343,12 @@ describe('extendTarget', () => {
   });
 
   it('runs an arc on past the end angle, or back before the start', () => {
-    // The line x = -5√2 meets the circle at 135° — 45° on past the quarter
-    // turn's end — and at 225°, which is 45° back before its start.
     const past = line(at(-5 * Math.SQRT2, -50), at(-5 * Math.SQRT2, 50));
     expectAt(extendTarget(quarter, 'end', [past]), at(-5 * Math.SQRT2, 5 * Math.SQRT2));
     expectAt(extendTarget(quarter, 'start', [past]), at(-5 * Math.SQRT2, -5 * Math.SQRT2));
   });
 
   it('reaches a crossing outside the sweep from either end', () => {
-    // The line x = 5 crosses the circle at 60°, inside the quarter turn, and at
-    // 300°: 210° on past the end, 60° back before the start.
     expectAt(extendTarget(quarter, 'start', [vertical(5)]), at(5, -Math.sqrt(75)));
     expectAt(extendTarget(quarter, 'end', [vertical(5)]), at(5, -Math.sqrt(75)));
   });
@@ -389,7 +363,6 @@ describe('extendTarget', () => {
 
   it('is undefined when nothing lies beyond', () => {
     expect(extendTarget(span, 'end', [])).toBeUndefined();
-    // A tangent circle meets the half turn at 90°, the middle of its sweep.
     const tangent = circle(at(0, 20), 10);
     expect(extendTarget(half, 'end', [tangent])).toBeUndefined();
     expect(extendTarget(half, 'start', [tangent])).toBeUndefined();
@@ -404,8 +377,6 @@ describe('extendTarget', () => {
 });
 
 describe('an arc drawn all the way round', () => {
-  // Its ends coincide, so the sweep is a full turn: a trim still has somewhere
-  // to shorten to, and an extend has nowhere left to go.
   const full = arcThrough(at(0, 0), at(10, 0), at(10, 0));
 
   it('trims to the nearest crossing along the full sweep', () => {

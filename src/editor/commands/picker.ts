@@ -25,9 +25,9 @@ export interface PickOptions {
 }
 
 /**
- * Turns cursor positions into inferred picks for the drawing commands and
- * draws the inference feedback (glyphs, alignment guides, snap marker).
- * The last line under the cursor becomes the parallel/perpendicular reference.
+ * Turns cursor positions into inferred picks for the drawing commands and draws the inference
+ * feedback (glyphs, alignment guides, snap marker). The last line under the cursor becomes the
+ * parallel/perpendicular reference.
  */
 export class Picker {
   private reference: Id | undefined;
@@ -58,13 +58,6 @@ export class Picker {
       ...(options.anchor === undefined ? {} : { anchor: options.anchor }),
       ...(this.reference === undefined ? {} : { reference: this.reference }),
     });
-    // Honor the inference settings (Inventor's 约束设置): drop every kind the
-    // user turned off. We post-filter `infer`'s RESULT rather than re-running
-    // it per kind — `InferenceOptions` has no per-kind filter and inference.ts
-    // is out of scope. Trade-off: the snapped POSITION stays as `infer`
-    // computed it (the cursor still lands on the geometry; a disabled direction
-    // constraint may leave it on a snapped spot no constraint pins). Only the
-    // constraints that get created change.
     const enabled = settings.value.inferred;
     result = { ...result, constraints: result.constraints.filter((c) => enabled.has(c.kind)) };
     if (options.pointsOnly === true && !result.constraints.some((c) => c.kind === 'coincident')) {
@@ -106,9 +99,9 @@ export function snappedPoint(pick: InferenceResult): Id | undefined {
 }
 
 /**
- * Resolves a pick to a point id: the snapped existing point, or a new point
- * carrying the pick's inferred constraints. `segment`/`anchor` describe the
- * line ending at this point, if the command just created one.
+ * Resolves a pick to a point id: the snapped existing point, or a new point carrying the pick's
+ * inferred constraints. `segment`/`anchor` describe the line ending at this point, if the command
+ * just created one.
  */
 export function placePoint(draft: Draft, pick: InferenceResult): Id {
   return snappedPoint(pick) ?? draft.point(pick.position);

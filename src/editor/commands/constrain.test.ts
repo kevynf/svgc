@@ -421,7 +421,6 @@ describe('rejections', () => {
     expect(pointOf(editor, p2)).toEqual({ x: 50, y: 20 });
     expect(editor.activeCommand.prompt()).toEqual({ key: 'prompts.conflict.coincident' });
     expect(editor.activeCommand.id).toBe('coincident');
-    // The key resolves in both catalogs, so the status bar never shows a raw key.
     const message = editor.activeCommand.prompt();
     expect(new Translator('zh-CN').t(message.key, message.params)).toContain('重合');
     expect(new Translator('en').t(message.key, message.params)).toContain('Coincident');
@@ -452,7 +451,6 @@ describe('rejections', () => {
     expect(editor.sketch.constraints).toEqual([]);
     expect(editor.activeCommand.prompt()).toEqual({ key: 'prompts.incompatible' });
     expect(editor.activeCommand.id).toBe('parallel');
-    // The command is ready for a fresh pair of operands.
     clickCurve(editor, line);
     expect(editor.activeCommand.overlay?.()).toEqual([{ kind: 'highlight', ids: [line] }]);
   });

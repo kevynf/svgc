@@ -21,9 +21,9 @@ interface Placing {
   /** Where the cursor is: the dimension follows it, and Enter places it here. */
   cursor: Vec2 | undefined;
   /**
-   * The line whose length is being placed, so a second line clicked while it
-   * follows the cursor turns the dimension into the angle between the two.
-   * Absent for every other dimension, which has no second line to take.
+   * The line whose length is being placed, so a second line clicked while it follows the cursor
+   * turns the dimension into the angle between the two. Absent for every other dimension, which has
+   * no second line to take.
    */
   readonly fromLine?: Id;
 }
@@ -42,17 +42,14 @@ interface Entering {
 type Phase = { readonly kind: 'pick' } | Placing | Entering;
 
 /**
- * The dimension command, Inventor's way: pick the operands and the dimension
- * starts following the cursor, click to place it, then type its value —
- * pre-filled with the measurement, so accepting it moves nothing while a typed
- * value drives the geometry to it. What it constrains is decided by the
- * operands: a circle or arc gets a radius, a line its length, two points a
- * distance, a point and a line the distance between them, and two lines the
- * angle between them. A line's length is the whole dimension on its own, so
- * the two-line angle is reached the other way round: while that length is
- * being placed, clicking a second line turns the pending dimension into the
- * angle between the two, which then follows the cursor like any other. The
- * command stays active for the next one.
+ * The dimension command, Inventor's way: pick the operands and the dimension starts following the
+ * cursor, click to place it, then type its value — pre-filled with the measurement, so accepting it
+ * moves nothing while a typed value drives the geometry to it. What it constrains is decided by the
+ * operands: a circle or arc gets a radius, a line its length, two points a distance, a point and a
+ * line the distance between them, and two lines the angle between them. A line's length is the
+ * whole dimension on its own, so the two-line angle is reached the other way round: while that
+ * length is being placed, clicking a second line turns the pending dimension into the angle between
+ * the two, which then follows the cursor like any other. The command stays active for the next one.
  */
 export class DimensionCommand extends ConstraintCommand {
   readonly id = 'dimension';
@@ -71,8 +68,6 @@ export class DimensionCommand extends ConstraintCommand {
   protected override build(picks: readonly Operand[]): ConstraintInput | undefined {
     const measured = measure(this.editor.sketch, picks);
     const [first, second] = picks;
-    // Only the single-line case remembers its line; every other build starts
-    // from a clean slate, so a stale one can never convert a later dimension.
     this.lengthOf =
       second === undefined && first?.kind === 'line' && measured !== undefined
         ? first.id
@@ -81,9 +76,9 @@ export class DimensionCommand extends ConstraintCommand {
   }
 
   /**
-   * The line under `world`, within the click tolerance, as a pick would find
-   * it. Points win the hit test, so a click on a line's end never counts as a
-   * second line — and neither does a click on a curve.
+   * The line under `world`, within the click tolerance, as a pick would find it. Points win the hit
+   * test, so a click on a line's end never counts as a second line — and neither does a click on a
+   * curve.
    */
   private lineAt(world: Vec2): Id | undefined {
     const hit = hitTest(this.editor.sketch, world, {
@@ -94,9 +89,8 @@ export class DimensionCommand extends ConstraintCommand {
   }
 
   /**
-   * Where an operand sits now, so a preview can start from it: the point
-   * itself, or the middle of a line. A curve never waits for a second pick,
-   * so it has no preview position.
+   * Where an operand sits now, so a preview can start from it: the point itself, or the middle of a
+   * line. A curve never waits for a second pick, so it has no preview position.
    */
   private position(id: Id): Vec2 | undefined {
     const e = this.editor.sketch.entities.find((x) => x.id === id);
@@ -106,12 +100,10 @@ export class DimensionCommand extends ConstraintCommand {
   }
 
   /**
-   * The operands are complete, so the dimension starts following the cursor
-   * instead of being applied: the user places it, then values it.
+   * The operands are complete, so the dimension starts following the cursor instead of being
+   * applied: the user places it, then values it.
    */
   protected override complete(constraint: ConstraintInput): void {
-    // `build()` only produces the three dimensional kinds; the test is what
-    // narrows the constraint to them.
     if (
       constraint.kind === 'distance' ||
       constraint.kind === 'radius' ||
@@ -129,8 +121,6 @@ export class DimensionCommand extends ConstraintCommand {
       super.pointerMove(input);
       return;
     }
-    // The dimension follows the cursor while it is being placed; the value box
-    // owns the pointer once it is open.
     if (phase.kind === 'placing') {
       phase.cursor = input.world;
       this.editor.viewChanged();
@@ -139,8 +129,6 @@ export class DimensionCommand extends ConstraintCommand {
 
   override pointerUp(input: PointerInput): void {
     const phase = this.phase;
-    // A click puts the dimension where it follows the cursor; the value box owns
-    // the pointer once it is open.
     if (phase.kind === 'placing') {
       if (!this.convert(phase, input.world)) this.place(input.world);
       return;
@@ -159,8 +147,6 @@ export class DimensionCommand extends ConstraintCommand {
   override prompt(): Message {
     const phase = this.phase;
     if (phase.kind === 'placing') {
-      // A line's own length is still pending, so a second line would turn it
-      // into the angle between the two — the hint says so.
       if (phase.fromLine !== undefined) return this.status ?? { key: 'prompts.dimensionPlaceLine' };
       return this.status ?? { key: 'prompts.dimensionPlace' };
     }
@@ -180,11 +166,10 @@ export class DimensionCommand extends ConstraintCommand {
   }
 
   /**
-   * Applies what the user typed. Accepting the measurement untouched (`edited`
-   * false) applies the exact value the sketch already has, so nothing moves;
-   * otherwise the text is a parameter name or an expression and the dimension
-   * drives the geometry to it. An unusable value, or one the solver rejects,
-   * keeps the box open so it can be fixed.
+   * Applies what the user typed. Accepting the measurement untouched (`edited` false) applies the
+   * exact value the sketch already has, so nothing moves; otherwise the text is a parameter name or
+   * an expression and the dimension drives the geometry to it. An unusable value, or one the solver
+   * rejects, keeps the box open so it can be fixed.
    */
   commitEdit(text: string, edited: boolean): boolean {
     const phase = this.phase;
@@ -201,7 +186,6 @@ export class DimensionCommand extends ConstraintCommand {
       value,
       ...(offset === undefined ? {} : { placement: offset }),
     });
-    // A conflict or a redundancy: the message is recorded and the box stays open.
     if (next === undefined) return false;
     this.editor.commit(next);
     this.reset();
@@ -214,12 +198,8 @@ export class DimensionCommand extends ConstraintCommand {
   }
 
   override cancel(): boolean {
-    // Esc backs out one step at a time: the value box, the placement, the
-    // pending pick, and only then the command itself.
     const phase = this.phase;
     if (phase.kind === 'entering') {
-      // Back to placing, with the dimension where it was put. A rejection
-      // recorded while the box was open is stale now, so it goes too.
       this.status = undefined;
       this.phase = { kind: 'placing', constraint: phase.constraint, cursor: phase.placement };
       this.editor.viewChanged();
@@ -251,14 +231,11 @@ export class DimensionCommand extends ConstraintCommand {
       this.editor.viewport.scale,
     );
     const highlight: OverlayShape = { kind: 'highlight', ids: spec.operands };
-    // Degenerate operands have no layout to draw, but their highlight stands.
     if (layout === undefined) return [highlight];
     const dimension: OverlayShape = {
       kind: 'dimension',
       layout,
       radius: phase.constraint.kind === 'radius',
-      // The measured value rides along while the dimension follows the cursor;
-      // once it is placed, the value box shows it instead.
       ...(phase.kind === 'placing' ? { value: this.measured(phase.constraint) } : {}),
     };
     return [highlight, dimension];
@@ -270,11 +247,10 @@ export class DimensionCommand extends ConstraintCommand {
   }
 
   /**
-   * Inventor's route to the angle between two lines: a line's length is the
-   * whole dimension on its own, so while it is being placed a click on a second
-   * line turns the pending dimension into the angle between the two — the arc
-   * then follows the cursor from there, ready to be placed like any other.
-   * Returns false when the click was no such line, so it places the dimension.
+   * Inventor's route to the angle between two lines: a line's length is the whole dimension on its
+   * own, so while it is being placed a click on a second line turns the pending dimension into the
+   * angle between the two — the arc then follows the cursor from there, ready to be placed like any
+   * other. Returns false when the click was no such line, so it places the dimension.
    */
   private convert(phase: Placing, at: Vec2): boolean {
     const first = phase.fromLine;
@@ -299,8 +275,6 @@ export class DimensionCommand extends ConstraintCommand {
       indexEntities(this.editor.sketch),
       this.editor.viewport.scale,
     );
-    // Degenerate operands (coincident points, a zero-radius curve) leave nowhere
-    // to draw the dimension, so the click is ignored.
     if (layout === undefined) return;
     this.phase = {
       kind: 'entering',
@@ -312,10 +286,9 @@ export class DimensionCommand extends ConstraintCommand {
   }
 
   /**
-   * The value the user typed: a parameter name binds the name itself, so the
-   * dimension tracks it, and anything else is an expression evaluated against
-   * the sketch's parameters. Undefined — with the message the status bar shows —
-   * when the text is unusable.
+   * The value the user typed: a parameter name binds the name itself, so the dimension tracks it,
+   * and anything else is an expression evaluated against the sketch's parameters. Undefined — with
+   * the message the status bar shows — when the text is unusable.
    */
   private parse(text: string, kind: DimensionConstraint['kind']): Value | undefined {
     const trimmed = text.trim();
@@ -329,9 +302,6 @@ export class DimensionCommand extends ConstraintCommand {
       this.editor.viewChanged();
       return undefined;
     }
-    // A negative distance or a non-positive radius is not a value the solver can
-    // take (translate refuses it, which would throw out of the commit), so it is
-    // refused here with the same message an unparseable one gets.
     const admissible = kind === 'radius' ? value > 0 : kind === 'distance' ? value >= 0 : true;
     if (!Number.isFinite(value) || !admissible) {
       this.status = { key: 'properties.invalid' };
@@ -342,9 +312,9 @@ export class DimensionCommand extends ConstraintCommand {
   }
 
   /**
-   * The measurement the constraint carries, as a number: `build()` always
-   * measures one, and the id the draft assigns does not matter to
-   * `constraintValue`, which reads only the kind and the value.
+   * The measurement the constraint carries, as a number: `build()` always measures one, and the id
+   * the draft assigns does not matter to `constraintValue`, which reads only the kind and the
+   * value.
    */
   private measured(c: DimensionConstraint): number {
     return constraintValue(c as Constraint, this.editor.sketch.params)!;

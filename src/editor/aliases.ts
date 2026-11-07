@@ -1,7 +1,7 @@
 /**
- * Recognizes typed command aliases such as `L`, `REC` or `A3`. An alias fires
- * as soon as it is unambiguous; when it is also the prefix of a longer alias
- * (`A` vs `A3`) it fires after a short pause unless more keys arrive.
+ * Recognizes typed command aliases such as `L`, `REC` or `A3`. An alias fires as soon as it is
+ * unambiguous; when it is also the prefix of a longer alias (`A` vs `A3`) it fires after a short
+ * pause unless more keys arrive.
  */
 export class AliasMatcher {
   private buffer = '';

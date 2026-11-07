@@ -22,20 +22,18 @@ import { DIMENSION_KINDS, dimensionLayout } from './dimensions';
 import './constraints.css';
 
 /**
- * Constraint symbols on the canvas — Inventor's 显示约束: a small glyph beside
- * the geometry each constraint acts on.
+ * Constraint symbols on the canvas — Inventor's 显示约束: a small glyph beside the geometry each
+ * constraint acts on.
  *
- * Placement is pure geometry and takes the viewport `scale`, because every
- * offset from the geometry is given in SCREEN pixels and divided by it: a
- * symbol keeps the same distance from its geometry at any zoom, the same
- * reason `SketchView` maps world coordinates itself instead of leaning on an
+ * Placement is pure geometry and takes the viewport `scale`, because every offset from the geometry
+ * is given in SCREEN pixels and divided by it: a symbol keeps the same distance from its geometry
+ * at any zoom, the same reason `SketchView` maps world coordinates itself instead of leaning on an
  * SVG transform.
  *
- * `constraintElements` builds the SVG in screen space. `SketchView` rebuilds
- * its layers on every render, so hover and selection state is passed in per
- * call rather than mutated afterwards; the caller finds the hovered symbol
- * with `hitConstraint`, since the symbols are `pointer-events: none` and
- * picking stays in world space like the rest of the editor.
+ * `constraintElements` builds the SVG in screen space. `SketchView` rebuilds its layers on every
+ * render, so hover and selection state is passed in per call rather than mutated afterwards; the
+ * caller finds the hovered symbol with `hitConstraint`, since the symbols are `pointer-events:
+ * none` and picking stays in world space like the rest of the editor.
  */
 
 const SVG_NS = 'http://www.w3.org/2000/svg';
@@ -50,9 +48,9 @@ const OFFSET_PX = 14;
 const FIX_PX = { x: 10, y: -10 } as const;
 
 /**
- * Minimum on-screen distance between two symbol centers. Chips are 20px wide,
- * so this keeps them edge to edge at any zoom — the clamp that keeps a dense
- * sketch legible without swamping the drawing.
+ * Minimum on-screen distance between two symbol centers. Chips are 20px wide, so this keeps them
+ * edge to edge at any zoom — the clamp that keeps a dense sketch legible without swamping the
+ * drawing.
  */
 const MIN_GAP_PX = 20;
 /** A symbol never drifts further than this from its anchor, so nudging can't run away. */
@@ -97,14 +95,12 @@ export interface ConstraintSymbolState {
 }
 
 /**
- * Where every drawable constraint's symbol goes, in world coordinates. The
- * three dimension kinds (`distance`, `radius`, `angle`) anchor at the value
- * text `dimensions.ts` lays out for them, since that is what the user reads;
- * the dimension graphics around it — dimension line, witness lines, arrowheads,
- * arc — are drawn by the renderer from that module, not from this one.
- * `separate` never moves those three, so their anchor is always exactly the
- * text on screen and a click on it picks the dimension; the symbols that give
- * way are the ordinary glyph chips around them.
+ * Where every drawable constraint's symbol goes, in world coordinates. The three dimension kinds
+ * (`distance`, `radius`, `angle`) anchor at the value text `dimensions.ts` lays out for them, since
+ * that is what the user reads; the dimension graphics around it — dimension line, witness lines,
+ * arrowheads, arc — are drawn by the renderer from that module, not from this one. `separate` never
+ * moves those three, so their anchor is always exactly the text on screen and a click on it picks
+ * the dimension; the symbols that give way are the ordinary glyph chips around them.
  */
 export function constraintPlacements(
   sketch: Sketch,
@@ -138,8 +134,6 @@ export function hitConstraint(
   }
   return best?.id;
 }
-
-// ── Placement ───────────────────────────────────────────────────────────────
 
 interface Anchor {
   readonly glyph: ConstraintGlyph;
@@ -175,7 +169,6 @@ function constraintAnchor(c: Constraint, index: EntityIndex, scale: number): Anc
     case 'vertical': {
       const seg = segment(c.a, c.b, index);
       if (seg === undefined) return undefined;
-      // Offset perpendicular, on the outward side of a clockwise outline.
       const n = segmentNormal(seg.a, seg.b);
       const mid = midpoint(seg.a, seg.b);
       return { glyph: c.kind, at: shift(mid, scale, n.x * OFFSET_PX, n.y * OFFSET_PX) };
@@ -207,8 +200,6 @@ function constraintAnchor(c: Constraint, index: EntityIndex, scale: number): Anc
       return p === undefined ? undefined : { glyph: c.kind, at: pos(p) };
     }
     case 'symmetric': {
-      // The pair's midpoint lies on the mirror line, so it is the one point of
-      // the constraint that sits on the geometry the user sees.
       const a = pointAt(index, c.a);
       const b = pointAt(index, c.b);
       if (a === undefined || b === undefined) return undefined;
@@ -217,9 +208,6 @@ function constraintAnchor(c: Constraint, index: EntityIndex, scale: number): Anc
     case 'distance':
     case 'radius':
     case 'angle': {
-      // The dimension graphics are the renderer's job (see `dimensions.ts`), so
-      // there is no chip here: the value text is the symbol, and this anchor —
-      // which `separate` never moves — is what a click on that text picks up.
       const layout = dimensionLayout(c, index, scale);
       return layout === undefined ? undefined : { glyph: c.kind, at: layout.textAt };
     }
@@ -227,21 +215,19 @@ function constraintAnchor(c: Constraint, index: EntityIndex, scale: number): Anc
 }
 
 /**
- * Glyphs the renderer draws as CAD dimensions — dimension line, witness lines,
- * arrowheads and the value text — so no chip is built for them here: the value
- * text is the symbol. They stay in `constraintPlacements`, because `hitConstraint`
- * still has to pick them up for hover, selection and editing, and `separate`
- * pins them so that pick point stays on the text the user reads. The list
- * itself is `dimensions.ts`'s, since that module decides which kinds carry a
- * value; only the glyph type is local.
+ * Glyphs the renderer draws as CAD dimensions — dimension line, witness lines, arrowheads and the
+ * value text — so no chip is built for them here: the value text is the symbol. They stay in
+ * `constraintPlacements`, because `hitConstraint` still has to pick them up for hover, selection
+ * and editing, and `separate` pins them so that pick point stays on the text the user reads. The
+ * list itself is `dimensions.ts`'s, since that module decides which kinds carry a value; only the
+ * glyph type is local.
  */
 const DIMENSION_GLYPHS: readonly ConstraintGlyph[] = DIMENSION_KINDS;
 
 /**
- * Nudges symbols that land on top of each other, in screen px, keeping sketch
- * order. A dimension is exempt: its pick point is the value text `view.ts`
- * draws at `dimensionLayout(...).textAt`, so nudging it would drag
- * `hitConstraint` off the text the user sees and clicks. It still registers
+ * Nudges symbols that land on top of each other, in screen px, keeping sketch order. A dimension is
+ * exempt: its pick point is the value text `view.ts` draws at `dimensionLayout(...).textAt`, so
+ * nudging it would drag `hitConstraint` off the text the user sees and clicks. It still registers
  * its position, so the ordinary chips around it are the ones that give way.
  */
 function separate(
@@ -265,8 +251,6 @@ function separate(
   }
   return out;
 }
-
-// ── Geometry helpers ────────────────────────────────────────────────────────
 
 function pointAt(index: EntityIndex, id: Id): Point | undefined {
   const e = index.get(id);
@@ -307,7 +291,10 @@ function firstCurve(a: Id, b: Id, index: EntityIndex): Entity | undefined {
   return ea ?? eb;
 }
 
-/** Where a symbol hangs off a curve: the midpoint of a line, the top of a circle, the middle of an arc's sweep. */
+/**
+ * Where a symbol hangs off a curve: the midpoint of a line, the top of a circle, the middle of an
+ * arc's sweep.
+ */
 function curvePoint(e: Entity, index: EntityIndex): Vec2 | undefined {
   switch (e.kind) {
     case 'point':
@@ -343,7 +330,10 @@ function onCurve(e: Circle | Arc, index: EntityIndex): Vec2 | undefined {
   return { x: c.x + f.radius * Math.cos(f.mid), y: c.y + f.radius * Math.sin(f.mid) };
 }
 
-/** On the first line's midpoint, offset the other way from horizontal/vertical so the two don't collide. */
+/**
+ * On the first line's midpoint, offset the other way from horizontal/vertical so the two don't
+ * collide.
+ */
 function equalOnLine(e: Line, index: EntityIndex, scale: number): Anchor | undefined {
   const seg = segment(e.id, undefined, index);
   if (seg === undefined) return undefined;
@@ -362,8 +352,6 @@ function equalOnCurve(e: Circle | Arc, index: EntityIndex, scale: number): Ancho
     at: shift(on, scale, Math.cos(f.mid) * OFFSET_PX, Math.sin(f.mid) * OFFSET_PX),
   };
 }
-
-// ── Tangency ────────────────────────────────────────────────────────────────
 
 /** Point ids a curve starts or ends at (a circle has none). */
 function endpointIds(e: Entity): Id[] {
@@ -448,7 +436,6 @@ function lineCurveTouch(line: Entity, curve: Entity, index: EntityIndex): Vec2 |
   if (dir === undefined) return undefined;
   const at = add(ci.center, scaled(dir, ci.radius));
   if (onCircleish(ci, at)) return at;
-  // The touch point falls off the arc: use the endpoint nearest the line.
   if (curve.kind !== 'arc') return at;
   const start = pointAt(index, curve.start);
   const end = pointAt(index, curve.end);
@@ -456,7 +443,10 @@ function lineCurveTouch(line: Entity, curve: Entity, index: EntityIndex): Vec2 |
   return distance(start, foot) <= distance(end, foot) ? pos(start) : pos(end);
 }
 
-/** Where two circles touch: on the line through their centers, on the far side for internal tangency. */
+/**
+ * Where two circles touch: on the line through their centers, on the far side for internal
+ * tangency.
+ */
 function circleTouch(x: Circleish, y: Circleish): Vec2 {
   const toward = unit(sub(y.center, x.center));
   if (toward === undefined) return x.center;
@@ -465,8 +455,6 @@ function circleTouch(x: Circleish, y: Circleish): Vec2 {
   const flip = !external && x.radius < y.radius;
   return add(x.center, scaled(toward, flip ? -x.radius : x.radius));
 }
-
-// ── Rendering ───────────────────────────────────────────────────────────────
 
 function svgElement<K extends keyof SVGElementTagNameMap>(
   tag: K,
@@ -478,10 +466,9 @@ function svgElement<K extends keyof SVGElementTagNameMap>(
 }
 
 /**
- * Builds the SVG for the placements, in screen space. `s` maps world → screen
- * (the viewport's own `toScreen`) and `scale` is the viewport scale, used only
- * for the legibility clamp: zoomed far out, the chips would swamp the drawing,
- * so they are dropped and the glyph stands alone.
+ * Builds the SVG for the placements, in screen space. `s` maps world → screen (the viewport's own
+ * `toScreen`) and `scale` is the viewport scale, used only for the legibility clamp: zoomed far
+ * out, the chips would swamp the drawing, so they are dropped and the glyph stands alone.
  */
 export function constraintElements(
   placements: readonly ConstraintPlacement[],

@@ -1,7 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import { CONSTRAINT_GLYPHS, constraintGlyphSvg } from './constraint-icons';
 
-/** Absolute positions visited by a path, tracking relative commands. Arcs and curves contribute their end points. */
+/**
+ * Absolute positions visited by a path, tracking relative commands. Arcs and curves contribute
+ * their end points.
+ */
 function visitedPoints(d: string): [number, number][] {
   const tokens = d.match(/[a-zA-Z]|-?\d*\.?\d+(?:e-?\d+)?/g) ?? [];
   const points: [number, number][] = [];

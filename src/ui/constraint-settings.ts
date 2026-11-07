@@ -47,15 +47,15 @@ export function inferenceSummary(inferred: ReadonlySet<InferredKind>, t: Transla
 }
 
 /**
- * Modal dialog for Inventor's 约束设置: chooses which constraint kinds are
- * inferred while drawing. It edits the `settings` store, reflects its current
- * state when opened, and stays live via `settings.subscribe`.
+ * Modal dialog for Inventor's 约束设置: chooses which constraint kinds are inferred while drawing. It
+ * edits the `settings` store, reflects its current state when opened, and stays live via
+ * `settings.subscribe`.
  *
- * The card is `element`; a dimmed backdrop is created with it and both are
- * appended to `document.body` while open. Closed by Esc, the ✕ button or a
- * backdrop click; focus is trapped inside and returns to the invoker on close.
- * All DOM is built in the constructor, so the module imports cleanly under Node
- * (where `document` is absent) — the pure helpers above stay testable there.
+ * The card is `element`; a dimmed backdrop is created with it and both are appended to
+ * `document.body` while open. Closed by Esc, the ✕ button or a backdrop click; focus is trapped
+ * inside and returns to the invoker on close. All DOM is built in the constructor, so the module
+ * imports cleanly under Node (where `document` is absent) — the pure helpers above stay testable
+ * there.
  */
 export class ConstraintSettingsDialog {
   readonly element: HTMLElement;
@@ -148,8 +148,6 @@ export class ConstraintSettingsDialog {
     this.invoker?.focus();
     this.invoker = undefined;
   }
-
-  // ── Rows ──────────────────────────────────────────────────────────────
 
   private row(row: InferenceRow): HTMLElement {
     const li = document.createElement('li');

@@ -24,10 +24,9 @@ export interface Translation {
 }
 
 /**
- * Lowers a sketch to planegcs primitives. planegcs requires referenced
- * primitives to be pushed first, so points go before curves, curves before
- * constraints. Named parameters are resolved to numbers here; they are fixed
- * during solving, so this is equivalent to passing them by reference.
+ * Lowers a sketch to planegcs primitives. planegcs requires referenced primitives to be pushed
+ * first, so points go before curves, curves before constraints. Named parameters are resolved to
+ * numbers here; they are fixed during solving, so this is equivalent to passing them by reference.
  */
 export function translate(sketch: Sketch, drag?: DragTarget): Translation {
   const index = indexEntities(sketch);
@@ -122,7 +121,6 @@ function lowerCurve(
         end_angle: endAngle,
       });
       gcsIdOf.set(entity.id, a_id);
-      // Keeps start/end on the arc's circle at its start/end angles.
       push({ type: 'arc_rules', a_id });
       return;
     }
@@ -159,10 +157,10 @@ function normalAt(entity: Entity, at: Vec2, index: EntityIndex): Vec2 {
 }
 
 /**
- * When two curves share an endpoint, "distance from center to line = radius"
- * is degenerate at the solution (the point-on-curve and tangency conditions
- * become dependent). Like FreeCAD, constrain the angle between the curve
- * normals at the joint instead, snapped to 0 or π from the current geometry.
+ * When two curves share an endpoint, "distance from center to line = radius" is degenerate at the
+ * solution (the point-on-curve and tangency conditions become dependent). Like FreeCAD, constrain
+ * the angle between the curve normals at the joint instead, snapped to 0 or π from the current
+ * geometry.
  */
 function endpointTangency(
   index: EntityIndex,

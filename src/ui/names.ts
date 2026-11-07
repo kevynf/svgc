@@ -4,8 +4,8 @@ import type { Sketch } from '../core/sketch';
 import type { Translator } from '../i18n/i18n';
 
 /**
- * Human-readable names in Inventor's style (直线1, 圆弧2, …), numbered per
- * kind in creation order. Internal ids never reach the UI.
+ * Human-readable names in Inventor's style (直线1, 圆弧2, …), numbered per kind in creation order.
+ * Internal ids never reach the UI.
  */
 export class Names {
   private readonly numbers = new Map<Id, number>();

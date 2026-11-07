@@ -92,8 +92,6 @@ export interface Bounds {
 export type ParsedNumber =
   { readonly ok: true; readonly value: number } | { readonly ok: false; readonly error: string };
 
-// ── Angles ───────────────────────────────────────────────────────────────
-
 /** The panel's readouts share the core angle convention; re-exported for its tests. */
 export { screenAngle };
 
@@ -101,8 +99,6 @@ export { screenAngle };
 export function screenDeg(radians: number): number {
   return normalizeDeg((-radians * 180) / Math.PI);
 }
-
-// ── Fields ───────────────────────────────────────────────────────────────
 
 function pointAt(index: EntityIndex, id: Id): Point | undefined {
   const entity = index.get(id);

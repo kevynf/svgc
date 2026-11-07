@@ -17,8 +17,8 @@ export type SolveOutcome = 'solved' | 'converged' | 'failed';
 
 export interface SolveResult {
   /**
-   * `converged` means the solver stopped making progress without satisfying
-   * every constraint exactly, typically because of redundant constraints.
+   * `converged` means the solver stopped making progress without satisfying every constraint
+   * exactly, typically because of redundant constraints.
    */
   readonly outcome: SolveOutcome;
   /** The solved sketch, or the input sketch unchanged when solving failed. */
@@ -76,10 +76,9 @@ export class Solver {
   }
 
   /**
-   * Loads `sketch` into the planegcs system and runs `probe` against it. The
-   * probe may push extra primitives and re-solve as often as it likes: the
-   * solution is never applied to the parameters, and `solve()` clears the
-   * system before loading a sketch, so probing cannot affect later solves.
+   * Loads `sketch` into the planegcs system and runs `probe` against it. The probe may push extra
+   * primitives and re-solve as often as it likes: the solution is never applied to the parameters,
+   * and `solve()` clears the system before loading a sketch, so probing cannot affect later solves.
    * Used by `analyzeStatus` for per-entity constraint status.
    */
   probeSystem<T>(sketch: Sketch, probe: (translation: Translation, gcs: GcsWrapper) => T): T {
@@ -112,8 +111,8 @@ export class Solver {
 }
 
 /**
- * Loads the planegcs WebAssembly module. In the browser pass the URL of
- * `planegcs.wasm`; in Node it is resolved next to the package's JS file.
+ * Loads the planegcs WebAssembly module. In the browser pass the URL of `planegcs.wasm`; in Node it
+ * is resolved next to the package's JS file.
  */
 export async function createSolver(wasmUrl?: string): Promise<Solver> {
   const mod = await init_planegcs_module(

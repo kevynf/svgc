@@ -1,8 +1,3 @@
-/* Application menu (Inventor's title-bar application button): the button at the
-   far left of the title strip and the dropdown card it opens. Imported by
-   app-menu.ts; every rule is scoped under .app-menu-* so it cannot leak into
-   the rest of the shell. */
-
 :root {
   --app-menu-width: 176px;
   --app-menu-shadow: 0 8px 24px rgb(0 0 0 / 0.5);
@@ -34,8 +29,6 @@
   height: 12px;
 }
 
-/* The card hangs off the title strip in viewport coordinates, sharing the
-   ribbon's raised chrome and shadow so it reads as part of the shell. */
 .app-menu-panel {
   position: fixed;
   z-index: 100;

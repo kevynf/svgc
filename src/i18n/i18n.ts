@@ -34,7 +34,10 @@ function interpolate(template: string, params: Params, format: (n: number) => st
   });
 }
 
-/** A translator bound to one locale. Missing keys fall back to the default locale, then to the key itself. */
+/**
+ * A translator bound to one locale. Missing keys fall back to the default locale, then to the key
+ * itself.
+ */
 export class Translator {
   readonly locale: Locale;
   private readonly plurals: Intl.PluralRules;

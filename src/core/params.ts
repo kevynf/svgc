@@ -15,11 +15,10 @@ import {
 /**
  * Creating, editing, renaming and deleting sketch parameters.
  *
- * A parameter lives in two places: `params` holds the number the solver reads,
- * `expressions` the source the user typed (absent for a plain value, whose
- * source is that number). Every operation validates the whole edit before it
- * builds anything, so a refused edit answers `{ ok: false }` and leaves the
- * caller's sketch object exactly as it was.
+ * A parameter lives in two places: `params` holds the number the solver reads, `expressions` the
+ * source the user typed (absent for a plain value, whose source is that number). Every operation
+ * validates the whole edit before it builds anything, so a refused edit answers `{ ok: false }` and
+ * leaves the caller's sketch object exactly as it was.
  */
 
 export type ParamError = ExprErrorCode | 'inUse';
@@ -33,15 +32,10 @@ export type ParamResult =
       readonly count?: number;
     };
 
-// ---------------------------------------------------------------------------
-// Reading
-// ---------------------------------------------------------------------------
-
 /**
- * Every parameter as an expression: its stored source, or `String(value)` for a
- * plain one. `params` is the parameter set — it is what the solver and the
- * dimension constraints read — so a name only found in `expressions` is not a
- * parameter.
+ * Every parameter as an expression: its stored source, or `String(value)` for a plain one. `params`
+ * is the parameter set — it is what the solver and the dimension constraints read — so a name only
+ * found in `expressions` is not a parameter.
  */
 export function paramDefs(sketch: Sketch): readonly ParamDef[] {
   const defs: ParamDef[] = [];
@@ -57,9 +51,9 @@ export function resolveSketchParams(sketch: Sketch): Resolution {
 }
 
 /**
- * How many things break if `name` disappears: the dimensional constraints that
- * take their value from it, plus the other parameters that reference it. Zero
- * is what {@link withoutParam} needs to accept the deletion.
+ * How many things break if `name` disappears: the dimensional constraints that take their value
+ * from it, plus the other parameters that reference it. Zero is what {@link withoutParam} needs to
+ * accept the deletion.
  */
 export function paramRefCount(sketch: Sketch, name: string): number {
   let count = 0;
@@ -67,18 +61,15 @@ export function paramRefCount(sketch: Sketch, name: string): number {
     if (isDimension(c) && c.value === name) count += 1;
   }
   for (const def of paramDefs(sketch)) {
-    // A parameter cannot reference itself without being a cycle, which no
-    // operation here accepts; skipping it keeps the count about the others.
     if (def.name !== name && referencesOf(def.expression).has(name)) count += 1;
   }
   return count;
 }
 
-// ---------------------------------------------------------------------------
-// Writing
-// ---------------------------------------------------------------------------
-
-/** Adds a parameter. Refused for an invalid or duplicate name, an unparseable expression, an unknown name in it, or a cycle. */
+/**
+ * Adds a parameter. Refused for an invalid or duplicate name, an unparseable expression, an unknown
+ * name in it, or a cycle.
+ */
 export function withParam(sketch: Sketch, name: string, expression: string): ParamResult {
   if (!isValidName(name)) return { ok: false, error: 'invalidName' };
   if (sketch.params[name] !== undefined) return { ok: false, error: 'duplicateName' };
@@ -88,8 +79,8 @@ export function withParam(sketch: Sketch, name: string, expression: string): Par
 }
 
 /**
- * Rewrites one parameter's expression. Every other parameter is re-resolved, so
- * the ones that reference it follow.
+ * Rewrites one parameter's expression. Every other parameter is re-resolved, so the ones that
+ * reference it follow.
  */
 export function withParamExpression(sketch: Sketch, name: string, expression: string): ParamResult {
   if (sketch.params[name] === undefined) return { ok: false, error: 'unknownName', detail: name };
@@ -99,12 +90,11 @@ export function withParamExpression(sketch: Sketch, name: string, expression: st
 }
 
 /**
- * Renames a parameter, rewriting the references to it in the other parameters'
- * expressions and in every dimensional constraint's value.
+ * Renames a parameter, rewriting the references to it in the other parameters' expressions and in
+ * every dimensional constraint's value.
  */
 export function withRenamedParam(sketch: Sketch, from: string, to: string): ParamResult {
   if (sketch.params[from] === undefined) return { ok: false, error: 'unknownName', detail: from };
-  // Renaming to itself is not an edit; the caller keeps the sketch it has.
   if (from === to) return { ok: true, sketch };
   if (!isValidName(to)) return { ok: false, error: 'invalidName' };
   if (sketch.params[to] !== undefined) return { ok: false, error: 'duplicateName' };
@@ -117,8 +107,6 @@ export function withRenamedParam(sketch: Sketch, from: string, to: string): Para
   for (const [name, source] of Object.entries(sketch.expressions ?? {})) {
     sources[name === from ? to : name] = renamedSource(source, from, to);
   }
-  // Renaming is a consistent substitution, so it cannot introduce a cycle; the
-  // re-resolution in commit() is what proves the result still adds up.
   const constraints = sketch.constraints.map((c): Constraint =>
     isDimension(c) && c.value === from ? { ...c, value: to } : c,
   );
@@ -141,10 +129,6 @@ export function withoutParam(sketch: Sketch, name: string): ParamResult {
   return commit(withExpressions({ ...sketch, params }, sources));
 }
 
-// ---------------------------------------------------------------------------
-// Internals
-// ---------------------------------------------------------------------------
-
 /** The dimensional constraints: the only ones whose value can name a parameter. */
 type DimensionConstraint = Extract<Constraint, { value: Value }>;
 
@@ -162,10 +146,10 @@ function referencesOf(source: string): ReadonlySet<string> {
 }
 
 /**
- * Parses `expression` and evaluates it against the parameters other than
- * `name`, returning the value it comes to. The parameter being edited stands
- * in for its current value (0 when it has none), so that a self-reference
- * reaches the cycle check instead of being reported as an unknown name.
+ * Parses `expression` and evaluates it against the parameters other than `name`, returning the
+ * value it comes to. The parameter being edited stands in for its current value (0 when it has
+ * none), so that a self-reference reaches the cycle check instead of being reported as an unknown
+ * name.
  */
 function checkExpression(sketch: Sketch, name: string, expression: string): CheckResult {
   let ast: Expr;
@@ -205,7 +189,7 @@ function renamedSource(source: string, from: string, to: string): string {
   try {
     ast = parse(source);
   } catch {
-    return source; // an unparseable source is left as it is; the sketch is already broken
+    return source;
   }
   const swap = (node: Expr): Expr => {
     switch (node.kind) {
@@ -221,14 +205,12 @@ function renamedSource(source: string, from: string, to: string): string {
         return node;
     }
   };
-  // format() re-renders the AST, so the rewritten source is canonical text
-  // rather than the user's spacing.
   return format(swap(ast));
 }
 
 /**
- * The shared tail of adding and editing a parameter: refuse the cycle, then
- * store the source and re-resolve every parameter from it.
+ * The shared tail of adding and editing a parameter: refuse the cycle, then store the source and
+ * re-resolve every parameter from it.
  */
 function replaceParam(
   sketch: Sketch,
@@ -244,9 +226,8 @@ function replaceParam(
 }
 
 /**
- * Stores `sources` on the sketch, dropping the field when no parameter has one:
- * a sketch whose parameters are all plain values then looks exactly like one
- * built by hand.
+ * Stores `sources` on the sketch, dropping the field when no parameter has one: a sketch whose
+ * parameters are all plain values then looks exactly like one built by hand.
  */
 function withExpressions(sketch: Sketch, sources: Readonly<Record<string, string>>): Sketch {
   if (Object.keys(sources).length === 0) {
@@ -257,9 +238,9 @@ function withExpressions(sketch: Sketch, sources: Readonly<Record<string, string
 }
 
 /**
- * Re-resolves every parameter of an edited sketch and stores the numbers. A
- * parameter that no longer resolves is refused: the sketch must never carry
- * one, or the solver would have nothing to read for it.
+ * Re-resolves every parameter of an edited sketch and stores the numbers. A parameter that no
+ * longer resolves is refused: the sketch must never carry one, or the solver would have nothing to
+ * read for it.
  */
 function commit(next: Sketch): ParamResult {
   const defs = paramDefs(next);

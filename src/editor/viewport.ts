@@ -28,8 +28,8 @@ const MAX_SCALE = 1e3;
 const MIN_GRID_PX = 12;
 
 /**
- * Maps world coordinates (px, Y down) to screen pixels with a uniform scale
- * and translation: screen = world × scale + offset.
+ * Maps world coordinates (px, Y down) to screen pixels with a uniform scale and translation: screen
+ * = world × scale + offset.
  */
 export class Viewport {
   scale = 1;

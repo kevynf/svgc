@@ -143,7 +143,6 @@ describe('constraintPlacements', () => {
     const eq = b.constrain({ kind: 'equal', a: arc, b: circle });
 
     const found = at(constraintPlacements(b.build(), 1), eq);
-    // Mid-sweep at 45° on r=10, then 14px further out along the same radius.
     expect(found.x).toBeCloseTo(10 * Math.SQRT1_2 + 14 * Math.SQRT1_2, 9);
     expect(found.y).toBeCloseTo(found.x, 9);
   });
@@ -282,8 +281,8 @@ describe('constraintPlacements', () => {
   });
 
   /**
-   * One of each dimension, spread far enough apart that `separate` never nudges
-   * them: a point-to-point distance, a circle radius and a right angle.
+   * One of each dimension, spread far enough apart that `separate` never nudges them: a
+   * point-to-point distance, a circle radius and a right angle.
    */
   function dimensionSketch(): { sketch: Sketch; d: string; r: string; g: string } {
     const b = new SketchBuilder();
@@ -314,11 +313,8 @@ describe('constraintPlacements', () => {
     }
 
     const found = index(placements);
-    // The dimension line runs 14px off the two points, so its middle is the value.
     expect(found[d]).toEqual({ x: 50, y: -14 });
-    // The leader runs out past the top of the circle to where the value sits.
     expect(found[r]).toEqual({ x: 300, y: -12 });
-    // The value sits on the bisector, 30 + 8 px from the vertex.
     expect(found[g]!.x).toBeCloseTo(38 * Math.SQRT1_2, 9);
     expect(found[g]!.y).toBeCloseTo(200 + 38 * Math.SQRT1_2, 9);
   });
@@ -332,33 +328,28 @@ describe('constraintPlacements', () => {
     for (const scale of [0.25, 0.5, 1, 2, 8]) {
       const s = toScreen(scale);
       const found = index(constraintPlacements(sketch, scale));
-      // Distance: 14px off the measured points, as every other symbol is.
       expect(distance(s(mid), s(found[d]!))).toBeCloseTo(14, 9);
-      // Radius: the leader runs 14px past the curve, the value 8px beyond that.
       expect(distance(s(onCurve), s(found[r]!))).toBeCloseTo(14 + 8, 9);
-      // Angle: 8px beyond the 30px arc.
       expect(distance(s(vertex), s(found[g]!))).toBeCloseTo(30 + 8, 9);
     }
   });
 
   /**
-   * A dimension's pick point is the value text the renderer draws, so `separate`
-   * pins it: the chips around it are the ones that give way. Both directions
-   * matter — a chip arriving after the dimension is nudged off the text, and a
-   * dimension arriving after a chip holds its anchor instead of being nudged.
+   * A dimension's pick point is the value text the renderer draws, so `separate` pins it: the chips
+   * around it are the ones that give way. Both directions matter — a chip arriving after the
+   * dimension is nudged off the text, and a dimension arriving after a chip holds its anchor
+   * instead of being nudged.
    */
   it('nudges a glyph chip off a dimension value text', () => {
     const b = new SketchBuilder();
     const p1 = b.point(0, 0);
     const p2 = b.point(100, 0);
     const d = b.constrain({ kind: 'distance', a: p1, b: p2, value: 100 });
-    // A coincident pair whose symbol lands exactly on the distance's value text.
     const q1 = b.point(50, -14);
     const q2 = b.point(50, -14);
     const coin = b.constrain({ kind: 'coincident', a: q1, b: q2 });
 
     const found = index(constraintPlacements(b.build(), 1));
-    // The dimension holds the text position; the chip is the one that gives way.
     expect(found[d]).toEqual({ x: 50, y: -14 });
     expect(found[coin]).not.toEqual({ x: 50, y: -14 });
     expect(distance(found[d]!, found[coin]!)).toBeGreaterThanOrEqual(20);
@@ -366,8 +357,6 @@ describe('constraintPlacements', () => {
 
   it('keeps a dimension on its value text when a glyph chip is already there', () => {
     const b = new SketchBuilder();
-    // The chip is placed first, so it is the one a nudge would have to move —
-    // and the dimension arriving second is the one that used to be nudged off.
     const q1 = b.point(50, -14);
     const q2 = b.point(50, -14);
     const coin = b.constrain({ kind: 'coincident', a: q1, b: q2 });
@@ -377,7 +366,6 @@ describe('constraintPlacements', () => {
 
     const found = index(constraintPlacements(b.build(), 1));
     expect(found[coin]).toEqual({ x: 50, y: -14 });
-    // The pick point stays on the text the user reads, chip or no chip.
     expect(found[d]).toEqual({ x: 50, y: -14 });
   });
 
@@ -386,7 +374,6 @@ describe('constraintPlacements', () => {
     const p1 = b.point(0, 0);
     const p2 = b.point(100, 0);
     const d = b.constrain({ kind: 'distance', a: p1, b: p2, value: 100 });
-    // A radius whose value text lands 10px from the distance's, well inside the gap.
     const center = b.point(50, 8);
     const circle = b.circle(center, 10);
     const r = b.constrain({ kind: 'radius', curve: circle, value: 10 });
@@ -394,7 +381,6 @@ describe('constraintPlacements', () => {
     const found = index(constraintPlacements(b.build(), 1));
     expect(distance(found[d]!, found[r]!)).toBeLessThan(20);
     expect(found[d]).toEqual({ x: 50, y: -14 });
-    // The leader runs 14px past the curve, the value 8px beyond that: 10 + 22 above the centre.
     expect(found[r]).toEqual({ x: 50, y: -24 });
   });
 
@@ -438,7 +424,6 @@ describe('constraintPlacements', () => {
     expect(
       constraintPlacements(sketch, 1, { only: new Set([second]) }).map((p) => p.constraint),
     ).toEqual([v]);
-    // A point-to-point horizontal refers to its two points, not the line.
     expect(
       constraintPlacements(sketch, 1, { only: new Set([a2]) }).map((p) => p.constraint),
     ).toEqual([pair]);

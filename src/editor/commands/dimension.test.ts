@@ -101,16 +101,15 @@ function clickCurve(editor: Editor, id: Id): void {
 }
 
 /**
- * A dimension command handed its picks by the test. A zero-length line can
- * never be clicked — the point at the same spot always wins the hit test — so
- * such a pick is delivered the way a clicked one is.
+ * A dimension command handed its picks by the test. A zero-length line can never be clicked — the
+ * point at the same spot always wins the hit test — so such a pick is delivered the way a clicked
+ * one is.
  */
 class Handed extends DimensionCommand {
   /** Picks `operand`, exactly as a click on it would. */
   hand(operand: Operand): void {
     const picks = [...this.picks, operand];
     const constraint = this.build(picks);
-    // An operand the command cannot dimension from leaves the pick pending.
     if (constraint === undefined) {
       this.picks = picks;
       this.editor.viewChanged();

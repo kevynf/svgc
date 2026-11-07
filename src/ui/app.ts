@@ -29,8 +29,8 @@ import type { ConstraintGlyph } from './constraint-icons';
 import { StatusBar } from './statusbar';
 
 /**
- * Inventor's default command aliases. Only aliases whose command exists are
- * active; the rest are listed so the ribbon tooltips are complete.
+ * Inventor's default command aliases. Only aliases whose command exists are active; the rest are
+ * listed so the ribbon tooltips are complete.
  */
 export const COMMAND_ALIASES: readonly (readonly [alias: string, command: string])[] = [
   ['L', 'line'],
@@ -150,7 +150,6 @@ export class App {
     this.properties = new PropertiesPanel(editor, t);
     workspace.append(this.properties.element);
 
-    // Title bar and ribbon tabs share one row: app name left, language right.
     const head = document.createElement('header');
     head.className = 'titlebar';
     const title = document.createElement('h1');

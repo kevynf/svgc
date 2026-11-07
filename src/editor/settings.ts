@@ -42,9 +42,8 @@ function loadInferred(): Set<InferredKind> {
 }
 
 /**
- * Editor-wide display and inference settings, persisted in localStorage.
- * Kept out of `Editor` so the ribbon, the canvas and the drawing commands can
- * all read it without threading it through.
+ * Editor-wide display and inference settings, persisted in localStorage. Kept out of `Editor` so
+ * the ribbon, the canvas and the drawing commands can all read it without threading it through.
  */
 class SettingsStore {
   private show = loadShow();

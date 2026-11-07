@@ -43,7 +43,6 @@ function twisty(): SVGSVGElement {
   const ns = 'http://www.w3.org/2000/svg';
   const svg = document.createElementNS(ns, 'svg');
   const attrs: Record<string, string> = {
-    // `browser-twisty` drives the rotation; `.icon` is the shared base.
     class: 'icon browser-twisty',
     width: '16',
     height: '16',
@@ -71,9 +70,9 @@ interface TreeItem {
 }
 
 /**
- * Left-hand browser: the sketch's geometry and constraints as an Inventor-style
- * tree, with expandable groups, per-item type icons, and selection/hover kept in
- * sync with the canvas. Resizable by a drag handle on its right edge.
+ * Left-hand browser: the sketch's geometry and constraints as an Inventor-style tree, with
+ * expandable groups, per-item type icons, and selection/hover kept in sync with the canvas.
+ * Resizable by a drag handle on its right edge.
  */
 export class Browser {
   readonly element = document.createElement('nav');

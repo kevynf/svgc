@@ -1,5 +1,3 @@
-// Dev-only: measures each icon's real ink bounding box via getBBox() and prints
-// the offset needed to center it in the 24×24 grid. Open /measure.html.
 import { icon } from './ui/icons';
 import type { IconName } from './ui/icons';
 import { CONSTRAINT_GLYPHS, constraintIcon } from './ui/constraint-icons';
@@ -13,7 +11,6 @@ document.body.append(host);
 const lines: string[] = [];
 const measure = (name: string, make: () => SVGSVGElement) => {
   const svg = make();
-  // Tabler ships a transparent full-canvas background path; it dominates getBBox.
   for (const path of [...svg.querySelectorAll('path')]) {
     if (path.getAttribute('stroke') === 'none' && path.getAttribute('fill') === 'none')
       path.remove();

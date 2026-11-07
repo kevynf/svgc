@@ -15,7 +15,10 @@ const LINE_EPS = 1e-9;
 type Curve = Line | Circle | Arc;
 
 export type InferredConstraint =
-  /** Cursor snapped onto an existing point. The caller REUSES that point instead of creating a new one. */
+  /**
+   * Cursor snapped onto an existing point. The caller REUSES that point instead of creating a new
+   * one.
+   */
   | { readonly kind: 'coincident'; readonly target: Id }
   /** Cursor projected onto an existing line, circle or arc. */
   | { readonly kind: 'pointOnCurve'; readonly target: Id }
@@ -25,7 +28,10 @@ export type InferredConstraint =
   /** Segment anchor→cursor is parallel / perpendicular to the reference line. */
   | { readonly kind: 'parallel'; readonly target: Id }
   | { readonly kind: 'perpendicular'; readonly target: Id }
-  /** Segment anchor→cursor is tangent to an arc/circle that the anchor point lies on as an arc endpoint. */
+  /**
+   * Segment anchor→cursor is tangent to an arc/circle that the anchor point lies on as an arc
+   * endpoint.
+   */
   | { readonly kind: 'tangent'; readonly target: Id };
 
 /** Visual-only dotted alignment guide (Inventor does not create a constraint for these). */
@@ -46,13 +52,18 @@ export interface InferenceOptions {
   readonly tolerance: number;
   /** False when Ctrl is held: return the raw cursor, nothing inferred. */
   readonly enabled: boolean;
-  /** The previous click of the current command, if any (e.g. line start). `id` is set when it is an existing point. */
+  /**
+   * The previous click of the current command, if any (e.g. line start). `id` is set when it is an
+   * existing point.
+   */
   readonly anchor?: Anchor;
   /** Entities to ignore (e.g. the preview geometry, the anchor point itself). */
   readonly exclude?: ReadonlySet<Id>;
   /** Line most recently hovered by the user; the reference for parallel/perpendicular. */
   readonly reference?: Id;
-  /** Angular tolerance in degrees for horizontal/vertical/parallel/perpendicular/tangent. Default 4. */
+  /**
+   * Angular tolerance in degrees for horizontal/vertical/parallel/perpendicular/tangent. Default 4.
+   */
   readonly angleTolerance?: number;
 }
 
@@ -78,9 +89,9 @@ function angleDelta(a: number, b: number): number {
 }
 
 /**
- * Of the two directions along a line at angle `base` (base and base + π), the
- * one closest to `theta`, with its angular distance. Lines have no direction,
- * so drawing leftwards is just as horizontal as drawing rightwards.
+ * Of the two directions along a line at angle `base` (base and base + π), the one closest to
+ * `theta`, with its angular distance. Lines have no direction, so drawing leftwards is just as
+ * horizontal as drawing rightwards.
  */
 function alongLine(theta: number, base: number): { angle: number; delta: number } {
   const forward = angleDelta(theta, base);
@@ -126,9 +137,9 @@ function angleInSweep(angle: number, start: number, end: number): boolean {
 }
 
 /**
- * Direction of the tangent at an arc endpoint, pointing away from the arc so a
- * new segment extends it smoothly. At the start the arc travels towards the
- * sweep, so "away" is the reverse of that travel.
+ * Direction of the tangent at an arc endpoint, pointing away from the arc so a new segment extends
+ * it smoothly. At the start the arc travels towards the sweep, so "away" is the reverse of that
+ * travel.
  */
 function arcTangentAngle(center: Vec2, endpoint: Vec2, atStart: boolean): number {
   const a = angleOf(center, endpoint);
@@ -261,9 +272,9 @@ function projectOnto(entity: Curve, p: Vec2, pt: PointLookup): Vec2 {
 }
 
 /**
- * Where the infinite line `origin + t·dir` meets a curve. `onLine` is a point
- * already on that line; a collinear segment is met along its whole length, so
- * the closest point on it is the intersection.
+ * Where the infinite line `origin + t·dir` meets a curve. `onLine` is a point already on that line;
+ * a collinear segment is met along its whole length, so the closest point on it is the
+ * intersection.
  */
 function lineCurveIntersections(
   origin: Vec2,
@@ -320,9 +331,9 @@ function circleLineHits(origin: Vec2, dir: Vec2, c: Vec2, params: ArcParams): Ve
 }
 
 /**
- * Nearest non-excluded curve within tolerance. Without a direction constraint
- * the cursor is projected onto it; with one, the constrained line through the
- * anchor has to actually meet it, otherwise the curve snap is dropped.
+ * Nearest non-excluded curve within tolerance. Without a direction constraint the cursor is
+ * projected onto it; with one, the constrained line through the anchor has to actually meet it,
+ * otherwise the curve snap is dropped.
  */
 function snapToCurve(
   sketch: Sketch,
@@ -384,10 +395,9 @@ function nearestOnAxis(
 }
 
 /**
- * Snaps the free coordinates of `position` onto the nearest point per axis.
- * `axis` is the coordinate an H/V constraint pins: that axis is left to the
- * constraint, and on the other one a point already sitting on the constraint
- * line through the anchor is not worth a guide.
+ * Snaps the free coordinates of `position` onto the nearest point per axis. `axis` is the
+ * coordinate an H/V constraint pins: that axis is left to the constraint, and on the other one a
+ * point already sitting on the constraint line through the anchor is not worth a guide.
  */
 function alignTo(
   sketch: Sketch,
@@ -426,11 +436,10 @@ function alignTo(
 }
 
 /**
- * Snaps `cursor` onto nearby geometry and reports what the UI should show:
- * the inferred constraints created on click, plus visual-only alignment
- * guides. Rules apply in priority order — a point hit wins outright, then the
- * direction constraints relative to the anchor, then the curve snap, then the
- * alignments.
+ * Snaps `cursor` onto nearby geometry and reports what the UI should show: the inferred constraints
+ * created on click, plus visual-only alignment guides. Rules apply in priority order — a point hit
+ * wins outright, then the direction constraints relative to the anchor, then the curve snap, then
+ * the alignments.
  */
 export function infer(sketch: Sketch, cursor: Vec2, options: InferenceOptions): InferenceResult {
   if (!options.enabled) return { position: cursor, constraints: [], alignments: [] };
@@ -440,7 +449,6 @@ export function infer(sketch: Sketch, cursor: Vec2, options: InferenceOptions): 
   const angleTol = degToRad(options.angleTolerance ?? DEFAULT_ANGLE_TOLERANCE);
   const isExcluded = (id: Id): boolean => options.exclude?.has(id) === true;
 
-  // Reusing an existing point says everything; nothing else is inferred.
   const snapped = nearestPoint(sketch, cursor, tolerance, isExcluded);
   if (snapped !== undefined) {
     return {
@@ -473,19 +481,19 @@ export function infer(sketch: Sketch, cursor: Vec2, options: InferenceOptions): 
   if (direction !== undefined) constraints.push(direction.constraint);
   if (curve !== undefined) constraints.push({ kind: 'pointOnCurve', target: curve.id });
 
-  // A curve snap fixed both coordinates, so there is nothing left to align.
   if (curve !== undefined) return { position, constraints, alignments: [] };
   const aligned = alignTo(sketch, position, anchor, direction?.axis, tolerance, isExcluded);
   return { position: aligned.position, constraints, alignments: aligned.alignments };
 }
 
 /**
- * Turns inferred constraints into model constraints once the user clicks.
- * `point` is the id of the (new or reused) point at the cursor, `segment` the new line from anchor to it
- * (if the command creates one), `anchor` the anchor point id.
+ * Turns inferred constraints into model constraints once the user clicks. `point` is the id of the
+ * (new or reused) point at the cursor, `segment` the new line from anchor to it (if the command
+ * creates one), `anchor` the anchor point id.
  * - coincident → [] (the caller reused the point)
  * - pointOnCurve → pointOnLine when target is a line, else pointOnCurve
- * - horizontal/vertical → on `segment` if given ({kind:'horizontal', a: segment}); else between anchor and point ({kind, a: anchor, b: point}); else []
+ * - horizontal/vertical → on `segment` if given ({kind:'horizontal', a: segment}); else between
+ *   anchor and point ({kind, a: anchor, b: point}); else []
  * - parallel/perpendicular/tangent → need `segment`, else []
  */
 export function materialize(
@@ -498,7 +506,6 @@ export function materialize(
   for (const c of inferred) {
     switch (c.kind) {
       case 'coincident':
-        // The caller reused the point, so there is nothing to add.
         break;
       case 'pointOnCurve':
         out.push(

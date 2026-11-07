@@ -18,20 +18,18 @@ import { hitTest } from '../hit';
 import { HIT_PX } from './select';
 
 /**
- * How far the copy sits from the original at the least, on screen — the floor a
- * dimension being placed uses, so the copy never lands on the geometry it came
- * from at any zoom.
+ * How far the copy sits from the original at the least, on screen — the floor a dimension being
+ * placed uses, so the copy never lands on the geometry it came from at any zoom.
  */
 const MIN_OFFSET_PX = 14;
 /** A radius below this is refused: the solver rejects a zero or negative one. */
 const MIN_RADIUS = 1e-6;
 
 /**
- * The picked curve, resolved to the geometry an offset is measured from: where
- * its points sit now, plus the ids a copy needs. The editor holds the solved
- * sketch, so these positions already account for every constraint applied so
- * far. Undefined for a curve with nothing to offset: a zero-length line, a zero
- * radius, or a missing point.
+ * The picked curve, resolved to the geometry an offset is measured from: where its points sit now,
+ * plus the ids a copy needs. The editor holds the solved sketch, so these positions already account
+ * for every constraint applied so far. Undefined for a curve with nothing to offset: a zero-length
+ * line, a zero radius, or a missing point.
  */
 type Source =
   | { readonly kind: 'line'; readonly id: Id; readonly a: Vec2; readonly b: Vec2 }
@@ -97,19 +95,16 @@ interface Entering {
 type Phase = Picking | Placing | Entering;
 
 /**
- * The offset command, Inventor's way: pick a line, circle or arc, move the
- * cursor to choose the side and the distance, click to place the copy, then type
- * the distance — pre-filled with the measurement, so accepting it moves nothing
- * while a typed value drives the copy to it. A line is copied parallel to
- * itself, a circle or an arc concentrically at the same start and end angles.
+ * The offset command, Inventor's way: pick a line, circle or arc, move the cursor to choose the
+ * side and the distance, click to place the copy, then type the distance — pre-filled with the
+ * measurement, so accepting it moves nothing while a typed value drives the copy to it. A line is
+ * copied parallel to itself, a circle or an arc concentrically at the same start and end angles.
  *
- * The copy stays attached to what it came from: a line's copy is parallel to it
- * with one end a measured distance away, so it holds the offset while keeping
- * its own length; a circle's or arc's copy shares the original's centre and
- * carries a radius, so it follows that centre as it moves. The distance is never
- * negative — the solver refuses one — so the side the cursor chose lives in the
- * copy's geometry rather than in its value. The command stays active for the
- * next one.
+ * The copy stays attached to what it came from: a line's copy is parallel to it with one end a
+ * measured distance away, so it holds the offset while keeping its own length; a circle's or arc's
+ * copy shares the original's centre and carries a radius, so it follows that centre as it moves.
+ * The distance is never negative — the solver refuses one — so the side the cursor chose lives in
+ * the copy's geometry rather than in its value. The command stays active for the next one.
  */
 export class OffsetCommand implements Command {
   readonly id = 'offset';
@@ -129,8 +124,6 @@ export class OffsetCommand implements Command {
 
   pointerMove(input: PointerInput): void {
     const phase = this.phase;
-    // The copy follows the cursor while it is being placed; the value box owns
-    // the pointer once it is open.
     if (phase.kind !== 'placing') return;
     phase.cursor = input.world;
     this.editor.viewChanged();
@@ -139,8 +132,6 @@ export class OffsetCommand implements Command {
   pointerUp(input: PointerInput): void {
     this.status = undefined;
     const phase = this.phase;
-    // A click puts the copy where it follows the cursor and opens the value box;
-    // while a pick is pending it takes the curve under the cursor.
     if (phase.kind === 'placing') {
       this.place(input.world);
       return;
@@ -162,12 +153,8 @@ export class OffsetCommand implements Command {
   }
 
   cancel(): boolean {
-    // Esc backs out one step at a time: the value box, the placement, the
-    // pending pick, and only then the command itself.
     const phase = this.phase;
     if (phase.kind === 'entering') {
-      // Back to placing, with the copy where it was put. A rejection recorded
-      // while the box was open is stale now, so it goes too.
       this.status = undefined;
       this.phase = { kind: 'placing', source: phase.source, cursor: phase.cursor };
       this.editor.viewChanged();
@@ -201,11 +188,10 @@ export class OffsetCommand implements Command {
   }
 
   /**
-   * Applies what the user typed. Accepting the measurement untouched (`edited`
-   * false) places the copy exactly where the cursor put it; otherwise the text
-   * is a parameter name or an expression and the value drives the copy to it —
-   * on the side the cursor chose, since a distance is a magnitude. An unusable
-   * value, or one the solver rejects, keeps the box open so it can be fixed.
+   * Applies what the user typed. Accepting the measurement untouched (`edited` false) places the
+   * copy exactly where the cursor put it; otherwise the text is a parameter name or an expression
+   * and the value drives the copy to it — on the side the cursor chose, since a distance is a
+   * magnitude. An unusable value, or one the solver rejects, keeps the box open so it can be fixed.
    */
   commitEdit(text: string, edited: boolean): boolean {
     const phase = this.phase;
@@ -213,8 +199,6 @@ export class OffsetCommand implements Command {
     const value = edited ? this.parse(text) : phase.value;
     if (value === undefined) return false;
     const draft = this.build(phase.source, phase.offset, value);
-    // A value the sketch cannot carry, or a solve it did not survive: nothing is
-    // committed and the box stays open.
     if (draft === undefined || !this.editor.commit(draft.sketch)) return false;
     this.reset();
     return true;
@@ -223,8 +207,6 @@ export class OffsetCommand implements Command {
   dispose(): void {
     this.phase = { kind: 'pick' };
   }
-
-  // ── Picking ──────────────────────────────────────────────────────────────
 
   /** Takes the curve under `world`; a point, or one with nothing to offset, is no pick. */
   private pick(world: Vec2): void {
@@ -237,15 +219,11 @@ export class OffsetCommand implements Command {
     this.editor.viewChanged();
   }
 
-  // ── Placing ──────────────────────────────────────────────────────────────
-
   /** Puts the copy where the cursor resolved it and opens the value box on it. */
   private place(cursor: Vec2): void {
     const phase = this.phase;
     if (phase.kind !== 'placing') return;
     const resolved = this.resolve(phase.source, cursor);
-    // A copy the cursor cannot resolve — a radius the solver would refuse — is
-    // not placed, and the command stays where it is.
     if (resolved === undefined) return;
     this.phase = {
       kind: 'entering',
@@ -267,18 +245,15 @@ export class OffsetCommand implements Command {
     if (copy === undefined) return undefined;
     return {
       offset,
-      // A line's copy is measured by how far it sits from the original; a
-      // curve's by the radius it ends up with.
       value: copy.kind === 'line' ? Math.abs(offset) : copy.radius,
       at: this.anchorOf(copy, cursor),
     };
   }
 
   /**
-   * The offset the cursor asks for: its signed distance from the curve, floored
-   * at MIN_OFFSET_PX in magnitude so the copy never lands on the original. A
-   * cursor with no distance to speak of takes the positive side, as a dimension
-   * being placed does.
+   * The offset the cursor asks for: its signed distance from the curve, floored at MIN_OFFSET_PX in
+   * magnitude so the copy never lands on the original. A cursor with no distance to speak of takes
+   * the positive side, as a dimension being placed does.
    */
   private offsetOf(source: Source, cursor: Vec2): number {
     const min = this.editor.viewport.toWorldLength(MIN_OFFSET_PX);
@@ -299,26 +274,24 @@ export class OffsetCommand implements Command {
       case 'circle':
       case 'arc': {
         const radius = source.radius + offset;
-        // A copy that would collapse onto the centre is not offered at all.
         return radius >= MIN_RADIUS ? { kind: 'curve', center: source.center, radius } : undefined;
       }
     }
   }
 
   /**
-   * Where the value box opens: the middle of a line's copy, or the point of a
-   * curve's copy nearest the cursor.
+   * Where the value box opens: the middle of a line's copy, or the point of a curve's copy nearest
+   * the cursor.
    */
   private anchorOf(copy: Copy, cursor: Vec2): Vec2 {
     if (copy.kind === 'line') return midpoint(copy.from, copy.to);
     const dir = unit(sub(cursor, copy.center));
-    // A cursor on the centre has no direction; the copy's right-hand point stands in.
     return add(copy.center, scaled(dir ?? { x: 1, y: 0 }, copy.radius));
   }
 
   /**
-   * The copy being previewed: from the cursor while it follows it, from the
-   * resolved offset once it is placed.
+   * The copy being previewed: from the cursor while it follows it, from the resolved offset once it
+   * is placed.
    */
   private previewOf(phase: Placing | Entering): Copy | undefined {
     const source = this.sourceOf(phase.source);
@@ -327,8 +300,6 @@ export class OffsetCommand implements Command {
     if (phase.cursor === undefined) return undefined;
     return this.copyOf(source, this.offsetOf(source, phase.cursor));
   }
-
-  // ── Committing ───────────────────────────────────────────────────────────
 
   /** Builds the copy in a draft, or undefined when the value cannot be carried. */
   private build(id: Id, measured: number, value: Value): Draft | undefined {
@@ -339,33 +310,24 @@ export class OffsetCommand implements Command {
     const draft = new Draft(this.editor.sketch);
     switch (from.kind) {
       case 'line': {
-        // A negative distance makes the solver throw, so a typed one is refused.
         if (magnitude < 0) return undefined;
-        // The side the cursor chose is carried by the copy's geometry, since the
-        // distance itself is only a magnitude.
         const side = measured < 0 ? -1 : 1;
         const shift = scaled(segmentNormal(from.a, from.b), side * magnitude);
         const p1 = draft.point(add(from.a, shift));
         const p2 = draft.point(add(from.b, shift));
         const copy = draft.line(p1, p2);
-        // The copy keeps its own length: parallel holds its direction and the
-        // distance holds the offset, so it may be re-lengthened freely.
         draft.constrain({ kind: 'parallel', a: from.id, b: copy });
         draft.constrain({ kind: 'distance', a: p1, b: from.id, value });
         return draft;
       }
       case 'circle': {
-        // The solver refuses a zero or negative radius, so neither is placed.
         if (!(magnitude >= MIN_RADIUS)) return undefined;
-        // The centre is the original's, so the copy follows it as it moves.
         const copy = draft.circle(from.centerId, magnitude);
         draft.constrain({ kind: 'radius', curve: copy, value });
         return draft;
       }
       case 'arc': {
         if (!(magnitude >= MIN_RADIUS)) return undefined;
-        // New ends at the new radius along the original's directions keep the
-        // start and end angles; the centre is the original's, as for a circle.
         const start = draft.point(add(from.center, scaled(from.startDir, magnitude)));
         const end = draft.point(add(from.center, scaled(from.endDir, magnitude)));
         const copy = draft.arc(from.centerId, start, end);
@@ -376,10 +338,9 @@ export class OffsetCommand implements Command {
   }
 
   /**
-   * The value the user typed: a parameter name binds the name itself, so the
-   * copy tracks it, and anything else is an expression evaluated against the
-   * sketch's parameters. Undefined — with the message the status bar shows —
-   * when the text is unusable.
+   * The value the user typed: a parameter name binds the name itself, so the copy tracks it, and
+   * anything else is an expression evaluated against the sketch's parameters. Undefined — with the
+   * message the status bar shows — when the text is unusable.
    */
   private parse(text: string): Value | undefined {
     const trimmed = text.trim();
@@ -411,13 +372,11 @@ export class OffsetCommand implements Command {
     switch (entity.kind) {
       case 'line': {
         const [a, b] = [point(entity.p1), point(entity.p2)];
-        // A zero-length line has no direction to offset along.
         if (a === undefined || b === undefined || distance(a, b) === 0) return undefined;
         return { kind: 'line', id, a, b };
       }
       case 'circle': {
         const center = point(entity.center);
-        // A zero radius has no curve to measure an offset from.
         if (center === undefined || !(entity.radius > 0)) return undefined;
         return { kind: 'circle', id, centerId: entity.center, center, radius: entity.radius };
       }

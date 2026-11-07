@@ -35,14 +35,12 @@ export function appMenuItems(): readonly AppMenuItem[] {
 }
 
 /**
- * Inventor's application menu: the button at the far left of the title strip,
- * opening a dropdown of the file commands. The button is `element`; the card is
- * `panel`, appended to `document.body` while open and sharing the ribbon's
- * raised chrome so it reads as part of the title bar. Closed by Esc, by
- * choosing an item, or by a click outside; focus moves into the panel on open
- * and back to the button on close. All DOM is built in the constructor, so the
- * module imports cleanly under Node (where `document` is absent) — the pure
- * helper above stays testable there.
+ * Inventor's application menu: the button at the far left of the title strip, opening a dropdown of
+ * the file commands. The button is `element`; the card is `panel`, appended to `document.body`
+ * while open and sharing the ribbon's raised chrome so it reads as part of the title bar. Closed by
+ * Esc, by choosing an item, or by a click outside; focus moves into the panel on open and back to
+ * the button on close. All DOM is built in the constructor, so the module imports cleanly under
+ * Node (where `document` is absent) — the pure helper above stays testable there.
  */
 export class AppMenu {
   readonly element: HTMLElement;
@@ -62,8 +60,6 @@ export class AppMenu {
     button.className = 'app-menu-button';
     button.setAttribute('aria-haspopup', 'true');
     button.setAttribute('aria-expanded', 'false');
-    // The app name is the button's label, as in Inventor's title bar; the
-    // chevron only says there is a menu behind it.
     button.textContent = t.t('app.title');
     button.append(icon('chevronDown', 12));
     button.addEventListener('click', () => this.toggle());
@@ -85,8 +81,6 @@ export class AppMenu {
     if (this.opened) return;
     this.opened = true;
     this.invoker = invoker;
-    // Anchored to the button in viewport coordinates, so the card hangs off
-    // the title strip wherever the shell happens to sit.
     const rect = this.element.getBoundingClientRect();
     this.panel.style.left = `${rect.left}px`;
     this.panel.style.top = `${rect.bottom}px`;

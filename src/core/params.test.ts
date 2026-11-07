@@ -64,7 +64,6 @@ describe('resolveSketchParams', () => {
   it('resolves a dependent before the parameter that reads it', () => {
     let out = edited(withParam(emptySketch(), 'b', '4'));
     out = edited(withParam(out, 'a', '2'));
-    // `b` is declared first, but from here on it reads `a`.
     out = edited(withParamExpression(out, 'b', 'a * 2'));
     const res = resolveSketchParams(out);
     expect(res.order).toEqual(['a', 'b']);
@@ -112,7 +111,6 @@ describe('withParam', () => {
     const out = withParam(s.sketch, 'side', 'gap * 2');
     if (!out.ok) return;
     expect(out.sketch.params).toEqual({ gap: 25, span: 40, side: 50 });
-    // The map stays sparse: the plain parameters keep no source.
     expect(out.sketch.expressions).toEqual({ side: 'gap * 2' });
     expect(out.sketch.entities).toBe(s.sketch.entities);
     expect(out.sketch.constraints).toBe(s.sketch.constraints);
@@ -161,8 +159,6 @@ describe('withParam', () => {
   });
 
   it('refuses an expression that would close a cycle', () => {
-    // `b` reads a parameter that does not exist yet; adding it as a reader of
-    // `b` would close b → a → b.
     const dangling: Sketch = {
       entities: [],
       constraints: [],
@@ -184,7 +180,6 @@ describe('withParamExpression', () => {
     const out = withParamExpression(chain(), 'a', '20');
     if (!out.ok) return;
     expect(out.sketch.params).toEqual({ a: 20, b: 40 });
-    // The source of the parameter that was not edited survives.
     expect(out.sketch.expressions).toEqual({ a: '20', b: 'a * 2' });
   });
 
@@ -224,7 +219,6 @@ describe('withRenamedParam', () => {
     expect(out.sketch.expressions).toEqual({ side: 'width * 2', area: 'side * span' });
     expect(at(out.sketch, s.dist)).toMatchObject({ kind: 'distance', value: 'width' });
     expect(at(out.sketch, s.rad)).toMatchObject({ kind: 'radius', value: 'width' });
-    // The angle kept its plain number, and the horizontal has no value at all.
     expect(at(out.sketch, s.ang)).toMatchObject({ value: 90 });
     expect(at(out.sketch, s.horiz)).not.toHaveProperty('value');
   });
@@ -327,7 +321,6 @@ describe('round trip', () => {
       { name: 'span', expression: '40' },
       { name: 'side', expression: 'gap * 2' },
     ]);
-    // An edit on top of it still resolves from the stored sources.
     const next = edited(withParamExpression(side, 'gap', '30'));
     expect(paramDefs(next)).toEqual([
       { name: 'gap', expression: '30' },

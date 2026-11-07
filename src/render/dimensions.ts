@@ -16,33 +16,29 @@ import type { Constraint, Id, Line, Point } from '../core/model';
 import type { EntityIndex } from '../core/sketch';
 
 /**
- * Dimensions on the canvas — the measured value a `distance`, `radius` or
- * `angle` constraint carries, drawn the way a CAD system does: a dimension
- * line terminated by arrowheads, witness lines off the measured feature, the
- * value text just beyond it, an arc for an angle and a leader for a radius.
+ * Dimensions on the canvas — the measured value a `distance`, `radius` or `angle` constraint
+ * carries, drawn the way a CAD system does: a dimension line terminated by arrowheads, witness
+ * lines off the measured feature, the value text just beyond it, an arc for an angle and a leader
+ * for a radius.
  *
- * The arrangement is the one GB/T 4458.4 / ISO 129-1 prescribes: the dimension
- * line runs BETWEEN the two witness lines, so its arrowheads sit on those
- * crossings with their tips touching, pointing outward — reaching past the
- * witness lines with the arrows out there is the not-enough-room arrangement,
- * not this one. Each witness line leaves a gap from the feature it measures
- * and runs a little past the dimension line, at whatever distance the
- * dimension was placed. A radius leader has no witness lines: it runs from the
- * centre through the curve.
+ * The arrangement is the one GB/T 4458.4 / ISO 129-1 prescribes: the dimension line runs BETWEEN
+ * the two witness lines, so its arrowheads sit on those crossings with their tips touching,
+ * pointing outward — reaching past the witness lines with the arrows out there is the
+ * not-enough-room arrangement, not this one. Each witness line leaves a gap from the feature it
+ * measures and runs a little past the dimension line, at whatever distance the dimension was
+ * placed. A radius leader has no witness lines: it runs from the centre through the curve.
  *
- * The layout is pure geometry in WORLD coordinates, and takes the viewport
- * `scale` because every offset from the geometry is given in SCREEN pixels
- * and divided by it: a dimension keeps the same distance from its geometry at
- * any zoom, the same reason `constraints.ts` divides its offsets. Nothing here
- * touches the DOM — the renderer maps the result through its own world →
- * screen transform, and formatting the value text is the caller's job.
+ * The layout is pure geometry in WORLD coordinates, and takes the viewport `scale` because every
+ * offset from the geometry is given in SCREEN pixels and divided by it: a dimension keeps the same
+ * distance from its geometry at any zoom, the same reason `constraints.ts` divides its offsets.
+ * Nothing here touches the DOM — the renderer maps the result through its own world → screen
+ * transform, and formatting the value text is the caller's job.
  *
- * What is measured comes from a `DimensionSpec`: the operands, plus the world
- * cursor position while a dimension is being placed — the dimension follows it,
- * so the user chooses where it sits before committing. Committing keeps that
- * choice as the constraint's `placement`, which a spec carries as its `offset`,
- * so a placed dimension stays where the user put it instead of snapping back
- * to the default anchor — which is still what one with neither of them draws.
+ * What is measured comes from a `DimensionSpec`: the operands, plus the world cursor position while
+ * a dimension is being placed — the dimension follows it, so the user chooses where it sits before
+ * committing. Committing keeps that choice as the constraint's `placement`, which a spec carries as
+ * its `offset`, so a placed dimension stays where the user put it instead of snapping back to the
+ * default anchor — which is still what one with neither of them draws.
  */
 
 /** How far a dimension sits off the geometry it measures, on screen. */
@@ -72,7 +68,10 @@ export function isDimensionKind(kind: Constraint['kind']): kind is DimensionKind
   return (DIMENSION_KINDS as readonly string[]).includes(kind);
 }
 
-/** An arrowhead tip plus the direction it points, in screen-space radians (atan2 with Y pointing down). */
+/**
+ * An arrowhead tip plus the direction it points, in screen-space radians (atan2 with Y pointing
+ * down).
+ */
 export interface DimensionArrow {
   readonly at: Vec2;
   readonly angle: number;
@@ -101,9 +100,9 @@ export interface DimensionLayout {
 }
 
 /**
- * What a dimension measures, without a value: the operands and where it sits.
- * The operands are the same ones the matching constraint carries, so a
- * committed dimension's spec is just its constraint's.
+ * What a dimension measures, without a value: the operands and where it sits. The operands are the
+ * same ones the matching constraint carries, so a committed dimension's spec is just its
+ * constraint's.
  */
 export interface DimensionSpec {
   readonly kind: DimensionKind;
@@ -112,22 +111,20 @@ export interface DimensionSpec {
   /** World cursor position controlling where the dimension sits; undefined = the default anchor. */
   readonly placement?: Vec2;
   /**
-   * The stored placement a placed dimension carries: the offset the cursor
-   * chose, in the model's units (a world distance for distance/angle, radians
-   * for a radius). The cursor's `placement` wins when both are given.
+   * The stored placement a placed dimension carries: the offset the cursor chose, in the model's
+   * units (a world distance for distance/angle, radians for a radius). The cursor's `placement`
+   * wins when both are given.
    */
   readonly offset?: number;
 }
 
 /**
- * Layout of one dimension spec, or undefined when the geometry cannot carry
- * one. Where the dimension sits is `resolveOffset`'s answer — the cursor's
- * `placement` if there is one, the stored `offset` otherwise, the kind's
- * default anchor if neither — and each kind reads it as one quantity: the
- * offset for a distance, the arc's radius for an angle, the leader's direction
- * for a radius. Everything else — where the dimension line stops, its witness
- * lines with their gap and overshoot, the arrowheads and where the value sits
- * — derives from that as it always has.
+ * Layout of one dimension spec, or undefined when the geometry cannot carry one. Where the
+ * dimension sits is `resolveOffset`'s answer — the cursor's `placement` if there is one, the stored
+ * `offset` otherwise, the kind's default anchor if neither — and each kind reads it as one
+ * quantity: the offset for a distance, the arc's radius for an angle, the leader's direction for a
+ * radius. Everything else — where the dimension line stops, its witness lines with their gap and
+ * overshoot, the arrowheads and where the value sits — derives from that as it always has.
  */
 export function layoutDimension(
   spec: DimensionSpec,
@@ -141,7 +138,6 @@ export function layoutDimension(
   switch (kind) {
     case 'distance': {
       const [a, b] = operands;
-      // A spec short of its operands measures nothing, like a missing entity.
       if (a === undefined || b === undefined) return undefined;
       return distanceLayout(a, b, index, k, offset);
     }
@@ -159,11 +155,10 @@ export function layoutDimension(
 }
 
 /**
- * The stored placement a placed dimension carries: the offset the cursor chose,
- * in the model's units (a world distance for distance/angle, radians for a
- * radius). Undefined for degenerate geometry. A cursor outranks a stored
- * offset, so a dimension being placed follows the cursor; with neither, each
- * kind's default anchor.
+ * The stored placement a placed dimension carries: the offset the cursor chose, in the model's
+ * units (a world distance for distance/angle, radians for a radius). Undefined for degenerate
+ * geometry. A cursor outranks a stored offset, so a dimension being placed follows the cursor; with
+ * neither, each kind's default anchor.
  */
 export function resolveOffset(
   spec: DimensionSpec,
@@ -175,18 +170,13 @@ export function resolveOffset(
   switch (kind) {
     case 'distance': {
       const [a, b] = operands;
-      // A spec short of its operands measures nothing, like a missing entity.
       if (a === undefined || b === undefined) return undefined;
       const d = distanceOperands(a, b, index);
       if (d === undefined) return undefined;
-      // A point–point distance reads the cursor across the segment; a
-      // point–line one reads it along the line, from the perpendicular foot.
       if (d.form === 'points') {
         const spread = pointSpread(d.a, d.b);
-        if (spread === undefined) return undefined; // coincident points
+        if (spread === undefined) return undefined;
         if (placement === undefined) return offset ?? OFFSET_PX * k;
-        // The normal is square to the segment, so the cursor's distance from
-        // any point along it — the mid here — is its distance from the segment.
         return cursorOffset(placement, midpoint(spread.a, spread.b), spread.n, k);
       }
       const gap = pointGap(d.point, d.line, index);
@@ -200,8 +190,6 @@ export function resolveOffset(
       const f = curveFrame(curve, index);
       if (f === undefined) return undefined;
       if (placement !== undefined) return leaderAngle(f, placement);
-      // A stored angle is taken as it stands: clamping onto an arc's sweep is
-      // the cursor's job, done as it resolves, so a stored one may point off it.
       return offset ?? f.mid;
     }
     case 'angle': {
@@ -235,21 +223,17 @@ function operandsOf(c: DimensionConstraint): readonly Id[] {
 }
 
 /**
- * Layout of one dimension constraint's on-canvas graphics, or undefined when
- * the geometry cannot carry one: its operands laid out at the placement the
- * user chose for it, which is what a committed dimension — one the user is not
- * moving — draws. A dimension being placed is laid out by `layoutDimension`
- * instead, with the cursor's position.
+ * Layout of one dimension constraint's on-canvas graphics, or undefined when the geometry cannot
+ * carry one: its operands laid out at the placement the user chose for it, which is what a
+ * committed dimension — one the user is not moving — draws. A dimension being placed is laid out by
+ * `layoutDimension` instead, with the cursor's position.
  */
 export function dimensionLayout(
   c: Constraint,
   index: EntityIndex,
   scale: number,
 ): DimensionLayout | undefined {
-  // Not a dimension: the glyph chip in constraints.ts carries its symbol.
   if (!isDimension(c)) return undefined;
-  // A committed dimension's spec is its own constraint: the operands, and the
-  // placement it was given, so it draws where the user put it.
   return layoutDimension(
     { kind: c.kind, operands: operandsOf(c), offset: c.placement },
     index,
@@ -258,9 +242,9 @@ export function dimensionLayout(
 }
 
 /**
- * The text a dimension shows: a radius reads `R40` the way Inventor draws it,
- * every other kind the plain number. Formatting is the caller's — a locale's
- * number format, say — so only the prefix is decided here.
+ * The text a dimension shows: a radius reads `R40` the way Inventor draws it, every other kind the
+ * plain number. Formatting is the caller's — a locale's number format, say — so only the prefix is
+ * decided here.
  */
 export function dimensionText(
   value: number,

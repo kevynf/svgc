@@ -1,10 +1,9 @@
 /**
  * Safe parameter-expression engine for the sketch editor.
  *
- * Users type expressions into dimension edit boxes and the parameters dialog
- * (`d0 * 2`, `width / 2 - 5`, `sqrt(a^2 + b^2)`). This module parses and
- * evaluates them without `eval`, `Function` or any other dynamic code
- * execution, and resolves interdependent parameter sets.
+ * Users type expressions into dimension edit boxes and the parameters dialog (`d0 * 2`, `width / 2
+ * - 5`, `sqrt(a^2 + b^2)`). This module parses and evaluates them without `eval`, `Function` or any
+ * other dynamic code execution, and resolves interdependent parameter sets.
  *
  * Grammar (whitespace is allowed between any two tokens):
  *   expr    := term (('+' | '-') term)*
@@ -14,13 +13,9 @@
  *   primary := number unit* | name unit* | '(' expr ')' unit* | call unit*
  *   call    := name '(' [expr (',' expr)*] ')'
  *
- * Units are converted to their numeric factor while parsing (no dimensional
- * analysis is performed), so a unit suffix never appears in the AST.
+ * Units are converted to their numeric factor while parsing (no dimensional analysis is performed),
+ * so a unit suffix never appears in the AST.
  */
-
-// ---------------------------------------------------------------------------
-// AST
-// ---------------------------------------------------------------------------
 
 export type Expr =
   | { readonly kind: 'number'; readonly value: number }
@@ -33,10 +28,6 @@ export type Expr =
       readonly right: Expr;
     }
   | { readonly kind: 'call'; readonly fn: string; readonly args: readonly Expr[] };
-
-// ---------------------------------------------------------------------------
-// Errors
-// ---------------------------------------------------------------------------
 
 export type ExprErrorCode =
   | 'syntax'
@@ -96,10 +87,6 @@ function rangeOf(expr: Expr): Range | undefined {
   }
 }
 
-// ---------------------------------------------------------------------------
-// Language tables
-// ---------------------------------------------------------------------------
-
 /** Sources longer than this are rejected before parsing. */
 const MAX_SOURCE_LENGTH = 1000;
 /** Maximum nesting of parentheses, unary operators, exponents and calls. */
@@ -150,8 +137,8 @@ const FUNCTIONS = new Map<string, FnSpec>([
 ]);
 
 /**
- * Functions that return NaN for out-of-domain input. Every evaluated value is
- * finite by construction, so a NaN result from one of these is a domain error.
+ * Functions that return NaN for out-of-domain input. Every evaluated value is finite by
+ * construction, so a NaN result from one of these is a domain error.
  */
 const DOMAIN_CHECKED = new Set(['sqrt', 'asin', 'acos']);
 

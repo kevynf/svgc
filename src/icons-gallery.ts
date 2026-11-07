@@ -1,4 +1,3 @@
-// Dev-only page (icons.html): constraint glyphs next to Tabler icons at UI sizes.
 import { CONSTRAINT_GLYPHS, constraintIcon } from './ui/constraint-icons';
 import { icon } from './ui/icons';
 import type { IconName } from './ui/icons';

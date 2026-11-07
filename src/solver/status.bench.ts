@@ -3,8 +3,8 @@ import type { Id } from '../core/model';
 import type { Sketch } from '../core/sketch';
 
 /**
- * Generators and timing harness for `analyzeStatus`. Kept out of the normal
- * test run: see `status.bench.test.ts` for how to run it.
+ * Generators and timing harness for `analyzeStatus`. Kept out of the normal test run: see
+ * `status.bench.test.ts` for how to run it.
  */
 
 export interface Generated {
@@ -16,9 +16,8 @@ export interface Generated {
 }
 
 /**
- * A grid of rectangles, each its own component, with a mix of fully
- * constrained, partly constrained and completely free cells — the shape a real
- * sketch tends to have.
+ * A grid of rectangles, each its own component, with a mix of fully constrained, partly constrained
+ * and completely free cells — the shape a real sketch tends to have.
  */
 export function rectangleGrid(columns: number, rows: number): Generated {
   const b = new SketchBuilder();
@@ -58,10 +57,9 @@ export function rectangleGrid(columns: number, rows: number): Generated {
 }
 
 /**
- * Worst case for the shortcuts if the segments between rows were constrained:
- * every point is connected. As drawn, each row's horizontal constraints form
- * their own component because the vertical segments carry no constraints, so
- * `components` counts the rows.
+ * Worst case for the shortcuts if the segments between rows were constrained: every point is
+ * connected. As drawn, each row's horizontal constraints form their own component because the
+ * vertical segments carry no constraints, so `components` counts the rows.
  */
 export function polylineGrid(columns: number, rows: number): Generated {
   const b = new SketchBuilder();
@@ -120,7 +118,6 @@ export function benchmark(
       ['rectangles', rectangleGrid],
       ['polyline rows', polylineGrid],
     ] as const) {
-      // 4 points per rectangle cell; the polyline grid uses `points` directly.
       const columns = 10;
       const rows = Math.max(
         1,

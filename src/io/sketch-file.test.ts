@@ -18,7 +18,10 @@ function edited(result: ParamResult): Sketch {
   return result.sketch;
 }
 
-/** One of everything: every entity kind, every constraint kind, a parameter with a source, one without, and an artboard. */
+/**
+ * One of everything: every entity kind, every constraint kind, a parameter with a source, one
+ * without, and an artboard.
+ */
 function rich(): Sketch {
   const b = new SketchBuilder().param('gap', 24).param('span', 60);
 
@@ -29,7 +32,6 @@ function rich(): Sketch {
   const top = b.line(origin, right);
   const left = b.line(origin, above);
 
-  // A second point the arc's start is meant to land on.
   const landing = b.point(0, 0);
   b.constrain({ kind: 'coincident', a: landing, b: origin });
 
@@ -80,7 +82,6 @@ describe('serializeSketch', () => {
         '}',
       ].join('\n'),
     );
-    // The same sketch always comes to the same bytes, whatever instance it is.
     expect(serializeSketch(bare)).toBe(text);
     expect(serializeSketch(rich())).toBe(serializeSketch(rich()));
     expect(text).not.toContain('\t');
@@ -235,7 +236,6 @@ describe('refusals', () => {
   });
 
   it('refuses a coordinate that is not a finite number', () => {
-    // JSON has no infinity, but 1e999 overflows to it once parsed.
     const entities = [
       { kind: 'point', id: 'e1', x: 1e999, y: 0 },
       { kind: 'point', id: 'e1', x: null, y: 0 },

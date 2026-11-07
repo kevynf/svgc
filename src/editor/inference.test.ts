@@ -11,7 +11,6 @@ function curveScene() {
   const line = b.line(a, c);
   const center = b.point(200, 0);
   const circle = b.circle(center, 40);
-  // Quarter arc centered at (300, 0) from (340, 0) clockwise on screen to (300, 40).
   const arcCenter = b.point(300, 0);
   const arcStart = b.point(340, 0);
   const arcEnd = b.point(300, 40);
@@ -108,7 +107,6 @@ describe('infer', () => {
 
   it('projects the cursor onto an arc inside its sweep', () => {
     const s = curveScene();
-    // Four units out along the radius at 30°, i.e. (338.10, 22).
     const r = infer(
       s.sketch,
       { x: 300 + 44 * Math.cos(degToRad(30)), y: 44 * Math.sin(degToRad(30)) },
@@ -125,7 +123,6 @@ describe('infer', () => {
 
   it('ignores a circle position outside the arc sweep', () => {
     const s = curveScene();
-    // Mirror of the point above: on the arc's circle but before its start.
     const cursor = { x: 300 + 40 * Math.cos(degToRad(-30)), y: 40 * Math.sin(degToRad(-30)) };
     const r = infer(s.sketch, cursor, { tolerance: 5, enabled: true });
     expect(r.constraints).toEqual([]);
@@ -145,7 +142,6 @@ describe('infer', () => {
       },
     );
     expect(r.constraints).toEqual([{ kind: 'horizontal' }]);
-    // x still aligns to p, but q (one unit off in y) is left alone.
     expect(r.alignments).toEqual([{ source: s.p, axis: 'x' }]);
     expect(r.position).toEqual({ x: 150, y: 250 });
   });
@@ -162,7 +158,6 @@ describe('infer', () => {
       },
     );
     expect(r.constraints).toEqual([{ kind: 'vertical' }]);
-    // t sits one unit off in x, but that axis is pinned by the constraint.
     expect(r.alignments).toEqual([]);
     expect(r.position).toEqual({ x: 0, y: 300 });
   });
@@ -397,7 +392,6 @@ describe('infer', () => {
       },
     );
     expect(r.constraints).toEqual([{ kind: 'horizontal' }]);
-    // s is nearer in x but already tied to the anchor by the constraint.
     expect(r.alignments).toEqual([{ source: s.p, axis: 'x' }]);
     expect(r.position).toEqual({ x: 150, y: 250 });
   });

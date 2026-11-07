@@ -1,6 +1,4 @@
-/* Constraint symbols on the canvas. New tokens are prefixed --constraint-. */
 :root {
-  /* A raised surface, so the glyph reads against the grid. */
   --constraint-chip: var(--bg-chrome-raised);
   --constraint-chip-opacity: 0.9;
   --constraint-chip-border: var(--border-subtle);
@@ -8,10 +6,6 @@
   --constraint-ink-hover: var(--geom-hover);
   --constraint-ink-selected: var(--geom-selected);
 
-  /* Dimensions are annotation, not geometry: muted ink for the lines and
-     arrowheads, full text brightness for the value, hover and selection tones
-     borrowed from the geometry palette, and a canvas-coloured halo behind the
-     value text. */
   --constraint-dimension: var(--text-muted);
   --constraint-dimension-text: var(--text);
   --constraint-dimension-hover: var(--geom-hover);
@@ -19,9 +13,6 @@
   --constraint-dimension-halo: var(--bg-canvas);
 }
 
-/* Symbols never take pointer events: the editor picks in world space, like the
-   rest of the canvas, and asks `hitConstraint` which symbol is under the
-   cursor. */
 .constraint-symbol {
   pointer-events: none;
 }
@@ -53,16 +44,10 @@
   color: var(--constraint-ink-selected);
 }
 
-/* Zoomed far out the chips would swamp the drawing, so only the glyph is drawn. */
 .constraint-symbol[data-density='dense'] .constraint-chip {
   display: none;
 }
 
-/* Dimensions: the measured value of a distance, radius or angle constraint.
-   Like the symbols, the group takes no pointer events — the editor picks in
-   world space and asks `hitConstraint`. The whole thing reads as a thin
-   annotation layer over the drawing rather than geometry in its own right:
-   hairline strokes, muted ink, arrowheads only heavy enough to read. */
 .dimension {
   pointer-events: none;
 }
@@ -75,7 +60,6 @@
   stroke-width: 1;
 }
 
-/* Witness lines only point at the dimension line, so they recede further still. */
 .dimension-witness {
   fill: none;
   stroke: var(--constraint-dimension);
@@ -90,17 +74,13 @@
 .dimension-text {
   fill: var(--constraint-dimension-text);
   font-size: 11px;
-  /* The value must stay legible where the dimension line runs behind it.
-     Painting a canvas-coloured stroke UNDER the fill (paint-order) punches a
-     clean halo around the glyphs and knocks the line out locally — no need to
-     measure the text and split the dimension line into two segments. */
+
   paint-order: stroke;
   stroke: var(--constraint-dimension-halo);
   stroke-width: 3;
   stroke-linejoin: round;
 }
 
-/* Hover and selection recolour the whole dimension, exactly as the chips do. */
 .dimension.hover .dimension-line,
 .dimension.hover .dimension-leader,
 .dimension.hover .dimension-arc,

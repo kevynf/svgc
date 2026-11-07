@@ -18,9 +18,9 @@ export type CommandFactory = (editor: Editor) => Command;
 export type ParamEdit = ParamResult | { readonly ok: false; readonly error: 'solveFailed' };
 
 /**
- * Owns all editor state: the sketch (with undo history), the latest solve
- * diagnostics, selection, hover, the viewport and the active command.
- * Everything that changes state goes through here and ends in `changed()`.
+ * Owns all editor state: the sketch (with undo history), the latest solve diagnostics, selection,
+ * hover, the viewport and the active command. Everything that changes state goes through here and
+ * ends in `changed()`.
  */
 export class Editor {
   readonly viewport = new Viewport();
@@ -57,9 +57,9 @@ export class Editor {
   }
 
   /**
-   * Per-entity constraint status of the current sketch. Computed on demand
-   * and cached per sketch snapshot; while a drag is in progress the last
-   * resting state's status is kept, since probing every frame is too costly.
+   * Per-entity constraint status of the current sketch. Computed on demand and cached per sketch
+   * snapshot; while a drag is in progress the last resting state's status is kept, since probing
+   * every frame is too costly.
    */
   get status(): ReadonlyMap<Id, EntityStatus> {
     const sketch = this.sketch;
@@ -100,18 +100,15 @@ export class Editor {
     return () => this.listeners.delete(listener);
   }
 
-  // ── Sketch edits ────────────────────────────────────────────────────────
-
   /** Solves a candidate sketch without committing; used for conflict checks. */
   evaluate(next: Sketch): SolveResult {
     return this.solver.solve(next);
   }
 
   /**
-   * Starts a new document: replaces the sketch and clears the history (opening
-   * a file, or New). The sketch is re-solved exactly like the constructor does,
-   * so a document that does not solve keeps its geometry and reports why, and
-   * nothing of the previous one is left selected or remembered.
+   * Starts a new document: replaces the sketch and clears the history (opening a file, or New). The
+   * sketch is re-solved exactly like the constructor does, so a document that does not solve keeps
+   * its geometry and reports why, and nothing of the previous one is left selected or remembered.
    */
   reset(sketch: Sketch): void {
     this.result = this.solver.solve(sketch);
@@ -141,7 +138,6 @@ export class Editor {
   }
 
   beginDrag(): void {
-    // Make sure the resting status is cached before the sketch starts changing.
     void this.status;
     this.dragging = true;
     this.history.begin();
@@ -156,7 +152,6 @@ export class Editor {
   }
 
   endDrag(): void {
-    // Re-solve without the drag target so diagnostics reflect the resting state.
     const result = this.solver.solve(this.sketch);
     this.result = result;
     if (result.outcome !== 'failed') this.history.replace(result.sketch);
@@ -227,7 +222,10 @@ export class Editor {
     this.commit({ ...this.sketch, entities });
   }
 
-  /** Sets the value of a dimensional constraint (distance, radius, angle); the solver re-solves and may move geometry. */
+  /**
+   * Sets the value of a dimensional constraint (distance, radius, angle); the solver re-solves and
+   * may move geometry.
+   */
   setConstraintValue(id: Id, value: Value): void {
     const current = this.sketch.constraints.find((c) => c.id === id);
     if (
@@ -235,7 +233,6 @@ export class Editor {
       !(current.kind === 'distance' || current.kind === 'radius' || current.kind === 'angle')
     )
       return;
-    // A parameter name the sketch does not define would make translate() throw a SketchError.
     if (typeof value === 'string' && this.sketch.params[value] === undefined) return;
     this.commit(setConstraintValue(this.sketch, id, value));
   }
@@ -261,17 +258,13 @@ export class Editor {
   }
 
   /**
-   * Commits an accepted parameter edit as a single undo step. A rejected one is
-   * returned unchanged and nothing is committed: the dialog shows the reason
-   * inline, so no notice is raised here.
+   * Commits an accepted parameter edit as a single undo step. A rejected one is returned unchanged
+   * and nothing is committed: the dialog shows the reason inline, so no notice is raised here.
    */
   private applyParam(result: ParamResult): ParamEdit {
     if (!result.ok) return result;
-    // A failed re-solve leaves the sketch untouched and commit() reports it.
     return this.commit(result.sketch) ? result : { ok: false, error: 'solveFailed' };
   }
-
-  // ── Selection and hover ────────────────────────────────────────────────
 
   select(ids: Iterable<Id>, mode: 'replace' | 'add' | 'toggle' | 'remove' = 'replace'): void {
     const next = mode === 'replace' ? new Set<Id>() : new Set(this.selected);
@@ -299,8 +292,6 @@ export class Editor {
     this.cursor = world;
     this.changed();
   }
-
-  // ── Commands ────────────────────────────────────────────────────────────
 
   hasCommand(id: string): boolean {
     return this.commands.has(id);
@@ -335,8 +326,6 @@ export class Editor {
   repeatLastCommand(): void {
     if (this.lastCommand !== undefined) this.startCommand(this.lastCommand);
   }
-
-  // ── View ────────────────────────────────────────────────────────────────
 
   zoomAll(): void {
     const bounds = sketchBounds(this.sketch);

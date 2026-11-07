@@ -1,9 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
 
-// The dialog module imports `icon()` from icons.ts, which builds a DOMParser
-// when it is first imported. Under the Node test runner that global is absent,
-// so provide a minimal one before the module under test is imported — the
-// dialog's DOM is never built here, only its pure helpers are exercised.
 vi.hoisted(() => {
   Object.defineProperty(globalThis, 'DOMParser', {
     configurable: true,
@@ -21,8 +17,6 @@ import { nextParamName, paramErrorMessage } from './parameters';
 const zh = new Translator('zh-CN');
 const en = new Translator('en');
 
-// DOM behavior (focus trap, Esc, backdrop click) needs a real document and is
-// exercised in the browser preview; only the pure helpers are unit-tested here.
 describe('nextParamName', () => {
   it('starts at d0 on an empty sketch', () => {
     expect(nextParamName({})).toBe('d0');

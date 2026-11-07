@@ -60,7 +60,6 @@ function enter(editor: Editor): void {
 function drag(editor: Editor, from: Vec2, to: Vec2): void {
   const command = editor.activeCommand;
   command.pointerDown?.(at(from.x, from.y));
-  // Well past the drag threshold, so the press becomes a drag, not a click.
   command.pointerMove?.(at(from.x + 10, from.y));
   command.pointerMove?.(at(to.x, to.y));
   command.pointerUp?.(at(to.x, to.y));
@@ -168,7 +167,6 @@ describe('reflectPoint', () => {
     const b = { x: 100, y: 0 };
     expect(reflectPoint({ x: 30, y: 40 }, a, b)).toEqual({ x: 30, y: -40 });
     expect(reflectPoint({ x: 30, y: -40 }, a, b)).toEqual({ x: 30, y: 40 });
-    // A point on the line stays where it is.
     expect(reflectPoint({ x: 30, y: 0 }, a, b)).toEqual({ x: 30, y: 0 });
   });
 
@@ -184,15 +182,12 @@ describe('reflectPoint', () => {
   });
 
   it('mirrors a point about a diagonal line', () => {
-    // About y = x a reflection swaps the two coordinates.
     const swapped = reflectPoint({ x: 6, y: 2 }, { x: 0, y: 0 }, { x: 10, y: 10 });
     expect(swapped.x).toBeCloseTo(2, 12);
     expect(swapped.y).toBeCloseTo(6, 12);
-    // A point on the line stays where it is.
     const on = reflectPoint({ x: 4, y: 4 }, { x: 0, y: 0 }, { x: 10, y: 10 });
     expect(on.x).toBeCloseTo(4, 12);
     expect(on.y).toBeCloseTo(4, 12);
-    // A line that neither axis follows, offset from the origin.
     const off = reflectPoint({ x: 0, y: 10 }, { x: 10, y: 10 }, { x: 40, y: 10 });
     expect(off.x).toBeCloseTo(0, 12);
     expect(off.y).toBeCloseTo(10, 12);
@@ -209,12 +204,10 @@ describe('mirror', () => {
     expect(editor.activeCommand.prompt()).toEqual({ key: 'prompts.mirror' });
     expect(editor.activeCommand.overlay?.()).toEqual([]);
     clickCurve(editor, line);
-    // Picking curves keeps the same prompt; the set is what changes.
     expect(editor.activeCommand.prompt()).toEqual({ key: 'prompts.mirror' });
     expect(highlightIds(editor)).toEqual([line]);
     enter(editor);
     expect(editor.activeCommand.prompt()).toEqual({ key: 'prompts.mirrorLine' });
-    // The set stays highlighted while the axis is pending.
     expect(highlightIds(editor)).toEqual([line]);
   });
 
@@ -223,8 +216,6 @@ describe('mirror', () => {
     const line = b.line(b.point(20, 10), b.point(60, 40));
     const editor = editorWith(b.build());
     editor.startCommand('mirror');
-    // Enter with nothing picked goes nowhere: there is no mirror to place yet,
-    // and the key is still the command's, so it cannot restart it either.
     expect(press(editor, 'Enter')).toBe(true);
     expect(editor.activeCommand.prompt()).toEqual({ key: 'prompts.mirror' });
     clickCurve(editor, line);
@@ -245,7 +236,6 @@ describe('mirror', () => {
     const before = snapshot(editor);
     clickCurve(editor, axis);
 
-    // One step: two points, a line between them, and a symmetric per point.
     expect(countKind(editor, 'point')).toBe(6);
     expect(countKind(editor, 'line')).toBe(3);
     expect(kinds(editor.sketch)).toEqual(['symmetric', 'symmetric']);
@@ -257,7 +247,6 @@ describe('mirror', () => {
       [copy.p1, p1, axis],
       [copy.p2, p2, axis],
     ]);
-    // The copy is the reflection of the original, which has not moved.
     expectAt(editor, copy.p1, mirrored(pointOf(editor, p1)));
     expectAt(editor, copy.p2, mirrored(pointOf(editor, p2)));
     expectUnmoved(editor, before);
@@ -275,8 +264,6 @@ describe('mirror', () => {
     const before = snapshot(editor);
     clickCurve(editor, axis);
 
-    // One step: the reflected centre, a circle of the same radius, and the two
-    // constraints that hold it there.
     expect(countKind(editor, 'point')).toBe(4);
     expect(countKind(editor, 'circle')).toBe(2);
     expect(kinds(editor.sketch)).toEqual(['symmetric', 'equal']);
@@ -305,16 +292,11 @@ describe('mirror', () => {
     const before = snapshot(editor);
     clickCurve(editor, axis);
 
-    // One step: three points and an arc between them, no extra radius
-    // constraint — the radius follows from the reflected points.
     expect(countKind(editor, 'point')).toBe(8);
     expect(countKind(editor, 'arc')).toBe(2);
     expect(kinds(editor.sketch)).toEqual(['symmetric', 'symmetric', 'symmetric']);
     const copy = editor.sketch.entities.find((e) => e.kind === 'arc' && e.id !== arc);
     if (copy?.kind !== 'arc') throw new Error('the mirror added no arc');
-    // A reflection reverses orientation, and the model stores arcs running
-    // clockwise on screen from start to end, so the copy's ends are the
-    // reflected originals the other way round.
     expect(editor.sketch.constraints.map(constraintRefs)).toEqual([
       [copy.center, center, axis],
       [copy.start, end, axis],
@@ -348,7 +330,6 @@ describe('mirror', () => {
     enter(editor);
     clickCurve(editor, axis);
 
-    // The lot in one undo step: three curves, six constraints.
     expect(countKind(editor, 'line')).toBe(3);
     expect(countKind(editor, 'circle')).toBe(2);
     expect(countKind(editor, 'arc')).toBe(2);
@@ -385,8 +366,6 @@ describe('mirror', () => {
     const a1 = b.point(AXIS_FROM.x, AXIS_FROM.y);
     const a2 = b.point(AXIS_TO.x, AXIS_TO.y);
     const axis = b.line(a1, a2);
-    // The axis is pinned, so the mirror has one place to be: a sketch left
-    // free would let the solver slide the axis as well as the dragged point.
     b.fix(a1);
     b.fix(a2);
     const editor = editorWith(b.build());
@@ -402,10 +381,8 @@ describe('mirror', () => {
     editor.startCommand('select');
     drag(editor, pointOf(editor, p1), { x: 40, y: 30 });
 
-    // The symmetric constraints keep the copy where the original reflects to.
     expectAt(editor, p1, { x: 40, y: 30 });
     expectAt(editor, copy.p1, { x: -40, y: 30 });
-    // The end that was not dragged has not moved, and neither has its mirror.
     expectAt(editor, p2, { x: 60, y: 40 });
     expectAt(editor, copy.p2, { x: -60, y: 40 });
   });
@@ -456,16 +433,12 @@ describe('mirror', () => {
     const axis = axisLine(b);
     const editor = editorWith(b.build());
     editor.startCommand('mirror');
-    // Clicking the axis while still picking adds it to the set, like any other
-    // curve; Enter is what moves the command on to the axis.
     clickCurve(editor, axis);
     expect(highlightIds(editor)).toEqual([axis]);
     expect(editor.sketch.constraints).toEqual([]);
     clickCurve(editor, line);
     expect(highlightIds(editor)).toEqual([axis, line]);
     enter(editor);
-    // The same line a second time is no axis: mirroring it about itself would
-    // only lay a copy on top of it.
     const entities = editor.sketch.entities.length;
     clickCurve(editor, axis);
     expect(editor.activeCommand.prompt()).toEqual({ key: 'prompts.mirrorLine' });
@@ -480,12 +453,10 @@ describe('mirror', () => {
     axisLine(b);
     const editor = editorWith(b.build());
     editor.startCommand('mirror');
-    // Picking: a point is not a curve, so the click picks nothing.
     clickEntity(editor, p);
     expect(highlightIds(editor)).toEqual([]);
     clickCurve(editor, line);
     enter(editor);
-    // The axis: a point is not a line either.
     const entities = editor.sketch.entities.length;
     clickEntity(editor, p);
     expect(editor.sketch.entities).toHaveLength(entities);
@@ -503,12 +474,10 @@ describe('mirror', () => {
     clickCurve(editor, circle);
     enter(editor);
     const entities = editor.sketch.entities.length;
-    // A circle is no mirror line, so the click is not an axis.
     clickCurve(editor, circle);
     expect(editor.sketch.entities).toHaveLength(entities);
     expect(editor.sketch.constraints).toEqual([]);
     expect(editor.activeCommand.prompt()).toEqual({ key: 'prompts.mirrorLine' });
-    // The line still mirrors the circle.
     clickCurve(editor, axis);
     expect(kinds(editor.sketch)).toEqual(['symmetric', 'equal']);
   });
@@ -532,7 +501,6 @@ describe('mirror', () => {
     expect(copies).toHaveLength(2);
     const copyOfConstruction = copies.find((e) => Math.abs(pointOf(editor, e.p1).y - 10) < 1);
     const copyOfNormal = copies.find((e) => Math.abs(pointOf(editor, e.p1).y - 60) < 1);
-    // Inventor mirrors the flag, so the construction line's copy is construction.
     expect(copyOfConstruction?.construction).toBe(true);
     expect(copyOfNormal?.construction).toBeUndefined();
   });
@@ -550,7 +518,6 @@ describe('mirror', () => {
     clickCurve(editor, line);
     enter(editor);
     clickCurve(editor, axis);
-    // Back to picking with an empty set, ready for the next one.
     expect(editor.activeCommand.id).toBe('mirror');
     expect(editor.activeCommand.prompt()).toEqual({ key: 'prompts.mirror' });
     expect(highlightIds(editor)).toEqual([]);

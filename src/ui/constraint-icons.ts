@@ -1,7 +1,3 @@
-// Constraint glyphs drawn for this project in the Tabler Icons outline style:
-// 24×24 grid, 2px padding, 2px round strokes, currentColor, no fills. Points are
-// r=2 rings with the curve broken around them, as in Tabler's `line` icon.
-
 export const CONSTRAINT_GLYPHS = [
   'coincident',
   'fix',

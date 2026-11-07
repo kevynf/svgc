@@ -41,15 +41,17 @@ export function degToRad(deg: number): number {
 }
 
 /**
- * Direction of the line a→b in degrees, counterclockwise on screen. The SVG Y
- * axis points down, so a line toward the upper right reads +45°.
+ * Direction of the line a→b in degrees, counterclockwise on screen. The SVG Y axis points down, so
+ * a line toward the upper right reads +45°.
  */
 export function screenAngle(dx: number, dy: number): number {
   const deg = (Math.atan2(-dy, dx) * 180) / Math.PI;
   return deg === 0 ? 0 : deg;
 }
 
-/** Direction of a→b in degrees, counterclockwise on screen: the point-to-point form of screenAngle. */
+/**
+ * Direction of a→b in degrees, counterclockwise on screen: the point-to-point form of screenAngle.
+ */
 export function directionDeg(a: Vec2, b: Vec2): number {
   return screenAngle(b.x - a.x, b.y - a.y);
 }
@@ -59,7 +61,6 @@ export function perpendicularDistance(p: Vec2, a: Vec2, b: Vec2): number {
   const dx = b.x - a.x;
   const dy = b.y - a.y;
   const len = Math.hypot(dx, dy);
-  // A degenerate line has no direction; the distance to its point is the only sensible answer.
   if (len === 0) return distance(p, a);
   return Math.abs((p.x - a.x) * dy - (p.y - a.y) * dx) / len;
 }
@@ -70,8 +71,8 @@ export function normalizeDeg(deg: number): number {
 }
 
 /**
- * Angle from the line a1–a2 to the line b1–b2, counterclockwise on screen and
- * wrapped into [0, 360): the convention the model's angle constraint uses.
+ * Angle from the line a1–a2 to the line b1–b2, counterclockwise on screen and wrapped into [0,
+ * 360): the convention the model's angle constraint uses.
  */
 export function lineAngleDeg(a1: Vec2, a2: Vec2, b1: Vec2, b2: Vec2): number {
   return normalizeDeg(directionDeg(b1, b2) - directionDeg(a1, a2));
@@ -107,8 +108,8 @@ export function lineIntersection(p1: Vec2, p2: Vec2, p3: Vec2, p4: Vec2): Vec2 |
 }
 
 /**
- * Unit normal to a segment, on the outward side of a clockwise outline: above
- * a left-to-right line, right of a top-to-bottom one.
+ * Unit normal to a segment, on the outward side of a clockwise outline: above a left-to-right line,
+ * right of a top-to-bottom one.
  */
 export function segmentNormal(a: Vec2, b: Vec2): Vec2 {
   const d = sub(b, a);
@@ -128,8 +129,6 @@ export function sub(a: Vec2, b: Vec2): Vec2 {
 export function scaled(v: Vec2, k: number): Vec2 {
   return { x: v.x * k, y: v.y * k };
 }
-
-// ── Extent ───────────────────────────────────────────────────────────────
 
 export interface Extent {
   readonly minX: number;
@@ -217,10 +216,9 @@ function union(a: Extent | undefined, b: Extent | undefined): Extent | undefined
 }
 
 /**
- * Exact extent of a sketch's geometry (points, lines, circles, arcs — an arc's
- * sweep crossings included), or undefined when there is no geometry. Curves
- * referencing a missing point contribute nothing rather than throwing, so a
- * sketch mid-edit still has a usable extent.
+ * Exact extent of a sketch's geometry (points, lines, circles, arcs — an arc's sweep crossings
+ * included), or undefined when there is no geometry. Curves referencing a missing point contribute
+ * nothing rather than throwing, so a sketch mid-edit still has a usable extent.
  */
 export function sketchExtent(sketch: Sketch): Extent | undefined {
   const index = indexEntities(sketch);

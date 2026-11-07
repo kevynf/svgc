@@ -9,47 +9,42 @@ import type { Solver } from './solver';
 import type { Translation } from './translate';
 
 /**
- * Per-entity constraint status, the way Inventor colours a sketch: an entity
- * is "fully constrained" when nothing about it can still move.
+ * Per-entity constraint status, the way Inventor colours a sketch: an entity is "fully constrained"
+ * when nothing about it can still move.
  *
  * ## Approach: probing
  *
- * planegcs only reports a *global* degree-of-freedom count, so per-entity
- * status has to be derived. We probe: for every point we push a
- * `coordinate_x` / `coordinate_y` constraint pinning it at its current
- * position and watch the DOF.
+ * planegcs only reports a *global* degree-of-freedom count, so per-entity status has to be derived.
+ * We probe: for every point we push a `coordinate_x` / `coordinate_y` constraint pinning it at its
+ * current position and watch the DOF.
  *
  * - DOF unchanged → the pin is linearly dependent on the existing equations,
  *   so that coordinate is already determined.
  * - DOF down by one → the pin carries new information, so the coordinate is
  *   free.
  *
- * x and y are probed separately (a point on a horizontal line has y
- * determined but x free) and a circle's radius is probed with a
- * `circle_radius` constraint. `fix` lowers to two coordinate constraints that
- * share one sketch constraint id, so probing needs constraint ids of its own:
+ * x and y are probed separately (a point on a horizontal line has y determined but x free) and a
+ * circle's radius is probed with a `circle_radius` constraint. `fix` lowers to two coordinate
+ * constraints that share one sketch constraint id, so probing needs constraint ids of its own:
  * `Solver.probeSystem` hands us the lowered translation plus the live wrapper.
  *
- * Probing never applies the solution, so the parameters stay at the pushed
- * (input) coordinates and every probe is exactly satisfied. That is not a
- * detail: applying the solution leaves ~1e-9 of noise, and on a nearly
- * degenerate sketch that noise is enough to flip planegcs' QR rank decision.
+ * Probing never applies the solution, so the parameters stay at the pushed (input) coordinates and
+ * every probe is exactly satisfied. That is not a detail: applying the solution leaves ~1e-9 of
+ * noise, and on a nearly degenerate sketch that noise is enough to flip planegcs' QR rank decision.
  *
  * ## Why not one batch of all pins
  *
- * Pushing every candidate pin at once and reading the redundant list does
- * **not** work. planegcs identifies dependent constraints with a pivoted QR,
- * so with several redundant rows it reports an order-dependent and incomplete
- * subset — and redundancy *between the pins themselves* is not redundancy with
- * respect to the sketch. Two points held at a fixed distance from each other
- * but otherwise free are the counter-example: neither point is determined, yet
- * pinning all four coordinates makes one pin redundant relative to the others.
+ * Pushing every candidate pin at once and reading the redundant list does **not** work. planegcs
+ * identifies dependent constraints with a pivoted QR, so with several redundant rows it reports an
+ * order-dependent and incomplete subset — and redundancy *between the pins themselves* is not
+ * redundancy with respect to the sketch. Two points held at a fixed distance from each other but
+ * otherwise free are the counter-example: neither point is determined, yet pinning all four
+ * coordinates makes one pin redundant relative to the others.
  *
  * ## Making probing affordable
  *
- * One solve per candidate is too slow, because every solve re-runs a full QR
- * diagnosis whose cost grows with the whole system. Four shortcuts keep it
- * cheap without giving up correctness:
+ * One solve per candidate is too slow, because every solve re-runs a full QR diagnosis whose cost
+ * grows with the whole system. Four shortcuts keep it cheap without giving up correctness:
  *
  * 1. **Independent components.** Entities are split into groups linked by
  *    constraints (plus the points those constraints need). Groups share no
@@ -107,10 +102,9 @@ interface Loaded {
 }
 
 /**
- * Upper bound on how many probes go into one planegcs solve. Bigger batches
- * make the QR diagnosis planegcs runs per solve allocate a proportionally
- * bigger Jacobian, and a batch can only ever be resolved as a whole, so there
- * is nothing to gain from going large.
+ * Upper bound on how many probes go into one planegcs solve. Bigger batches make the QR diagnosis
+ * planegcs runs per solve allocate a proportionally bigger Jacobian, and a batch can only ever be
+ * resolved as a whole, so there is nothing to gain from going large.
  */
 const MAX_BATCH = 128;
 
@@ -126,9 +120,6 @@ export function analyzeStatus(solver: Solver, sketch: Sketch): StatusReport {
   }
 
   const { components, derived } = componentsOf(sketch);
-  // First pass: load each component once. A conflict anywhere means the whole
-  // sketch is reported as under-constrained (the UI shows conflicts
-  // separately), and a component with no DOF left needs no probing.
   const pending: Component[] = [];
   for (const component of components) {
     if (!component.grounded) {
@@ -147,7 +138,6 @@ export function analyzeStatus(solver: Solver, sketch: Sketch): StatusReport {
     pending.push(component);
   }
 
-  // Second pass: probe the components that still have degrees of freedom.
   for (const component of pending) {
     const loaded = load(solver, sketch, component);
     if (loaded === undefined) {
@@ -162,8 +152,6 @@ export function analyzeStatus(solver: Solver, sketch: Sketch): StatusReport {
       statuses.set(entity.id, entityStatus(entity, settled));
     }
   }
-  // Unconstrained geometry: its points carry the whole answer, and a circle's
-  // radius is free by definition.
   for (const entity of derived) {
     statuses.set(entity.id, derivedStatus(entity, statuses));
   }
@@ -187,10 +175,9 @@ function load(solver: Solver, sketch: Sketch, component: Component): Loaded | un
 }
 
 /**
- * The coordinates to probe for a component: each point's x and y next to each
- * other, then the radius of each circle. Keeping a point's two coordinates
- * adjacent matters: a point whose coordinates share a fate (the common case)
- * is then settled by a single solve instead of two.
+ * The coordinates to probe for a component: each point's x and y next to each other, then the
+ * radius of each circle. Keeping a point's two coordinates adjacent matters: a point whose
+ * coordinates share a fate (the common case) is then settled by a single solve instead of two.
  */
 function probesOf(component: Component, translation: Translation): Probe[] {
   const probes: Probe[] = [];
@@ -255,8 +242,8 @@ function entityStatus(
 }
 
 /**
- * Status of geometry no constraint refers to. It adds nothing to the system,
- * so its points decide everything — and its own radius, for a circle, is free.
+ * Status of geometry no constraint refers to. It adds nothing to the system, so its points decide
+ * everything — and its own radius, for a circle, is free.
  */
 function derivedStatus(entity: Entity, statuses: ReadonlyMap<Id, EntityStatus>): EntityStatus {
   const of = (id: Id): boolean => statuses.get(id) === 'fully';
@@ -275,11 +262,10 @@ function derivedStatus(entity: Entity, statuses: ReadonlyMap<Id, EntityStatus>):
 /**
  * Splits the sketch into components that cannot influence each other.
  *
- * The link is a *constraint*: two entities belong together when some
- * constraint refers to both, or to a curve built on one of them and to the
- * other. Points that only unconstrained geometry passes through are not
- * linked, because such geometry adds no equations and no parameters — which
- * is what keeps, say, the rows of a polyline grid apart.
+ * The link is a *constraint*: two entities belong together when some constraint refers to both, or
+ * to a curve built on one of them and to the other. Points that only unconstrained geometry passes
+ * through are not linked, because such geometry adds no equations and no parameters — which is what
+ * keeps, say, the rows of a polyline grid apart.
  */
 function componentsOf(sketch: Sketch): { components: Component[]; derived: Entity[] } {
   const index = indexEntities(sketch);
@@ -314,7 +300,6 @@ function componentsOf(sketch: Sketch): { components: Component[]; derived: Entit
     if (ra !== rb) parent.set(ra, rb);
   };
 
-  // Active curves tie their points together.
   for (const id of active) {
     const entity = index.get(id);
     if (entity === undefined) continue;
@@ -322,7 +307,6 @@ function componentsOf(sketch: Sketch): { components: Component[]; derived: Entit
       if (active.has(point)) union(id, point);
     }
   }
-  // Constraints tie everything they refer to.
   for (const constraint of sketch.constraints) {
     const refs = constraintRefs(constraint).filter((id) => active.has(id));
     for (const ref of refs) union(ref, refs[0]!);
@@ -345,8 +329,6 @@ function componentsOf(sketch: Sketch): { components: Component[]; derived: Entit
     else bucket.push(constraint);
   }
 
-  // Buckets are filled in sketch order, so each component's entities keep the
-  // order the user drew them — which is what keeps probes grouped sensibly.
   const components: Component[] = [...byRoot].map(([root, entities]) => {
     const constraints = constraintsOf.get(root) ?? [];
     return { entities, constraints, grounded: constraints.some((c) => c.kind === 'fix') };
@@ -356,21 +338,18 @@ function componentsOf(sketch: Sketch): { components: Component[]; derived: Entit
 }
 
 /**
- * Group-tests candidate probes against a component's system. A batch that
- * leaves the DOF alone is entirely determined, one that lowers it by its own
- * size is entirely free; anything else — including a batch that fails to solve
- * — is narrowed. See the file comment for why this is sound while trusting the
- * redundant list of a large batch is not.
+ * Group-tests candidate probes against a component's system. A batch that leaves the DOF alone is
+ * entirely determined, one that lowers it by its own size is entirely free; anything else —
+ * including a batch that fails to solve — is narrowed. See the file comment for why this is sound
+ * while trusting the redundant list of a large batch is not.
  *
- * Narrowing stops at small batches, which are probed a point at a time: the
- * recursion's internal nodes would otherwise cost as many solves as the
- * answers they produce.
+ * Narrowing stops at small batches, which are probed a point at a time: the recursion's internal
+ * nodes would otherwise cost as many solves as the answers they produce.
  *
- * Every batch starts from a freshly loaded system. `clear_by_id` removes a
- * constraint but not the parameter its value lives in, so reusing one system
- * would grow planegcs' parameter vector — and the Jacobian it builds for each
- * solve — with every probe, which is what runs it out of memory on big
- * sketches.
+ * Every batch starts from a freshly loaded system. `clear_by_id` removes a constraint but not the
+ * parameter its value lives in, so reusing one system would grow planegcs' parameter vector — and
+ * the Jacobian it builds for each solve — with every probe, which is what runs it out of memory on
+ * big sketches.
  */
 function resolve(
   gcs: GcsWrapper,

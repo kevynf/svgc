@@ -1,4 +1,3 @@
-// Tabler Icons (MIT), outline style: 24×24 grid, 2px round strokes, currentColor.
 import artboard from '@tabler/icons/outline/artboard.svg?raw';
 import arrowBackUp from '@tabler/icons/outline/arrow-back-up.svg?raw';
 import arrowBarToRight from '@tabler/icons/outline/arrow-bar-to-right.svg?raw';
@@ -64,9 +63,9 @@ const sources = {
 } as const;
 
 /**
- * Ink offsets, in grid units, for the few Tabler icons whose geometry is not
- * centered in the 24×24 viewBox (measured with getBBox). Applied so a row or
- * column of icons lines up. Most icons need nothing.
+ * Ink offsets, in grid units, for the few Tabler icons whose geometry is not centered in the 24×24
+ * viewBox (measured with getBBox). Applied so a row or column of icons lines up. Most icons need
+ * nothing.
  */
 const OPTICAL: Partial<Record<IconName, readonly [number, number]>> = {
   dimension: [0, 0.5],

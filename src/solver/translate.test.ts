@@ -80,7 +80,6 @@ describe('translate', () => {
 
     const { primitives, gcsIdOf, constraintOf } = translate(b.build());
     const lowered = primitives.at(-1);
-    // One primitive for the whole constraint: no coincident pair is added first.
     expect(lowered).toEqual({
       id: String(primitives.length),
       type: 'p2p_symmetric_ppl',
@@ -97,7 +96,6 @@ describe('translate', () => {
     const p2 = b.point(100, 0);
     const a = b.point(20, 0);
     const axis = b.line(p1, p2);
-    // A line mirrored to a point, then a point standing in for the mirror line.
     b.constrain({ kind: 'symmetric', a, b: axis, line: axis });
     b.constrain({ kind: 'symmetric', a, b: p2, line: a });
     expect(() => translate(b.build())).toThrow(SketchError);
@@ -128,8 +126,6 @@ describe('translate', () => {
     b.constrain({ kind: 'angle', a: line, b: other, value: 45, driven: true });
 
     const { primitives, constraintOf } = translate(b.build());
-    // Points and curves only: no constraint primitive was pushed, so a driven
-    // dimension is never even mapped back to a sketch constraint.
     expect(primitives.map((p) => p.type)).toEqual([
       'point',
       'point',
@@ -161,8 +157,6 @@ describe('translate', () => {
       'circle_radius',
       'l2l_angle_ll',
     ]);
-    // planegcs measures angles in math orientation, so counterclockwise on
-    // screen — positive here — is negative there.
     expect(primitives.at(-1)).toMatchObject({ type: 'l2l_angle_ll', angle: -Math.PI / 4 });
     expect(constraintOf.size).toBe(3);
   });

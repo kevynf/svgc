@@ -10,7 +10,6 @@ function scene() {
   const line = b.line(a, c);
   const center = b.point(50, 50);
   const circle = b.circle(center, 20);
-  // Quarter arc from (80, 50) clockwise on screen to (50, 80).
   const ac = b.point(50, 50);
   const as = b.point(80, 50);
   const ae = b.point(50, 80);

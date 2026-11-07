@@ -5,14 +5,14 @@ import { createSolver } from './solver';
 import type { Solver } from './solver';
 
 /**
- * Performance measurement for `analyzeStatus`. Skipped by default so the normal
- * test run stays fast. Run it with:
+ * Performance measurement for `analyzeStatus`. Skipped by default so the normal test run stays
+ * fast. Run it with:
  *
  *   $env:SVGC_BENCH = '1'
  *   npm.cmd exec -- vitest run src/solver/status.bench.test.ts --disableConsoleIntercept
  *
- * The environment is read through a global rather than `process` so the file
- * type-checks without @types/node.
+ * The environment is read through a global rather than `process` so the file type-checks without
+ * @types/node.
  */
 const env = (globalThis as { process?: { env?: Record<string, string | undefined> } }).process?.env;
 const BENCH = env?.['SVGC_BENCH'] === '1';

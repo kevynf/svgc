@@ -1,7 +1,3 @@
-/* Constraint-inference settings dialog (Inventor's 约束设置): a modal card over
-   a dimmed backdrop. Imported by constraint-settings.ts; every rule is scoped
-   under .settings / .settings-backdrop so it cannot leak into the shell. */
-
 :root {
   --settings-width: 320px;
   --settings-backdrop: rgb(0 0 0 / 0.5);
@@ -33,7 +29,6 @@
   box-shadow: var(--settings-shadow);
 }
 
-/* The card is focused programmatically; the ring is for keyboard users only. */
 .settings:focus {
   outline: none;
 }

@@ -19,7 +19,9 @@ function toPick(result: InferenceResult): Pick {
   return { position: result.position, result };
 }
 
-/** Resolves a pick inside a draft: reuses a snapped point or creates one with its curve constraints. */
+/**
+ * Resolves a pick inside a draft: reuses a snapped point or creates one with its curve constraints.
+ */
 function resolve(draft: Draft, pick: Pick): Id {
   const id = placePoint(draft, pick.result);
   if (snappedPoint(pick.result) === undefined) applyInferred(draft, pick.result, { point: id });
@@ -109,8 +111,8 @@ export class LineCommand extends DrawCommand {
   }
 
   /**
-   * Dragging out of the start point (or of the curve the start point ends)
-   * creates a tangent arc, as in Inventor; a plain drag draws a segment.
+   * Dragging out of the start point (or of the curve the start point ends) creates a tangent arc,
+   * as in Inventor; a plain drag draws a segment.
    */
   pointerDown(input: PointerInput): void {
     const start = this.start;
@@ -390,9 +392,9 @@ function arcPreview(arc: ArcShape): OverlayShape[] {
 }
 
 /**
- * The arc leaving `from` in direction `tangent` (unit) and ending at `to`,
- * oriented clockwise on screen like model arcs. Undefined when `to` lies on
- * the tangent line (the arc would be infinitely large).
+ * The arc leaving `from` in direction `tangent` (unit) and ending at `to`, oriented clockwise on
+ * screen like model arcs. Undefined when `to` lies on the tangent line (the arc would be infinitely
+ * large).
  */
 export function tangentArc(
   from: Vec2,
@@ -406,7 +408,6 @@ export function tangentArc(
   if (Math.abs(dn) < 1e-6 * Math.sqrt(len2) || len2 === 0) return undefined;
   const r = len2 / (2 * dn);
   const center = { x: from.x + n.x * r, y: from.y + n.y * r };
-  // Moving clockwise on screen (increasing angle) at `from` heads along (-sin a, cos a).
   const a = angleOf(center, from);
   const swapped = -Math.sin(a) * tangent.x + Math.cos(a) * tangent.y < 0;
   const params = swapped ? arcParams(center, to, from) : arcParams(center, from, to);
@@ -433,7 +434,6 @@ function exitDirection(editor: Editor, curveId: Id, at: Id): Vec2 | undefined {
     const p = point(at);
     if (c === undefined || p === undefined) return undefined;
     const a = angleOf(c, p);
-    // Clockwise travel continues past `end`; leaving at `start` reverses it.
     return curve.end === at
       ? { x: -Math.sin(a), y: Math.cos(a) }
       : { x: Math.sin(a), y: -Math.cos(a) };
@@ -456,9 +456,8 @@ export function circumcenter(a: Vec2, b: Vec2, c: Vec2): Vec2 | undefined {
 }
 
 /**
- * The arc through `start`, `through` and `end`, oriented the way the model
- * stores arcs (clockwise on screen). `swapped` tells whether start and end
- * had to trade places for that.
+ * The arc through `start`, `through` and `end`, oriented the way the model stores arcs (clockwise
+ * on screen). `swapped` tells whether start and end had to trade places for that.
  */
 export function threePointArc(
   start: Vec2,

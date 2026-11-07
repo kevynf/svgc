@@ -30,8 +30,8 @@ export interface ArtboardPreset {
 const MIN_SIZE = 1;
 
 /**
- * Page sizes for the marking menu. Sizes are in CSS px at 96 dpi; A4 is
- * 210×297 mm and Letter is 8.5×11 in.
+ * Page sizes for the marking menu. Sizes are in CSS px at 96 dpi; A4 is 210×297 mm and Letter is
+ * 8.5×11 in.
  */
 export const PRESETS: readonly ArtboardPreset[] = [
   { id: 'a4Portrait', width: 794, height: 1123 },
@@ -103,10 +103,9 @@ export function sameArtboard(a: Artboard | undefined, b: Artboard | undefined): 
 }
 
 /**
- * Resizes `a` by dragging `handle` to `to`. The gripped edge follows the
- * cursor while the opposite edge stays put; `fromCenter` mirrors the grip
- * about the centre and `keepAspect` preserves the original aspect ratio.
- * The result keeps at least 1 px per axis but is not snapped to whole px.
+ * Resizes `a` by dragging `handle` to `to`. The gripped edge follows the cursor while the opposite
+ * edge stays put; `fromCenter` mirrors the grip about the centre and `keepAspect` preserves the
+ * original aspect ratio. The result keeps at least 1 px per axis but is not snapped to whole px.
  */
 export function resizeArtboard(
   a: Artboard,
@@ -130,7 +129,6 @@ export function resizeArtboard(
   const moveTop = handle.includes('n');
   const moveBottom = handle.includes('s');
 
-  // Per-axis size measured from the anchor toward the cursor.
   let w: number;
   if (fromCenter && (moveLeft || moveRight)) w = Math.abs(to.x - cx) * 2;
   else if (moveRight) w = to.x - left;
@@ -145,13 +143,12 @@ export function resizeArtboard(
 
   if (keepAspect && aspect > 0 && Number.isFinite(aspect)) {
     if ((moveLeft || moveRight) && (moveTop || moveBottom)) {
-      // Corner grip: the dominant axis drives so the corner tracks the cursor.
       if (w / aspect > h) h = w / aspect;
       else w = h * aspect;
     } else if (moveLeft || moveRight) {
-      h = w / aspect; // horizontal edge: width drives
+      h = w / aspect;
     } else {
-      w = h * aspect; // vertical edge: height drives
+      w = h * aspect;
     }
   }
 

@@ -124,18 +124,14 @@ describe('trim and extend', () => {
     const before = snapshot(editor);
     click(editor, 100, 0);
 
-    // The end landed exactly on the other line, and the curve is shorter for it.
     expectAt(editor, c, { x: 50, y: 0 });
     expect(distance(pointOf(editor, a), pointOf(editor, c))).toBeCloseTo(50, 9);
     expect(
       perpendicularDistance(pointOf(editor, c), pointOf(editor, top), pointOf(editor, bottom)),
     ).toBeCloseTo(0, 9);
     expectUnmovedExcept(editor, before, [c]);
-    // The command stays active for the next trim.
     expect(editor.activeCommand.id).toBe('trim');
 
-    // The same click under extend: the crossing is inside the span, not beyond
-    // the end, so there is nowhere to lengthen the line to.
     const extend = editorWith(b.build());
     extend.startCommand('extend');
     const untouched = snapshot(extend);
@@ -162,8 +158,6 @@ describe('trim and extend', () => {
     expectUnmovedExcept(editor, before, [c]);
     expect(editor.activeCommand.id).toBe('extend');
 
-    // The same click under trim: the crossing lies beyond the end, so there is
-    // nothing inside the span to shorten the line to.
     const trim = editorWith(b.build());
     trim.startCommand('trim');
     const untouched = snapshot(trim);
@@ -183,7 +177,6 @@ describe('trim and extend', () => {
 
     const editor = editorWith(b.build());
     editor.startCommand('trim');
-    // The far end goes to the nearer crossing, the near end to its own.
     click(editor, 100, 0);
     click(editor, 0, 0);
 
@@ -223,8 +216,6 @@ describe('trim and extend', () => {
     const before = snapshot(editor);
     click(editor, 200, 0);
 
-    // The circle meets the line at x = 40 and x = 160; the end goes to the
-    // nearer of the two.
     expectAt(editor, c, { x: 160, y: 0 });
     expect(distance(pointOf(editor, c), pointOf(editor, center))).toBeCloseTo(60, 9);
     expectUnmovedExcept(editor, before, [c]);
@@ -236,8 +227,6 @@ describe('trim and extend', () => {
     const start = b.point(50, 0);
     const end = b.point(0, 50);
     b.arc(center, start, end);
-    // A line through the centre at 60°: it meets the arc's circle at 60°, inside
-    // the quarter turn, and at 240°, outside it.
     const dir = Math.PI / 3;
     const far = b.point(-100 * Math.cos(dir), -100 * Math.sin(dir));
     const near = b.point(100 * Math.cos(dir), 100 * Math.sin(dir));
@@ -248,13 +237,11 @@ describe('trim and extend', () => {
     const before = snapshot(editor);
     click(editor, 0, 50);
 
-    // The end lands on the crossing inside the sweep, never on the one past it.
     const landing = { x: 50 * Math.cos(dir), y: 50 * Math.sin(dir) };
     expectAt(editor, end, landing);
     expect(
       perpendicularDistance(pointOf(editor, end), pointOf(editor, far), pointOf(editor, near)),
     ).toBeCloseTo(0, 9);
-    // The arc kept its centre and radius, and is shorter for it.
     const params = arcParams(pointOf(editor, center), pointOf(editor, start), pointOf(editor, end));
     expect(params.radius).toBeCloseTo(50, 9);
     expect(params.endAngle - params.startAngle).toBeCloseTo(dir, 9);
@@ -268,8 +255,6 @@ describe('trim and extend', () => {
     const start = b.point(50, 0);
     const end = b.point(0, 50);
     b.arc(center, start, end);
-    // A line through the centre at 100°: both of its crossings sit past the
-    // quarter turn's end angle, so neither of them is on the arc.
     const dir = (100 * Math.PI) / 180;
     b.line(
       b.point(-100 * Math.cos(dir), -100 * Math.sin(dir)),
@@ -296,14 +281,11 @@ describe('trim and extend', () => {
     const editor = editorWith(b.build());
     editor.startCommand('trim');
     const before = snapshot(editor);
-    // The middle of the span: the cursor is on the curve, but no end of either
-    // curve is within reach of it.
     click(editor, 50, 0);
     expectUnmoved(editor, before);
     expect(editor.message).toBeUndefined();
     expect(editor.activeCommand.id).toBe('trim');
 
-    // And empty space, where there is no curve at all.
     click(editor, 400, 400);
     expectUnmoved(editor, before);
     expect(editor.message).toBeUndefined();
@@ -318,8 +300,6 @@ describe('trim and extend', () => {
     const editor = editorWith(b.build());
     editor.startCommand('trim');
     const before = snapshot(editor);
-    // On the rim, to the right of the centre: a curve is hovered, but a circle
-    // has no ends, so there is nothing to pick.
     hover(editor, 50, 0);
     expect(editor.hover).toBe(round);
     click(editor, 50, 0);
@@ -346,7 +326,6 @@ describe('trim and extend', () => {
     expect(snapAt(editor)).toEqual({ x: 50, y: 0 });
     expect(highlightIds(editor)).toEqual([span]);
 
-    // Extending aims the same end the other way: beyond it, where nothing is.
     const extend = editorWith(b.build());
     extend.startCommand('extend');
     hover(extend, 100, 0);
@@ -365,12 +344,10 @@ describe('trim and extend', () => {
 
     const editor = editorWith(b.build());
     editor.startCommand('trim');
-    // The middle of the span: no end is within reach, so there is nowhere to mark.
     hover(editor, 50, 0);
     expect(snapAt(editor)).toBeUndefined();
     expect(highlightIds(editor)).toEqual([span]);
 
-    // A circle has no ends at all, so hovering one never marks anything either.
     hover(editor, 340, 0);
     expect(editor.hover).toBe(round);
     expect(snapAt(editor)).toBeUndefined();
@@ -389,13 +366,8 @@ describe('trim and extend', () => {
     const editor = editorWith(b.build());
     editor.startCommand('trim');
     const before = snapshot(editor);
-    // Both curves run through the clicked point; the hit test keeps the earlier
-    // one, the span drawn first.
     click(editor, 100, 0);
 
-    // The end moved to the crossing, and the leg built on it followed: it now
-    // runs from the new position of the shared point to its own end, which the
-    // trim never touched.
     expectAt(editor, shared, { x: 50, y: 0 });
     expectAt(editor, tip, { x: 100, y: 60 });
     expectUnmovedExcept(editor, before, [shared]);
@@ -407,8 +379,6 @@ describe('trim and extend', () => {
     const c = b.point(10, 1);
     const span = b.line(a, c);
     across(b, 5);
-    // The end's own line is already over-constrained: it cannot be horizontal,
-    // vertical and 50 long at once, so no position the trim asks for solves.
     b.constrain({ kind: 'horizontal', a: span });
     b.constrain({ kind: 'vertical', a: span });
     b.constrain({ kind: 'distance', a: a, b: c, value: 50 });
