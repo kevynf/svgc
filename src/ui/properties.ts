@@ -4,7 +4,15 @@ import type { Translator } from '../i18n/i18n';
 import { constraintIcon } from './constraint-icons';
 import { Names } from './names';
 import { buildModel, findField, parseNumber } from './properties-model';
-import type { ConstraintItem, EditTarget, Field, PropertiesModel, Row, Section, TriState } from './properties-model';
+import type {
+  ConstraintItem,
+  EditTarget,
+  Field,
+  PropertiesModel,
+  Row,
+  Section,
+  TriState,
+} from './properties-model';
 import './properties.css';
 
 const COLLAPSE_KEY = 'svgc.propertiesCollapsed';
@@ -287,7 +295,10 @@ export class PropertiesPanel {
     const status = model.status;
     this.badge.hidden = status === undefined;
     if (status !== undefined) {
-      setText(this.badge, this.t.t(status === 'fully' ? 'status.fullyConstrained' : 'properties.under'));
+      setText(
+        this.badge,
+        this.t.t(status === 'fully' ? 'status.fullyConstrained' : 'properties.under'),
+      );
       this.badge.dataset['state'] = status;
     }
 
@@ -334,7 +345,9 @@ export class PropertiesPanel {
   // ── Editing ────────────────────────────────────────────────────────────
 
   private constructionSection(): { curves: readonly Id[]; state: TriState } | undefined {
-    return this.model.sections.find((s): s is Extract<Section, { kind: 'construction' }> => s.kind === 'construction');
+    return this.model.sections.find(
+      (s): s is Extract<Section, { kind: 'construction' }> => s.kind === 'construction',
+    );
   }
 
   /** Applies what the user typed; the solved value is read back afterwards. */
@@ -381,7 +394,11 @@ export class PropertiesPanel {
     }
     const point = editor.sketch.entities.find((e) => e.id === target.point);
     if (point?.kind !== 'point') return;
-    editor.setPointPosition(target.point, target.axis === 'x' ? value : point.x, target.axis === 'y' ? value : point.y);
+    editor.setPointPosition(
+      target.point,
+      target.axis === 'x' ? value : point.x,
+      target.axis === 'y' ? value : point.y,
+    );
   }
 
   private showError(input: HTMLInputElement, key: string, detail: string): void {
@@ -407,7 +424,12 @@ export class PropertiesPanel {
     if (!(active instanceof HTMLInputElement) || !this.body.contains(active)) return undefined;
     const key = active.dataset['field'];
     if (key === undefined) return undefined;
-    return { key, value: active.value, start: active.selectionStart ?? 0, end: active.selectionEnd ?? 0 };
+    return {
+      key,
+      value: active.value,
+      start: active.selectionStart ?? 0,
+      end: active.selectionEnd ?? 0,
+    };
   }
 
   private restoreFocus(focus: FocusState | undefined): void {
@@ -431,7 +453,10 @@ export class PropertiesPanel {
     this.element.dataset['collapsed'] = String(this.collapsed);
     this.body.hidden = this.collapsed;
     this.toggle.setAttribute('aria-expanded', String(!this.collapsed));
-    this.toggle.setAttribute('aria-label', this.t.t(this.collapsed ? 'properties.expand' : 'properties.collapse'));
+    this.toggle.setAttribute(
+      'aria-label',
+      this.t.t(this.collapsed ? 'properties.expand' : 'properties.collapse'),
+    );
     this.toggle.replaceChildren(chevron(this.collapsed ? 'left' : 'right'));
   }
 }

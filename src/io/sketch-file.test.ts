@@ -93,7 +93,11 @@ describe('serializeSketch', () => {
   });
 
   it('writes the sections a sketch does have', () => {
-    const sketch: Sketch = { ...bare, expressions: { side: 'gap * 2' }, artboard: box(0, 0, 10, 10) };
+    const sketch: Sketch = {
+      ...bare,
+      expressions: { side: 'gap * 2' },
+      artboard: box(0, 0, 10, 10),
+    };
     expect(JSON.parse(serializeSketch(sketch))).toEqual({
       format: SKETCH_FILE_FORMAT,
       version: SKETCH_FILE_VERSION,
@@ -139,18 +143,25 @@ describe('refusals', () => {
   });
 
   it('refuses a document of another format', () => {
-    expect(parseSketch(JSON.stringify({ format: 'svgc-scene', version: 1, sketch: bare }))).toEqual({
-      ok: false,
-      error: 'unknownFormat',
-    });
+    expect(parseSketch(JSON.stringify({ format: 'svgc-scene', version: 1, sketch: bare }))).toEqual(
+      {
+        ok: false,
+        error: 'unknownFormat',
+      },
+    );
   });
 
   it('refuses a version newer than the one it writes', () => {
-    expect(parseSketch(file(bare, SKETCH_FILE_VERSION + 1))).toEqual({ ok: false, error: 'unsupportedVersion' });
+    expect(parseSketch(file(bare, SKETCH_FILE_VERSION + 1))).toEqual({
+      ok: false,
+      error: 'unsupportedVersion',
+    });
   });
 
   it('refuses a version that is not a number', () => {
-    expect(parseSketch(JSON.stringify({ format: SKETCH_FILE_FORMAT, version: '1', sketch: bare }))).toEqual({
+    expect(
+      parseSketch(JSON.stringify({ format: SKETCH_FILE_FORMAT, version: '1', sketch: bare })),
+    ).toEqual({
       ok: false,
       error: 'unsupportedVersion',
     });
@@ -161,9 +172,18 @@ describe('refusals', () => {
   });
 
   it('refuses a sketch that is missing a core section', () => {
-    expect(parseSketch(file({ constraints: [], params: {} }))).toEqual({ ok: false, error: 'invalidSketch' });
-    expect(parseSketch(file({ entities: [], params: {} }))).toEqual({ ok: false, error: 'invalidSketch' });
-    expect(parseSketch(file({ entities: [], constraints: [] }))).toEqual({ ok: false, error: 'invalidSketch' });
+    expect(parseSketch(file({ constraints: [], params: {} }))).toEqual({
+      ok: false,
+      error: 'invalidSketch',
+    });
+    expect(parseSketch(file({ entities: [], params: {} }))).toEqual({
+      ok: false,
+      error: 'invalidSketch',
+    });
+    expect(parseSketch(file({ entities: [], constraints: [] }))).toEqual({
+      ok: false,
+      error: 'invalidSketch',
+    });
   });
 
   it('refuses a sketch that is not an object', () => {
@@ -176,13 +196,24 @@ describe('refusals', () => {
   });
 
   it('refuses a core section of the wrong type', () => {
-    expect(parseSketch(file({ entities: {}, constraints: [], params: {} }))).toEqual({ ok: false, error: 'invalidSketch' });
-    expect(parseSketch(file({ entities: [], constraints: {}, params: {} }))).toEqual({ ok: false, error: 'invalidSketch' });
-    expect(parseSketch(file({ entities: [], constraints: [], params: [] }))).toEqual({ ok: false, error: 'invalidSketch' });
+    expect(parseSketch(file({ entities: {}, constraints: [], params: {} }))).toEqual({
+      ok: false,
+      error: 'invalidSketch',
+    });
+    expect(parseSketch(file({ entities: [], constraints: {}, params: {} }))).toEqual({
+      ok: false,
+      error: 'invalidSketch',
+    });
+    expect(parseSketch(file({ entities: [], constraints: [], params: [] }))).toEqual({
+      ok: false,
+      error: 'invalidSketch',
+    });
   });
 
   it('refuses an entity of an unknown kind', () => {
-    expect(parseSketch(file({ entities: [{ kind: 'spline', id: 'e1' }], constraints: [], params: {} }))).toEqual({
+    expect(
+      parseSketch(file({ entities: [{ kind: 'spline', id: 'e1' }], constraints: [], params: {} })),
+    ).toEqual({
       ok: false,
       error: 'invalidSketch',
     });
@@ -220,7 +251,11 @@ describe('refusals', () => {
   });
 
   it('refuses a constraint of an unknown kind', () => {
-    expect(parseSketch(file({ entities: [], constraints: [{ kind: 'symmetric', id: 'c1', a: 'e1' }], params: {} }))).toEqual({
+    expect(
+      parseSketch(
+        file({ entities: [], constraints: [{ kind: 'symmetric', id: 'c1', a: 'e1' }], params: {} }),
+      ),
+    ).toEqual({
       ok: false,
       error: 'invalidSketch',
     });
@@ -247,7 +282,10 @@ describe('refusals', () => {
 
   it('refuses an optional field that is present but malformed', () => {
     const entities = [{ kind: 'line', id: 'e1', p1: 'e2', p2: 'e3', construction: 'yes' }];
-    expect(parseSketch(file({ entities, constraints: [], params: {} }))).toEqual({ ok: false, error: 'invalidSketch' });
+    expect(parseSketch(file({ entities, constraints: [], params: {} }))).toEqual({
+      ok: false,
+      error: 'invalidSketch',
+    });
 
     const constraints = [
       { kind: 'horizontal', id: 'c1', a: 'e1', b: 5 },
@@ -272,14 +310,20 @@ describe('refusals', () => {
       null,
     ];
     for (const artboard of artboards) {
-      expect(parseSketch(file({ ...bare, artboard }))).toEqual({ ok: false, error: 'invalidSketch' });
+      expect(parseSketch(file({ ...bare, artboard }))).toEqual({
+        ok: false,
+        error: 'invalidSketch',
+      });
     }
   });
 
   it('refuses a malformed expressions record', () => {
     const records = [{ gap: 24 }, { gap: null }, [], 'gap'];
     for (const expressions of records) {
-      expect(parseSketch(file({ ...bare, expressions }))).toEqual({ ok: false, error: 'invalidSketch' });
+      expect(parseSketch(file({ ...bare, expressions }))).toEqual({
+        ok: false,
+        error: 'invalidSketch',
+      });
     }
   });
 
@@ -331,18 +375,27 @@ describe('forward compatibility', () => {
 
   it('ignores an extra field on the artboard', () => {
     const artboard = { ...box(0, 0, 10, 10), unit: 'px' };
-    expect(parseSketch(file({ ...bare, artboard }))).toEqual({ ok: true, sketch: { ...bare, artboard: box(0, 0, 10, 10) } });
+    expect(parseSketch(file({ ...bare, artboard }))).toEqual({
+      ok: true,
+      sketch: { ...bare, artboard: box(0, 0, 10, 10) },
+    });
   });
 });
 
 describe('normalisation', () => {
   it('copies the artboard as it is', () => {
     const artboard = box(-20, -20, 240, 120);
-    expect(parseSketch(serializeSketch({ ...bare, artboard }))).toEqual({ ok: true, sketch: { ...bare, artboard } });
+    expect(parseSketch(serializeSketch({ ...bare, artboard }))).toEqual({
+      ok: true,
+      sketch: { ...bare, artboard },
+    });
   });
 
   it('keeps an empty expressions record as it is', () => {
-    expect(parseSketch(file({ ...bare, expressions: {} }))).toEqual({ ok: true, sketch: { ...bare, expressions: {} } });
+    expect(parseSketch(file({ ...bare, expressions: {} }))).toEqual({
+      ok: true,
+      sketch: { ...bare, expressions: {} },
+    });
   });
 
   it('keeps ids verbatim', () => {

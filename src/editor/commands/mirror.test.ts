@@ -140,7 +140,8 @@ function radiusOf(editor: Editor, id: Id): number {
   const e = editor.sketch.entities.find((x) => x.id === id);
   if (e?.kind === 'circle') return e.radius;
   if (e?.kind !== 'arc') throw new Error(`"${id}" is not a curve`);
-  return arcParams(pointOf(editor, e.center), pointOf(editor, e.start), pointOf(editor, e.end)).radius;
+  return arcParams(pointOf(editor, e.center), pointOf(editor, e.start), pointOf(editor, e.end))
+    .radius;
 }
 
 function countKind(editor: Editor, kind: 'point' | 'line' | 'circle' | 'arc'): number {
@@ -172,8 +173,14 @@ describe('reflectPoint', () => {
   });
 
   it('mirrors a point about a vertical line', () => {
-    expect(reflectPoint({ x: 4, y: 7 }, { x: 10, y: -50 }, { x: 10, y: 50 })).toEqual({ x: 16, y: 7 });
-    expect(reflectPoint({ x: 10, y: 7 }, { x: 10, y: -50 }, { x: 10, y: 50 })).toEqual({ x: 10, y: 7 });
+    expect(reflectPoint({ x: 4, y: 7 }, { x: 10, y: -50 }, { x: 10, y: 50 })).toEqual({
+      x: 16,
+      y: 7,
+    });
+    expect(reflectPoint({ x: 10, y: 7 }, { x: 10, y: -50 }, { x: 10, y: 50 })).toEqual({
+      x: 10,
+      y: 7,
+    });
   });
 
   it('mirrors a point about a diagonal line', () => {
@@ -242,7 +249,9 @@ describe('mirror', () => {
     expect(countKind(editor, 'point')).toBe(6);
     expect(countKind(editor, 'line')).toBe(3);
     expect(kinds(editor.sketch)).toEqual(['symmetric', 'symmetric']);
-    const copy = editor.sketch.entities.find((e) => e.kind === 'line' && e.id !== line && e.id !== axis);
+    const copy = editor.sketch.entities.find(
+      (e) => e.kind === 'line' && e.id !== line && e.id !== axis,
+    );
     if (copy?.kind !== 'line') throw new Error('the mirror added no line');
     expect(editor.sketch.constraints.map(constraintRefs)).toEqual([
       [copy.p1, p1, axis],
@@ -352,7 +361,9 @@ describe('mirror', () => {
       'symmetric',
       'symmetric',
     ]);
-    const copyLine = editor.sketch.entities.find((e) => e.kind === 'line' && e.id !== line && e.id !== axis);
+    const copyLine = editor.sketch.entities.find(
+      (e) => e.kind === 'line' && e.id !== line && e.id !== axis,
+    );
     const copyCircle = editor.sketch.entities.find((e) => e.kind === 'circle' && e.id !== circle);
     const copyArc = editor.sketch.entities.find((e) => e.kind === 'arc' && e.id !== arc);
     if (copyLine?.kind !== 'line' || copyCircle?.kind !== 'circle' || copyArc?.kind !== 'arc') {
@@ -383,7 +394,9 @@ describe('mirror', () => {
     clickCurve(editor, line);
     enter(editor);
     clickCurve(editor, axis);
-    const copy = editor.sketch.entities.find((e) => e.kind === 'line' && e.id !== line && e.id !== axis);
+    const copy = editor.sketch.entities.find(
+      (e) => e.kind === 'line' && e.id !== line && e.id !== axis,
+    );
     if (copy?.kind !== 'line') throw new Error('the mirror added no line');
 
     editor.startCommand('select');
@@ -513,7 +526,8 @@ describe('mirror', () => {
     clickCurve(editor, axis);
 
     const copies = editor.sketch.entities.filter(
-      (e): e is Line => e.kind === 'line' && e.id !== construction && e.id !== normal && e.id !== axis,
+      (e): e is Line =>
+        e.kind === 'line' && e.id !== construction && e.id !== normal && e.id !== axis,
     );
     expect(copies).toHaveLength(2);
     const copyOfConstruction = copies.find((e) => Math.abs(pointOf(editor, e.p1).y - 10) < 1);

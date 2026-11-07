@@ -2,7 +2,13 @@ import wasmUrl from '@salusoft89/planegcs/dist/planegcs_dist/planegcs.wasm?url';
 import { emptySketch } from './core/sketch';
 import { ArtboardCommand } from './editor/commands/artboard';
 import { CONSTRAINT_COMMANDS } from './editor/commands/constrain';
-import { ArcCommand, CircleCommand, LineCommand, PointCommand, RectangleCommand } from './editor/commands/draw';
+import {
+  ArcCommand,
+  CircleCommand,
+  LineCommand,
+  PointCommand,
+  RectangleCommand,
+} from './editor/commands/draw';
 import { DimensionCommand } from './editor/commands/dimension';
 import { DrivenDimensionCommand } from './editor/commands/driven';
 import { MirrorCommand } from './editor/commands/mirror';

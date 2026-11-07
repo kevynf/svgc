@@ -114,14 +114,19 @@ function radiusOf(editor: Editor, id: Id): number {
   const e = editor.sketch.entities.find((x) => x.id === id);
   if (e?.kind === 'circle') return e.radius;
   if (e?.kind !== 'arc') throw new Error(`"${id}" is not a curve`);
-  return arcParams(pointOf(editor, e.center), pointOf(editor, e.start), pointOf(editor, e.end)).radius;
+  return arcParams(pointOf(editor, e.center), pointOf(editor, e.start), pointOf(editor, e.end))
+    .radius;
 }
 
 /** An arc's clockwise sweep, as `arcParams` measures it. */
 function sweepOf(editor: Editor, id: Id): number {
   const e = editor.sketch.entities.find((x) => x.id === id);
   if (e?.kind !== 'arc') throw new Error(`"${id}" is not an arc`);
-  const { endAngle, startAngle } = arcParams(pointOf(editor, e.center), pointOf(editor, e.start), pointOf(editor, e.end));
+  const { endAngle, startAngle } = arcParams(
+    pointOf(editor, e.center),
+    pointOf(editor, e.start),
+    pointOf(editor, e.end),
+  );
   return endAngle - startAngle;
 }
 
@@ -175,7 +180,11 @@ describe('fillet', () => {
     expect(commitEdit(editor, '', false)).toBe(true);
 
     // An arc, held by a radius, tangent to both trimmed lines.
-    expect(kinds(editor.sketch).filter((k) => k === 'tangent' || k === 'radius')).toEqual(['tangent', 'tangent', 'radius']);
+    expect(kinds(editor.sketch).filter((k) => k === 'tangent' || k === 'radius')).toEqual([
+      'tangent',
+      'tangent',
+      'radius',
+    ]);
     const arc = filletArc(editor);
     expect(radiusOf(editor, arc.id)).toBeCloseTo(r, 6);
     // The arc is the minor one: a quarter turn, not the three-quarter way around.

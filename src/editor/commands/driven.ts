@@ -68,7 +68,11 @@ export class DrivenDimensionCommand extends ConstraintCommand {
   protected override complete(constraint: ConstraintInput): void {
     // `build()` only produces the three dimensional kinds; the test is what
     // narrows the constraint to them.
-    if (constraint.kind === 'distance' || constraint.kind === 'radius' || constraint.kind === 'angle') {
+    if (
+      constraint.kind === 'distance' ||
+      constraint.kind === 'radius' ||
+      constraint.kind === 'angle'
+    ) {
       this.phase = { kind: 'placing', constraint, cursor: this.cursor };
     }
     this.editor.viewChanged();
@@ -103,14 +107,21 @@ export class DrivenDimensionCommand extends ConstraintCommand {
 
   override prompt(): Message {
     // Placing is the last step there is: a driven dimension opens no value box.
-    return this.status ?? (this.phase.kind === 'placing' ? { key: 'prompts.dimensionPlace' } : super.prompt());
+    return (
+      this.status ??
+      (this.phase.kind === 'placing' ? { key: 'prompts.dimensionPlace' } : super.prompt())
+    );
   }
 
   override overlay(): readonly OverlayShape[] {
     const phase = this.phase;
     if (phase.kind === 'pick') return super.overlay();
     const spec = { ...specOf(phase.constraint), placement: phase.cursor };
-    const layout = layoutDimension(spec, indexEntities(this.editor.sketch), this.editor.viewport.scale);
+    const layout = layoutDimension(
+      spec,
+      indexEntities(this.editor.sketch),
+      this.editor.viewport.scale,
+    );
     const highlight: OverlayShape = { kind: 'highlight', ids: spec.operands };
     // Degenerate operands have no layout to draw, but their highlight stands.
     if (layout === undefined) return [highlight];

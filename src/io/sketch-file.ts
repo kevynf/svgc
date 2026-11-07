@@ -14,7 +14,8 @@ export const SKETCH_FILE_FORMAT = 'svgc-sketch';
 /** The format version this module writes and accepts. */
 export const SKETCH_FILE_VERSION = 1;
 
-export type SketchFileError = 'invalidJson' | 'unknownFormat' | 'unsupportedVersion' | 'invalidSketch';
+export type SketchFileError =
+  'invalidJson' | 'unknownFormat' | 'unsupportedVersion' | 'invalidSketch';
 
 export type SketchFileResult =
   | { readonly ok: true; readonly sketch: Sketch }
@@ -141,7 +142,8 @@ function readEntity(raw: unknown): Entity | undefined {
       const center = readText(raw.center);
       const radius = readNumber(raw.radius);
       const construction = readConstruction(raw.construction);
-      if (center === undefined || radius === undefined || construction === undefined) return undefined;
+      if (center === undefined || radius === undefined || construction === undefined)
+        return undefined;
       return { kind: 'circle', id, center, radius, ...construction };
     }
     case 'arc': {
@@ -149,7 +151,12 @@ function readEntity(raw: unknown): Entity | undefined {
       const start = readText(raw.start);
       const end = readText(raw.end);
       const construction = readConstruction(raw.construction);
-      if (center === undefined || start === undefined || end === undefined || construction === undefined) {
+      if (
+        center === undefined ||
+        start === undefined ||
+        end === undefined ||
+        construction === undefined
+      ) {
         return undefined;
       }
       return { kind: 'arc', id, center, start, end, ...construction };
@@ -277,7 +284,8 @@ function readArtboard(raw: unknown): Artboard | undefined {
   const y = readNumber(raw.y);
   const width = readNumber(raw.width);
   const height = readNumber(raw.height);
-  if (x === undefined || y === undefined || width === undefined || height === undefined) return undefined;
+  if (x === undefined || y === undefined || width === undefined || height === undefined)
+    return undefined;
   return { x, y, width, height };
 }
 

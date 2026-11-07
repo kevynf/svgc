@@ -87,7 +87,8 @@ export const en: Catalog<Messages> = {
     dimension: 'Select an object to dimension',
     dimensionSecond: 'Select the second object',
     dimensionPlace: 'Move to place the dimension, click to set its position',
-    dimensionPlaceLine: 'Move to place the dimension, click to set its position; or click a second line to dimension the angle',
+    dimensionPlaceLine:
+      'Move to place the dimension, click to set its position; or click a second line to dimension the angle',
     dimensionValue: 'Type the dimension value, Enter to apply, Esc to cancel',
     offset: 'Select a curve to offset',
     offsetPlace: 'Move to set the offset side and distance, click to place',
@@ -123,8 +124,14 @@ export const en: Catalog<Messages> = {
   },
   status: {
     fullyConstrained: 'Fully Constrained',
-    dimensionsNeeded: plural({ one: '{count} dimension needed', other: '{count} dimensions needed' }),
-    conflicting: plural({ one: '{count} conflicting constraint', other: '{count} conflicting constraints' }),
+    dimensionsNeeded: plural({
+      one: '{count} dimension needed',
+      other: '{count} dimensions needed',
+    }),
+    conflicting: plural({
+      one: '{count} conflicting constraint',
+      other: '{count} conflicting constraints',
+    }),
     solveFailed: 'Solve failed',
     coordinates: 'X {x}  Y {y}',
     selected: plural({ one: '{count} object selected', other: '{count} objects selected' }),
@@ -201,7 +208,10 @@ export const en: Catalog<Messages> = {
     cycle: 'The parameters reference each other in a cycle',
     syntax: 'Invalid expression',
     unknownName: 'References unknown parameter "{name}"',
-    inUse: plural({ one: 'Used by {count} reference — cannot delete', other: 'Used by {count} references — cannot delete' }),
+    inUse: plural({
+      one: 'Used by {count} reference — cannot delete',
+      other: 'Used by {count} references — cannot delete',
+    }),
   },
   properties: {
     label: 'Properties',

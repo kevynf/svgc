@@ -50,8 +50,12 @@ describe('sketchToSvg', () => {
   });
 
   it('clips the geometry to the artboard when the sketch has one', () => {
-    const sketch: Sketch = { ...geometrySketch(), artboard: { x: 5, y: 5, width: 200, height: 100 } };
-    expect(sketchToSvg(sketch)).toBe(`${ROOT.replace('viewBox="10 20 110 60" width="110" height="60"', 'viewBox="5 5 200 100" width="200" height="100"')}
+    const sketch: Sketch = {
+      ...geometrySketch(),
+      artboard: { x: 5, y: 5, width: 200, height: 100 },
+    };
+    expect(sketchToSvg(sketch))
+      .toBe(`${ROOT.replace('viewBox="10 20 110 60" width="110" height="60"', 'viewBox="5 5 200 100" width="200" height="100"')}
   <defs>
     <clipPath id="svgc-artboard">
       <rect x="5" y="5" width="200" height="100"/>
@@ -75,7 +79,8 @@ describe('sketchToSvg', () => {
     const start = b.point(10 * Math.SQRT1_2, -10 * Math.SQRT1_2);
     const end = b.point(10 * Math.SQRT1_2, 10 * Math.SQRT1_2);
     b.arc(center, start, end);
-    const viewBox = /viewBox="([^"]+)"/.exec(sketchToSvg(b.build()))?.[1]?.split(' ').map(Number) ?? [];
+    const viewBox =
+      /viewBox="([^"]+)"/.exec(sketchToSvg(b.build()))?.[1]?.split(' ').map(Number) ?? [];
     expect(viewBox[0]).toBe(0); // the arc's centre point
     expect(viewBox[1]).toBeCloseTo(-10 * Math.SQRT1_2, 10);
     expect(viewBox[2]).toBeCloseTo(10, 10); // out to the crossing, past the endpoints
@@ -84,7 +89,8 @@ describe('sketchToSvg', () => {
 
   it('falls back to a unit page for an empty sketch', () => {
     // A zero-sized viewBox is an error in SVG, so the fallback is one unit.
-    expect(sketchToSvg({ entities: [], constraints: [], params: {} })).toBe(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1 1" width="1" height="1" fill="none" stroke="#000" stroke-width="1" stroke-linecap="round" stroke-linejoin="round">
+    expect(sketchToSvg({ entities: [], constraints: [], params: {} }))
+      .toBe(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1 1" width="1" height="1" fill="none" stroke="#000" stroke-width="1" stroke-linecap="round" stroke-linejoin="round">
 </svg>
 `);
   });
@@ -95,7 +101,9 @@ describe('sketchToSvg', () => {
   });
 
   it('lets extra attributes override the defaults, once each', () => {
-    const root = rootOf(sketchToSvg(geometrySketch(), { attributes: { id: 'plate', stroke: 'red' } }));
+    const root = rootOf(
+      sketchToSvg(geometrySketch(), { attributes: { id: 'plate', stroke: 'red' } }),
+    );
     expect(root).toContain('id="plate"');
     expect(root).toContain('stroke="red"');
     expect(root).not.toContain('#000');

@@ -36,14 +36,20 @@ function summary(sketch: Sketch, report: { entities: ReadonlyMap<Id, EntityStatu
     .join(' ');
 }
 
-function statuses(sketch: Sketch, report: { entities: ReadonlyMap<Id, EntityStatus> }): Record<string, EntityStatus> {
+function statuses(
+  sketch: Sketch,
+  report: { entities: ReadonlyMap<Id, EntityStatus> },
+): Record<string, EntityStatus> {
   const out: Record<string, EntityStatus> = {};
   for (const e of sketch.entities) out[e.id] = report.entities.get(e.id) ?? 'under';
   return out;
 }
 
 /** A grid of partly constrained rectangles with a mix of fixed and free parts. */
-function grid(columns: number, rows: number): { sketch: Sketch; cell: (c: number, r: number) => Id[] } {
+function grid(
+  columns: number,
+  rows: number,
+): { sketch: Sketch; cell: (c: number, r: number) => Id[] } {
   const b = new SketchBuilder();
   const cells: Id[][] = [];
   for (let r = 0; r < rows; r++) {
@@ -154,7 +160,10 @@ describe('analyzeStatus', () => {
     b.constrain({ kind: 'radius', curve: circle, value: 20 });
     const sketch = b.build();
 
-    expect(statuses(sketch, analyzeStatus(solver, sketch))).toEqual({ [center]: 'fully', [circle]: 'fully' });
+    expect(statuses(sketch, analyzeStatus(solver, sketch))).toEqual({
+      [center]: 'fully',
+      [circle]: 'fully',
+    });
   });
 
   it('treats y as determined but x as free on a fixed horizontal line', () => {
@@ -185,7 +194,10 @@ describe('analyzeStatus', () => {
     const sketch = b.build();
 
     // Nothing grounds the pair, so the whole shape can still drift.
-    expect(statuses(sketch, analyzeStatus(solver, sketch))).toEqual({ [p1]: 'under', [p2]: 'under' });
+    expect(statuses(sketch, analyzeStatus(solver, sketch))).toEqual({
+      [p1]: 'under',
+      [p2]: 'under',
+    });
   });
 
   it('handles a free arc', () => {

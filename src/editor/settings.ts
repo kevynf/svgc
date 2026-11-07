@@ -12,7 +12,15 @@ export interface Settings {
 
 const SHOW_KEY = 'svgc.showConstraints';
 const INFER_KEY = 'svgc.inferredConstraints';
-const ALL: readonly InferredKind[] = ['coincident', 'pointOnCurve', 'horizontal', 'vertical', 'parallel', 'perpendicular', 'tangent'];
+const ALL: readonly InferredKind[] = [
+  'coincident',
+  'pointOnCurve',
+  'horizontal',
+  'vertical',
+  'parallel',
+  'perpendicular',
+  'tangent',
+];
 
 /** localStorage is absent under the Node test runner; settings then simply don't persist. */
 function storage(): Pick<Storage, 'getItem' | 'setItem'> | undefined {

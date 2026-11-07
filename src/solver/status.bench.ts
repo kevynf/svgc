@@ -72,7 +72,8 @@ export function polylineGrid(columns: number, rows: number): Generated {
   const node = (r: number, c: number): Id => ids[r * columns + c]!;
   for (let r = 0; r < rows; r++) {
     for (let c = 0; c < columns; c++) {
-      if (c + 1 < columns) b.constrain({ kind: 'horizontal', a: b.line(node(r, c), node(r, c + 1)) });
+      if (c + 1 < columns)
+        b.constrain({ kind: 'horizontal', a: b.line(node(r, c), node(r, c + 1)) });
       if (r + 1 < rows) b.line(node(r, c), node(r + 1, c));
     }
   }
@@ -109,7 +110,10 @@ export function timeAnalysis(analysis: () => void, runs = 5): Timing & { median:
 }
 
 /** The timings to report, for a solver that has already been created. */
-export function benchmark(analysis: (sketch: Sketch) => void, log?: (line: string) => void): Timing[] {
+export function benchmark(
+  analysis: (sketch: Sketch) => void,
+  log?: (line: string) => void,
+): Timing[] {
   const out: Timing[] = [];
   for (const points of [50, 100, 200, 400]) {
     for (const [name, generate] of [
@@ -118,7 +122,10 @@ export function benchmark(analysis: (sketch: Sketch) => void, log?: (line: strin
     ] as const) {
       // 4 points per rectangle cell; the polyline grid uses `points` directly.
       const columns = 10;
-      const rows = Math.max(1, Math.round(points / (name === 'rectangles' ? 4 * columns : columns)));
+      const rows = Math.max(
+        1,
+        Math.round(points / (name === 'rectangles' ? 4 * columns : columns)),
+      );
       const generated = generate(columns, rows);
       const samples: number[] = [];
       for (let i = 0; i < 5; i++) {

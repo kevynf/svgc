@@ -75,7 +75,9 @@ export class MirrorCommand implements Command {
   /** Adds the clicked curve to the set, or takes it back out when it is already there. */
   private toggle(id: Id | undefined): void {
     if (id === undefined) return;
-    this.picked = this.picked.includes(id) ? this.picked.filter((p) => p !== id) : [...this.picked, id];
+    this.picked = this.picked.includes(id)
+      ? this.picked.filter((p) => p !== id)
+      : [...this.picked, id];
   }
 
   /** Copies every picked curve across `axis` and commits the lot as one step. */
@@ -102,7 +104,9 @@ export class MirrorCommand implements Command {
 
   /** The entity under `world`, when it is one a click in this phase may pick. */
   private curveAt(world: Vec2, kinds: readonly EntityKind[]): Id | undefined {
-    const hit = hitTest(this.editor.sketch, world, { tolerance: this.editor.viewport.toWorldLength(HIT_PX) });
+    const hit = hitTest(this.editor.sketch, world, {
+      tolerance: this.editor.viewport.toWorldLength(HIT_PX),
+    });
     // Points win the hit test everywhere else; here they are simply not
     // mirrorable, so a click that lands on one picks nothing at all.
     const entity = this.editor.sketch.entities.find((e) => e.id === hit);

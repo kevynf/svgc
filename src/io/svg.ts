@@ -43,7 +43,10 @@ export function sketchToSvg(sketch: Sketch, options: SvgOptions = {}): string {
     lines.push(
       indent(1, '<defs>'),
       indent(2, `<clipPath id="${ARTBOARD_CLIP}">`),
-      indent(3, `<rect x="${artboard.x}" y="${artboard.y}" width="${artboard.width}" height="${artboard.height}"/>`),
+      indent(
+        3,
+        `<rect x="${artboard.x}" y="${artboard.y}" width="${artboard.width}" height="${artboard.height}"/>`,
+      ),
       indent(2, '</clipPath>'),
       indent(1, '</defs>'),
       indent(1, `<g clip-path="url(#${ARTBOARD_CLIP})">`),
@@ -99,7 +102,13 @@ function rootAttributes(page: Artboard, options: SvgOptions): string {
 }
 
 /** The five XML predefined entities: every character an attribute value needs escaped. */
-const ATTR_ESCAPES: Record<string, string> = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&apos;' };
+const ATTR_ESCAPES: Record<string, string> = {
+  '&': '&amp;',
+  '<': '&lt;',
+  '>': '&gt;',
+  '"': '&quot;',
+  "'": '&apos;',
+};
 
 /** Escapes a value interpolated into a double-quoted attribute. */
 function escapeAttr(value: string): string {

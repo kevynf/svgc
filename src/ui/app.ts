@@ -99,7 +99,8 @@ export class App {
   /** Whether the user has typed in the value box, i.e. edited the measurement. */
   private editDirty = false;
   /** The dimension a double-click asked to re-value, while its value box is open. */
-  private constraintEdit: { readonly constraint: Id; readonly at: Vec2; readonly value: number } | undefined;
+  private constraintEdit:
+    { readonly constraint: Id; readonly at: Vec2; readonly value: number } | undefined;
   /** Which source the open box belongs to, so a change of source re-opens it. */
   private editSource: EditSource | undefined;
   private readonly settingsDialog: ConstraintSettingsDialog;
@@ -228,7 +229,12 @@ export class App {
   private panels(): RibbonPanel[] {
     const e = this.editor;
     const shortcut = (command: string) => COMMAND_ALIASES.find(([, c]) => c === command)?.[0];
-    const cmd = (id: string, iconName: RibbonButton['icon'], glyph?: ConstraintGlyph, size: 'large' | 'small' = 'large'): RibbonButton => {
+    const cmd = (
+      id: string,
+      iconName: RibbonButton['icon'],
+      glyph?: ConstraintGlyph,
+      size: 'large' | 'small' = 'large',
+    ): RibbonButton => {
       const keys = shortcut(id);
       return {
         id,
@@ -242,12 +248,19 @@ export class App {
         ...(keys === undefined ? {} : { shortcut: keys }),
       };
     };
-    const hasCurveSelected = () => e.sketch.entities.some((x) => x.kind !== 'point' && e.selection.has(x.id));
+    const hasCurveSelected = () =>
+      e.sketch.entities.some((x) => x.kind !== 'point' && e.selection.has(x.id));
 
     return [
       {
         label: 'ribbon.panels.create',
-        buttons: [cmd('line', 'line'), cmd('circle', 'circle'), cmd('arc', 'arc'), cmd('rectangle', 'rectangle'), cmd('point', 'point')],
+        buttons: [
+          cmd('line', 'line'),
+          cmd('circle', 'circle'),
+          cmd('arc', 'arc'),
+          cmd('rectangle', 'rectangle'),
+          cmd('point', 'point'),
+        ],
       },
       {
         label: 'ribbon.panels.modify',
@@ -305,14 +318,51 @@ export class App {
       {
         label: 'ribbon.panels.edit',
         buttons: [
-          { id: 'undo', icon: 'undo', label: 'commands.undo', size: 'small', shortcut: 'Ctrl+Z', available: true, enabled: () => e.history.canUndo, run: () => e.undo() },
-          { id: 'redo', icon: 'redo', label: 'commands.redo', size: 'small', shortcut: 'Ctrl+Y', available: true, enabled: () => e.history.canRedo, run: () => e.redo() },
-          { id: 'delete', icon: 'delete', label: 'commands.delete', size: 'small', shortcut: 'Delete', available: true, enabled: () => e.selection.size > 0, run: () => e.deleteSelection() },
+          {
+            id: 'undo',
+            icon: 'undo',
+            label: 'commands.undo',
+            size: 'small',
+            shortcut: 'Ctrl+Z',
+            available: true,
+            enabled: () => e.history.canUndo,
+            run: () => e.undo(),
+          },
+          {
+            id: 'redo',
+            icon: 'redo',
+            label: 'commands.redo',
+            size: 'small',
+            shortcut: 'Ctrl+Y',
+            available: true,
+            enabled: () => e.history.canRedo,
+            run: () => e.redo(),
+          },
+          {
+            id: 'delete',
+            icon: 'delete',
+            label: 'commands.delete',
+            size: 'small',
+            shortcut: 'Delete',
+            available: true,
+            enabled: () => e.selection.size > 0,
+            run: () => e.deleteSelection(),
+          },
         ],
       },
       {
         label: 'ribbon.panels.view',
-        buttons: [{ id: 'zoomAll', icon: 'zoomAll', label: 'commands.zoomAll', shortcut: 'Home', size: 'small', available: true, run: () => e.zoomAll() }],
+        buttons: [
+          {
+            id: 'zoomAll',
+            icon: 'zoomAll',
+            label: 'commands.zoomAll',
+            shortcut: 'Home',
+            size: 'small',
+            available: true,
+            run: () => e.zoomAll(),
+          },
+        ],
       },
     ];
   }
@@ -359,7 +409,10 @@ export class App {
 
   /** Reports a file that could not be adopted, naming the reason. */
   private openFailed(reason: SketchFileError): void {
-    this.editor.setMessage({ key: 'file.openFailed', params: { reason: this.t.t(`file.reason.${reason}`) } });
+    this.editor.setMessage({
+      key: 'file.openFailed',
+      params: { reason: this.t.t(`file.reason.${reason}`) },
+    });
   }
 
   /** Save: the sketch as a .svgc.json file, overwriting the location picked last time. */
@@ -392,7 +445,8 @@ export class App {
     const highlight = new Set<Id>();
     if (e.hover !== undefined) {
       const constraint = e.sketch.constraints.find((c) => c.id === e.hover);
-      for (const id of constraint === undefined ? [e.hover] : constraintRefs(constraint)) highlight.add(id);
+      for (const id of constraint === undefined ? [e.hover] : constraintRefs(constraint))
+        highlight.add(id);
     }
     const selection = new Set<Id>(e.selection);
     for (const c of e.sketch.constraints) {
@@ -470,7 +524,8 @@ export class App {
    * request. Otherwise the re-valuing a double-click asked for stands — unless
    * the constraint has since been deleted, which leaves nothing to edit.
    */
-  private editRequest(): { readonly source: EditSource; readonly request: EditRequest } | undefined {
+  private editRequest():
+    { readonly source: EditSource; readonly request: EditRequest } | undefined {
     const request = this.editor.activeCommand.edit;
     if (request !== undefined) {
       this.constraintEdit = undefined;
@@ -484,7 +539,11 @@ export class App {
     }
     return {
       source: 'constraint',
-      request: { at: constraint.at, value: constraint.value, label: { key: 'prompts.dimensionValue' } },
+      request: {
+        at: constraint.at,
+        value: constraint.value,
+        label: { key: 'prompts.dimensionValue' },
+      },
     };
   }
 
@@ -672,7 +731,9 @@ export class App {
           constraint: constraint.id,
           // Over the value text the dimension draws, so the box lands where the
           // user double-clicked; degenerate geometry falls back to the cursor.
-          at: dimensionLayout(constraint, indexEntities(this.editor.sketch), vp.scale)?.textAt ?? input.world,
+          at:
+            dimensionLayout(constraint, indexEntities(this.editor.sketch), vp.scale)?.textAt ??
+            input.world,
           value: constraintValue(constraint, this.editor.sketch.params) ?? 0,
         };
         this.schedule();
@@ -769,7 +830,8 @@ export class App {
       'wheel',
       (event) => {
         event.preventDefault();
-        const delta = event.deltaMode === WheelEvent.DOM_DELTA_LINE ? event.deltaY * 16 : event.deltaY;
+        const delta =
+          event.deltaMode === WheelEvent.DOM_DELTA_LINE ? event.deltaY * 16 : event.deltaY;
         vp.zoomAt(this.input(event).screen, WHEEL_ZOOM ** -delta);
         this.editor.setCursor(this.input(event).world);
       },
@@ -785,20 +847,46 @@ export class App {
     const active = e.activeCommand;
     const items: MenuItem[] = [];
     if (active.id !== 'select') {
-      items.push({ label: { key: 'commands.ok' }, icon: 'ok', enabled: true, run: () => e.finishCommand() });
+      items.push({
+        label: { key: 'commands.ok' },
+        icon: 'ok',
+        enabled: true,
+        run: () => e.finishCommand(),
+      });
     }
     items.push(...(active.menu?.() ?? []));
     const last = e.repeatable;
     items.push(
       {
-        label: last === undefined ? { key: 'commands.cancel' } : { key: 'commands.repeat', params: { command: this.t.t(`commands.${last}` as never) } },
+        label:
+          last === undefined
+            ? { key: 'commands.cancel' }
+            : {
+                key: 'commands.repeat',
+                params: { command: this.t.t(`commands.${last}` as never) },
+              },
         icon: last === undefined ? 'cancel' : 'repeat',
         enabled: last !== undefined || active.id !== 'select',
         run: () => (last === undefined ? e.escape() : e.repeatLastCommand()),
       },
-      { label: { key: 'commands.delete' }, icon: 'delete', enabled: e.selection.size > 0, run: () => e.deleteSelection() },
-      { label: { key: 'commands.undo' }, icon: 'undo', enabled: e.history.canUndo, run: () => e.undo() },
-      { label: { key: 'commands.zoomAll' }, icon: 'zoomAll', enabled: true, run: () => e.zoomAll() },
+      {
+        label: { key: 'commands.delete' },
+        icon: 'delete',
+        enabled: e.selection.size > 0,
+        run: () => e.deleteSelection(),
+      },
+      {
+        label: { key: 'commands.undo' },
+        icon: 'undo',
+        enabled: e.history.canUndo,
+        run: () => e.undo(),
+      },
+      {
+        label: { key: 'commands.zoomAll' },
+        icon: 'zoomAll',
+        enabled: true,
+        run: () => e.zoomAll(),
+      },
       {
         label: { key: 'commands.construction' },
         icon: 'construction',
@@ -815,13 +903,19 @@ export class App {
         label: { key: 'settings.label' },
         icon: 'fix',
         enabled: true,
-        run: () => this.settingsDialog.open(document.activeElement instanceof HTMLElement ? document.activeElement : undefined),
+        run: () =>
+          this.settingsDialog.open(
+            document.activeElement instanceof HTMLElement ? document.activeElement : undefined,
+          ),
       },
       {
         label: { key: 'parameters.label' },
         icon: 'mathFunction',
         enabled: true,
-        run: () => this.parametersDialog.open(document.activeElement instanceof HTMLElement ? document.activeElement : undefined),
+        run: () =>
+          this.parametersDialog.open(
+            document.activeElement instanceof HTMLElement ? document.activeElement : undefined,
+          ),
       },
     );
     return items;
@@ -830,13 +924,19 @@ export class App {
   // 鈹€鈹€ Keyboard 鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€
 
   private bindKeyboard(): void {
-    document.addEventListener('keydown', (event) => this.onKey(event), { signal: this.abort.signal });
+    document.addEventListener('keydown', (event) => this.onKey(event), {
+      signal: this.abort.signal,
+    });
   }
 
   private onKey(event: KeyboardEvent): void {
     if (event.defaultPrevented || this.menu.isOpen || this.appMenu.isOpen) return;
     const target = event.target;
-    if (target instanceof HTMLInputElement || target instanceof HTMLSelectElement || target instanceof HTMLTextAreaElement) {
+    if (
+      target instanceof HTMLInputElement ||
+      target instanceof HTMLSelectElement ||
+      target instanceof HTMLTextAreaElement
+    ) {
       return;
     }
     const e = this.editor;
@@ -885,7 +985,9 @@ export class App {
       return;
     }
     // Enter/Space activate focused controls; on the canvas they confirm a typed alias or repeat.
-    const onControl = target instanceof HTMLButtonElement || (target instanceof HTMLElement && target.closest('[role="tree"]') !== null);
+    const onControl =
+      target instanceof HTMLButtonElement ||
+      (target instanceof HTMLElement && target.closest('[role="tree"]') !== null);
     if ((key === 'Enter' || key === ' ') && !onControl) {
       event.preventDefault();
       if (!this.aliases.flush()) e.repeatLastCommand();

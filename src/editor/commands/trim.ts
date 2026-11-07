@@ -27,7 +27,11 @@ interface Ends {
 }
 
 /** Where an end would land: the crossing nearest it, inside the span for a trim, beyond it for an extend. */
-type Target = (curve: Intersectable, end: End, others: readonly Intersectable[]) => Vec2 | undefined;
+type Target = (
+  curve: Intersectable,
+  end: End,
+  others: readonly Intersectable[],
+) => Vec2 | undefined;
 
 /** What one of the two commands is about: its messages, and the crossing it aims an end at. */
 interface Spec {
@@ -196,7 +200,11 @@ abstract class EndCommand implements Command {
     const curve = curveOf(entity, index);
     // A degenerate curve has no span to cross, or to be shortened along.
     if (curve === undefined) return undefined;
-    return { end: best.end, point: best.point, target: this.spec.target(curve, best.end, this.curves(index)) };
+    return {
+      end: best.end,
+      point: best.point,
+      target: this.spec.target(curve, best.end, this.curves(index)),
+    };
   }
 
   /**

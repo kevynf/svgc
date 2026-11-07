@@ -48,7 +48,12 @@ export class StatusBar {
     this.prompt.classList.toggle('error', editor.message !== undefined);
 
     const cursor = editor.cursorWorld;
-    setText(this.coords, cursor === undefined ? '' : t.t('status.coordinates', { x: t.number(cursor.x), y: t.number(cursor.y) }));
+    setText(
+      this.coords,
+      cursor === undefined
+        ? ''
+        : t.t('status.coordinates', { x: t.number(cursor.x), y: t.number(cursor.y) }),
+    );
 
     setText(this.zoom, `${Math.round(editor.viewport.scale * 100)}%`);
 

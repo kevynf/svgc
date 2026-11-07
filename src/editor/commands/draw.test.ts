@@ -152,7 +152,9 @@ describe('ArcCommand', () => {
     const arc = editor.sketch.entities.find((e) => e.kind === 'arc');
     expect(arc).toBeDefined();
     // The three points lie on a circle of radius ~70.7 about (50, 50).
-    const center = editor.sketch.entities.find((e) => e.kind === 'point' && Math.abs(e.x - 50) < 1e-6);
+    const center = editor.sketch.entities.find(
+      (e) => e.kind === 'point' && Math.abs(e.x - 50) < 1e-6,
+    );
     expect(center).toBeDefined();
   });
 

@@ -244,6 +244,9 @@
   .parameters-remove,
   .parameters-name,
   .parameters-expression {
-    transition: background-color 80ms linear, border-color 80ms linear, color 80ms linear;
+    transition:
+      background-color 80ms linear,
+      border-color 80ms linear,
+      color 80ms linear;
   }
 }

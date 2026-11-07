@@ -18,7 +18,9 @@ describe('i18n', () => {
     const en = new Translator('en');
     expect(en.t('status.dimensionsNeeded', { count: 1 })).toBe('1 dimension needed');
     expect(en.t('status.dimensionsNeeded', { count: 4 })).toBe('4 dimensions needed');
-    expect(new Translator('zh-CN').t('status.dimensionsNeeded', { count: 1 })).toBe('需要 1 个尺寸');
+    expect(new Translator('zh-CN').t('status.dimensionsNeeded', { count: 1 })).toBe(
+      '需要 1 个尺寸',
+    );
   });
 
   it('leaves unknown placeholders intact', () => {

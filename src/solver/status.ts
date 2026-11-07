@@ -172,7 +172,11 @@ export function analyzeStatus(solver: Solver, sketch: Sketch): StatusReport {
 
 /** Loads one component into the solver and solves it; `undefined` on failure. */
 function load(solver: Solver, sketch: Sketch, component: Component): Loaded | undefined {
-  const sub: Sketch = { entities: component.entities, constraints: component.constraints, params: sketch.params };
+  const sub: Sketch = {
+    entities: component.entities,
+    constraints: component.constraints,
+    params: sketch.params,
+  };
   return solver.probeSystem(sub, (translation, gcs) => {
     const status = gcs.solve(Algorithm.DogLeg);
     if (status !== SolveStatus.Success && status !== SolveStatus.Converged) {
@@ -230,7 +234,10 @@ function settle(probes: readonly Probe[]): ReadonlyMap<Id, { fixed: number; tota
 }
 
 /** A point is fully constrained when both coordinates are; curves follow. */
-function entityStatus(entity: Entity, settled: ReadonlyMap<Id, { fixed: number; total: number }>): EntityStatus {
+function entityStatus(
+  entity: Entity,
+  settled: ReadonlyMap<Id, { fixed: number; total: number }>,
+): EntityStatus {
   const of = (id: Id): boolean => {
     const entry = settled.get(id);
     return entry !== undefined && entry.total > 0 && entry.fixed === entry.total;

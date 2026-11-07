@@ -22,7 +22,10 @@ describe('perpendicularDistance', () => {
 
   it('measures to a diagonal line', () => {
     // On the line y = x, the point (2, 0) sits √2 away.
-    expect(perpendicularDistance({ x: 2, y: 0 }, { x: 0, y: 0 }, { x: 10, y: 10 })).toBeCloseTo(Math.SQRT2, 12);
+    expect(perpendicularDistance({ x: 2, y: 0 }, { x: 0, y: 0 }, { x: 10, y: 10 })).toBeCloseTo(
+      Math.SQRT2,
+      12,
+    );
   });
 
   it('ignores where along the line the foot falls', () => {
@@ -50,11 +53,15 @@ describe('unit', () => {
 
 describe('lineIntersection', () => {
   it('finds where two segments cross', () => {
-    expect(lineIntersection({ x: 0, y: 0 }, { x: 10, y: 0 }, { x: 5, y: -5 }, { x: 5, y: 5 })).toEqual({ x: 5, y: 0 });
+    expect(
+      lineIntersection({ x: 0, y: 0 }, { x: 10, y: 0 }, { x: 5, y: -5 }, { x: 5, y: 5 }),
+    ).toEqual({ x: 5, y: 0 });
   });
 
   it('is undefined for parallel lines', () => {
-    expect(lineIntersection({ x: 0, y: 0 }, { x: 10, y: 0 }, { x: 0, y: 5 }, { x: 10, y: 5 })).toBeUndefined();
+    expect(
+      lineIntersection({ x: 0, y: 0 }, { x: 10, y: 0 }, { x: 0, y: 5 }, { x: 10, y: 5 }),
+    ).toBeUndefined();
   });
 });
 
@@ -77,16 +84,28 @@ describe('segmentNormal', () => {
 
 describe('closestOnSegment', () => {
   it('projects inside the segment', () => {
-    expect(closestOnSegment({ x: 5, y: 5 }, { x: 0, y: 0 }, { x: 10, y: 0 })).toEqual({ x: 5, y: 0 });
+    expect(closestOnSegment({ x: 5, y: 5 }, { x: 0, y: 0 }, { x: 10, y: 0 })).toEqual({
+      x: 5,
+      y: 0,
+    });
   });
 
   it('clamps to the endpoints', () => {
-    expect(closestOnSegment({ x: -5, y: 5 }, { x: 0, y: 0 }, { x: 10, y: 0 })).toEqual({ x: 0, y: 0 });
-    expect(closestOnSegment({ x: 15, y: 5 }, { x: 0, y: 0 }, { x: 10, y: 0 })).toEqual({ x: 10, y: 0 });
+    expect(closestOnSegment({ x: -5, y: 5 }, { x: 0, y: 0 }, { x: 10, y: 0 })).toEqual({
+      x: 0,
+      y: 0,
+    });
+    expect(closestOnSegment({ x: 15, y: 5 }, { x: 0, y: 0 }, { x: 10, y: 0 })).toEqual({
+      x: 10,
+      y: 0,
+    });
   });
 
   it('returns the point itself for a degenerate segment', () => {
-    expect(closestOnSegment({ x: 5, y: 5 }, { x: 3, y: 3 }, { x: 3, y: 3 })).toEqual({ x: 3, y: 3 });
+    expect(closestOnSegment({ x: 5, y: 5 }, { x: 3, y: 3 }, { x: 3, y: 3 })).toEqual({
+      x: 3,
+      y: 3,
+    });
   });
 });
 
@@ -118,20 +137,29 @@ describe('directionDeg', () => {
 describe('lineAngleDeg', () => {
   it('measures counterclockwise on screen from the first line to the second', () => {
     // A horizontal base and an arm pointing up the screen: 90°.
-    expect(lineAngleDeg({ x: 0, y: 0 }, { x: 10, y: 0 }, { x: 0, y: 0 }, { x: 0, y: -10 })).toBe(90);
+    expect(lineAngleDeg({ x: 0, y: 0 }, { x: 10, y: 0 }, { x: 0, y: 0 }, { x: 0, y: -10 })).toBe(
+      90,
+    );
   });
 
   it('measures a diagonal', () => {
-    expect(lineAngleDeg({ x: 0, y: 0 }, { x: 10, y: 0 }, { x: 5, y: 5 }, { x: 15, y: -5 })).toBe(45);
+    expect(lineAngleDeg({ x: 0, y: 0 }, { x: 10, y: 0 }, { x: 5, y: 5 }, { x: 15, y: -5 })).toBe(
+      45,
+    );
   });
 
   it('wraps a clockwise turn past zero', () => {
     // An arm pointing down the screen is a 270° counterclockwise turn.
-    expect(lineAngleDeg({ x: 0, y: 0 }, { x: 10, y: 0 }, { x: 0, y: 0 }, { x: 0, y: 10 })).toBe(270);
+    expect(lineAngleDeg({ x: 0, y: 0 }, { x: 10, y: 0 }, { x: 0, y: 0 }, { x: 0, y: 10 })).toBe(
+      270,
+    );
   });
 
   it('always lands in [0, 360)', () => {
-    const at = (deg: number) => ({ x: 100 * Math.cos(degToRad(deg)), y: -100 * Math.sin(degToRad(deg)) });
+    const at = (deg: number) => ({
+      x: 100 * Math.cos(degToRad(deg)),
+      y: -100 * Math.sin(degToRad(deg)),
+    });
     for (const a of [0, 37, 90, 179, 180, 268, 359]) {
       for (const b of [0, 53, 90, 181, 270, 300]) {
         const value = lineAngleDeg({ x: 0, y: 0 }, at(a), { x: 0, y: 0 }, at(b));

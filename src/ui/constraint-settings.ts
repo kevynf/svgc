@@ -34,7 +34,11 @@ export interface InferenceRow {
 
 /** The dialog's rows, one per inference kind, in `INFERRED_KINDS` order. */
 export function inferenceRows(): readonly InferenceRow[] {
-  return INFERRED_KINDS.map((kind) => ({ kind, glyph: KIND_GLYPH[kind], labelKey: KIND_LABEL[kind] }));
+  return INFERRED_KINDS.map((kind) => ({
+    kind,
+    glyph: KIND_GLYPH[kind],
+    labelKey: KIND_LABEL[kind],
+  }));
 }
 
 /** e.g. "已推断 5 / 7 种约束" / "5 of 7 constraint types inferred". */

@@ -1,6 +1,14 @@
 import { describe, expect, it } from 'vitest';
 import { SketchBuilder } from '../core/builder';
-import { add, distance, midpoint, perpendicularDistance, scaled, segmentNormal, sub } from '../core/geometry';
+import {
+  add,
+  distance,
+  midpoint,
+  perpendicularDistance,
+  scaled,
+  segmentNormal,
+  sub,
+} from '../core/geometry';
 import type { Vec2 } from '../core/geometry';
 import type { Constraint, Line } from '../core/model';
 import { indexEntities } from '../core/sketch';
@@ -102,7 +110,10 @@ function soleArc(layout: DimensionLayout): DimensionArc {
 
 /** The point on an arc at `angle`. */
 function arcPoint(arc: DimensionArc, angle: number): Vec2 {
-  return { x: arc.center.x + arc.radius * Math.cos(angle), y: arc.center.y + arc.radius * Math.sin(angle) };
+  return {
+    x: arc.center.x + arc.radius * Math.cos(angle),
+    y: arc.center.y + arc.radius * Math.sin(angle),
+  };
 }
 
 /** Screen direction from one point to another, in atan2 radians (Y pointing down). */
@@ -186,7 +197,10 @@ describe('dimensionLayout', () => {
         expect(perpendicularDistance(s(far), s(start), s(end))).toBeCloseTo(OVERSHOOT_PX, 9);
         expect(distance(s(p), s(far))).toBeCloseTo(14 + OVERSHOOT_PX, 9);
         // The arrowhead at that end sits ON the witness line, tip touching it.
-        expect(perpendicularDistance(s(arrowNear(layout, p).at), s(near), s(far))).toBeCloseTo(0, 9);
+        expect(perpendicularDistance(s(arrowNear(layout, p).at), s(near), s(far))).toBeCloseTo(
+          0,
+          9,
+        );
       }
     });
 
@@ -297,7 +311,10 @@ describe('dimensionLayout', () => {
         const layout = layoutOf(constraint, index, scale);
         const [start, end] = firstLine(layout);
         expect(between(dir(s(start), s(end)), dir(s(from), s(to)))).toBeCloseTo(Math.PI / 2, 9);
-        expect(distance(s(start), s(end))).toBeCloseTo(perpendicularDistance(point, from, to) * scale, 9);
+        expect(distance(s(start), s(end))).toBeCloseTo(
+          perpendicularDistance(point, from, to) * scale,
+          9,
+        );
       }
     });
 
@@ -503,7 +520,9 @@ describe('dimensionLayout', () => {
       // Each arrowhead tip lands on one of them, so the arc terminates against
       // the witness lines the way a dimension line does.
       for (const arrow of layout.arrows) {
-        const on = layout.witnesses.filter(([near, far]) => perpendicularDistance(s(arrow.at), s(near), s(far)) < 1e-9);
+        const on = layout.witnesses.filter(
+          ([near, far]) => perpendicularDistance(s(arrow.at), s(near), s(far)) < 1e-9,
+        );
         expect(on).toHaveLength(1);
       }
     });
@@ -544,14 +563,32 @@ describe('dimensionLayout', () => {
       const p1 = b.point(0, 0);
       const sketch = b.build();
       const index = indexEntities(sketch);
-      expect(dimensionLayout({ kind: 'distance', id: 'd', a: p1, b: 'nope', value: 10 }, index, 1)).toBeUndefined();
-      expect(dimensionLayout({ kind: 'radius', id: 'r', curve: 'nope', value: 10 }, index, 1)).toBeUndefined();
-      expect(dimensionLayout({ kind: 'angle', id: 'g', a: 'nope', b: 'nope', value: 90 }, index, 1)).toBeUndefined();
+      expect(
+        dimensionLayout({ kind: 'distance', id: 'd', a: p1, b: 'nope', value: 10 }, index, 1),
+      ).toBeUndefined();
+      expect(
+        dimensionLayout({ kind: 'radius', id: 'r', curve: 'nope', value: 10 }, index, 1),
+      ).toBeUndefined();
+      expect(
+        dimensionLayout({ kind: 'angle', id: 'g', a: 'nope', b: 'nope', value: 90 }, index, 1),
+      ).toBeUndefined();
       // A line whose endpoints are gone has no segment to measure or meet at.
       const orphan: Line = { kind: 'line', id: 'orphan', p1: 'gone', p2: 'gone' };
       const orphanIndex = indexEntities({ ...sketch, entities: [orphan] });
-      expect(dimensionLayout({ kind: 'distance', id: 'e', a: p1, b: 'orphan', value: 10 }, orphanIndex, 1)).toBeUndefined();
-      expect(dimensionLayout({ kind: 'angle', id: 'g2', a: 'orphan', b: 'orphan', value: 90 }, orphanIndex, 1)).toBeUndefined();
+      expect(
+        dimensionLayout(
+          { kind: 'distance', id: 'e', a: p1, b: 'orphan', value: 10 },
+          orphanIndex,
+          1,
+        ),
+      ).toBeUndefined();
+      expect(
+        dimensionLayout(
+          { kind: 'angle', id: 'g2', a: 'orphan', b: 'orphan', value: 90 },
+          orphanIndex,
+          1,
+        ),
+      ).toBeUndefined();
     });
 
     it('still lays out a point that sits on the line', () => {
@@ -615,9 +652,15 @@ describe('dimensionLayout', () => {
       const line = b.line(p1, p2);
       const index = indexEntities(b.build());
       // A distance between two lines, a radius on a line, an angle between points.
-      expect(dimensionLayout({ kind: 'distance', id: 'd', a: line, b: line, value: 10 }, index, 1)).toBeUndefined();
-      expect(dimensionLayout({ kind: 'radius', id: 'r', curve: line, value: 10 }, index, 1)).toBeUndefined();
-      expect(dimensionLayout({ kind: 'angle', id: 'g', a: p1, b: p2, value: 90 }, index, 1)).toBeUndefined();
+      expect(
+        dimensionLayout({ kind: 'distance', id: 'd', a: line, b: line, value: 10 }, index, 1),
+      ).toBeUndefined();
+      expect(
+        dimensionLayout({ kind: 'radius', id: 'r', curve: line, value: 10 }, index, 1),
+      ).toBeUndefined();
+      expect(
+        dimensionLayout({ kind: 'angle', id: 'g', a: p1, b: p2, value: 90 }, index, 1),
+      ).toBeUndefined();
       // A kind that is not a dimension has no layout either.
       expect(dimensionLayout({ kind: 'horizontal', id: 'h', a: line }, index, 1)).toBeUndefined();
     });
@@ -672,11 +715,23 @@ describe('layoutDimension', () => {
 
     it("takes the offset's magnitude and side from the cursor", () => {
       const s = toScreen(1);
-      const above = specLayout({ kind: 'distance', operands: [p1, p2], placement: { x: 50, y: -40 } }, index, 1);
-      const below = specLayout({ kind: 'distance', operands: [p1, p2], placement: { x: 50, y: 60 } }, index, 1);
-      expect(perpendicularDistance(s(mid), s(firstLine(above)[0]), s(firstLine(above)[1]))).toBeCloseTo(40, 9);
+      const above = specLayout(
+        { kind: 'distance', operands: [p1, p2], placement: { x: 50, y: -40 } },
+        index,
+        1,
+      );
+      const below = specLayout(
+        { kind: 'distance', operands: [p1, p2], placement: { x: 50, y: 60 } },
+        index,
+        1,
+      );
+      expect(
+        perpendicularDistance(s(mid), s(firstLine(above)[0]), s(firstLine(above)[1])),
+      ).toBeCloseTo(40, 9);
       expect(s(above.textAt).y).toBeCloseTo(s(mid).y - 40, 9);
-      expect(perpendicularDistance(s(mid), s(firstLine(below)[0]), s(firstLine(below)[1]))).toBeCloseTo(60, 9);
+      expect(
+        perpendicularDistance(s(mid), s(firstLine(below)[0]), s(firstLine(below)[1])),
+      ).toBeCloseTo(60, 9);
       expect(s(below.textAt).y).toBeCloseTo(s(mid).y + 60, 9);
     });
 
@@ -684,9 +739,21 @@ describe('layoutDimension', () => {
       const s = toScreen(1);
       // A cursor within 14px of the segment still lays the dimension out on its
       // own side, a full 14px away; one right on it takes the normal's side.
-      const above = specLayout({ kind: 'distance', operands: [p1, p2], placement: { x: 50, y: -5 } }, index, 1);
-      const below = specLayout({ kind: 'distance', operands: [p1, p2], placement: { x: 50, y: 5 } }, index, 1);
-      const on = specLayout({ kind: 'distance', operands: [p1, p2], placement: { x: 50, y: 0 } }, index, 1);
+      const above = specLayout(
+        { kind: 'distance', operands: [p1, p2], placement: { x: 50, y: -5 } },
+        index,
+        1,
+      );
+      const below = specLayout(
+        { kind: 'distance', operands: [p1, p2], placement: { x: 50, y: 5 } },
+        index,
+        1,
+      );
+      const on = specLayout(
+        { kind: 'distance', operands: [p1, p2], placement: { x: 50, y: 0 } },
+        index,
+        1,
+      );
       expect(s(above.textAt).y).toBeCloseTo(s(mid).y - 14, 9);
       expect(s(below.textAt).y).toBeCloseTo(s(mid).y + 14, 9);
       expect(s(on.textAt).y).toBeCloseTo(s(mid).y - 14, 9);
@@ -696,10 +763,18 @@ describe('layoutDimension', () => {
       for (const scale of SCALES) {
         const s = toScreen(scale);
         // 60 world units off reads 15 screen px even at the smallest zoom here.
-        const far = specLayout({ kind: 'distance', operands: [p1, p2], placement: { x: 50, y: -60 } }, index, scale);
+        const far = specLayout(
+          { kind: 'distance', operands: [p1, p2], placement: { x: 50, y: -60 } },
+          index,
+          scale,
+        );
         expect(distance(s(mid), s(far.textAt))).toBeCloseTo(60 * scale, 9);
         // One world unit off is under the floor at every zoom, so it stays 14.
-        const near = specLayout({ kind: 'distance', operands: [p1, p2], placement: { x: 50, y: -1 } }, index, scale);
+        const near = specLayout(
+          { kind: 'distance', operands: [p1, p2], placement: { x: 50, y: -1 } },
+          index,
+          scale,
+        );
         expect(distance(s(mid), s(near.textAt))).toBeCloseTo(14, 9);
       }
     });
@@ -714,8 +789,16 @@ describe('layoutDimension', () => {
 
     it("slides the dimension along the line by the cursor's projection", () => {
       const s = toScreen(1);
-      const ahead = specLayout({ kind: 'distance', operands: [p, line], placement: { x: 80, y: 40 } }, index, 1);
-      const behind = specLayout({ kind: 'distance', operands: [p, line], placement: { x: 20, y: 40 } }, index, 1);
+      const ahead = specLayout(
+        { kind: 'distance', operands: [p, line], placement: { x: 80, y: 40 } },
+        index,
+        1,
+      );
+      const behind = specLayout(
+        { kind: 'distance', operands: [p, line], placement: { x: 20, y: 40 } },
+        index,
+        1,
+      );
       // The foot sits at x = 50, so a cursor 30 either side of it slides the
       // dimension 30 that way, both ends together.
       expect(s(firstLine(ahead)[0]).x).toBeCloseTo(80, 9);
@@ -726,8 +809,16 @@ describe('layoutDimension', () => {
 
     it("reads only the cursor's projection along the line", () => {
       // How far off the line the cursor sits does not enter the slide.
-      const near = specLayout({ kind: 'distance', operands: [p, line], placement: { x: 80, y: 40 } }, index, 1);
-      const far = specLayout({ kind: 'distance', operands: [p, line], placement: { x: 80, y: 400 } }, index, 1);
+      const near = specLayout(
+        { kind: 'distance', operands: [p, line], placement: { x: 80, y: 40 } },
+        index,
+        1,
+      );
+      const far = specLayout(
+        { kind: 'distance', operands: [p, line], placement: { x: 80, y: 400 } },
+        index,
+        1,
+      );
       expect(far).toEqual(near);
     });
 
@@ -735,8 +826,16 @@ describe('layoutDimension', () => {
       const s = toScreen(1);
       // A cursor barely past the foot still slides the dimension a full 14px,
       // the way it came from.
-      const ahead = specLayout({ kind: 'distance', operands: [p, line], placement: { x: 55, y: 40 } }, index, 1);
-      const behind = specLayout({ kind: 'distance', operands: [p, line], placement: { x: 45, y: 40 } }, index, 1);
+      const ahead = specLayout(
+        { kind: 'distance', operands: [p, line], placement: { x: 55, y: 40 } },
+        index,
+        1,
+      );
+      const behind = specLayout(
+        { kind: 'distance', operands: [p, line], placement: { x: 45, y: 40 } },
+        index,
+        1,
+      );
       expect(s(firstLine(ahead)[0]).x).toBeCloseTo(64, 9);
       expect(s(firstLine(behind)[0]).x).toBeCloseTo(36, 9);
     });
@@ -744,12 +843,19 @@ describe('layoutDimension', () => {
     it('still measures the point-to-line gap wherever the cursor slides it', () => {
       for (const scale of SCALES) {
         const s = toScreen(scale);
-        const layout = specLayout({ kind: 'distance', operands: [p, line], placement: { x: 80, y: 40 } }, index, scale);
+        const layout = specLayout(
+          { kind: 'distance', operands: [p, line], placement: { x: 80, y: 40 } },
+          index,
+          scale,
+        );
         const [start, end] = firstLine(layout);
         // The gap itself is untouched: the dimension line still spans it, at
         // right angles to the line, with its far end on the infinite line.
         expect(between(dir(s(start), s(end)), dir(s(from), s(to)))).toBeCloseTo(Math.PI / 2, 9);
-        expect(distance(s(start), s(end))).toBeCloseTo(perpendicularDistance(point, from, to) * scale, 9);
+        expect(distance(s(start), s(end))).toBeCloseTo(
+          perpendicularDistance(point, from, to) * scale,
+          9,
+        );
         expect(perpendicularDistance(s(end), s(from), s(to))).toBeCloseTo(0, 9);
       }
     });
@@ -761,16 +867,31 @@ describe('layoutDimension', () => {
     it('grows the arc to the cursor, floored at ANGLE_RADIUS_PX', () => {
       for (const scale of SCALES) {
         // A cursor far from the vertex sets the radius, measured in screen px.
-        const far = specLayout({ kind: 'angle', operands: [lineA, lineB], placement: { x: 320, y: 120 } }, index, scale);
-        expect(soleArc(far).radius * scale).toBeCloseTo(distance({ x: 320, y: 120 }, vertex) * scale, 9);
+        const far = specLayout(
+          { kind: 'angle', operands: [lineA, lineB], placement: { x: 320, y: 120 } },
+          index,
+          scale,
+        );
+        expect(soleArc(far).radius * scale).toBeCloseTo(
+          distance({ x: 320, y: 120 }, vertex) * scale,
+          9,
+        );
         // A cursor all but on the vertex is floored at the default 30 screen px.
-        const near = specLayout({ kind: 'angle', operands: [lineA, lineB], placement: { x: 201, y: 1 } }, index, scale);
+        const near = specLayout(
+          { kind: 'angle', operands: [lineA, lineB], placement: { x: 201, y: 1 } },
+          index,
+          scale,
+        );
         expect(soleArc(near).radius * scale).toBeCloseTo(30, 9);
       }
     });
 
     it('keeps the arc centred on the vertex, sweeping from line a to line b', () => {
-      const layout = specLayout({ kind: 'angle', operands: [lineA, lineB], placement: { x: 320, y: 120 } }, index, 1);
+      const layout = specLayout(
+        { kind: 'angle', operands: [lineA, lineB], placement: { x: 320, y: 120 } },
+        index,
+        1,
+      );
       const arc = soleArc(layout);
       expect(distance(vertex, arc.center)).toBeCloseTo(0, 9);
       // Line a runs +x from the vertex and line b +y, so the sweep is a quarter
@@ -785,7 +906,11 @@ describe('layoutDimension', () => {
 
     it("points a circle's leader at the cursor", () => {
       const s = toScreen(1);
-      const layout = specLayout({ kind: 'radius', operands: [circle], placement: { x: 90, y: 50 } }, index, 1);
+      const layout = specLayout(
+        { kind: 'radius', operands: [circle], placement: { x: 90, y: 50 } },
+        index,
+        1,
+      );
       const arrow = soleArrow(layout);
       // The arrowhead lands on the curve toward the cursor and points away from
       // the centre; the value sits LEADER_PX + TEXT_GAP_PX beyond it.
@@ -806,7 +931,11 @@ describe('layoutDimension', () => {
         { x: 50, y: 10 },
         { x: 10, y: 50 },
       ]) {
-        const layout = specLayout({ kind: 'radius', operands: [circle], placement: cursor }, index, 1);
+        const layout = specLayout(
+          { kind: 'radius', operands: [circle], placement: cursor },
+          index,
+          1,
+        );
         const arrow = soleArrow(layout);
         // The direction is normalised, so only where the cursor points matters:
         // the arrowhead always sits on the curve, toward it.
@@ -820,7 +949,11 @@ describe('layoutDimension', () => {
 
       it('follows the cursor inside the sweep', () => {
         // The quarter arc runs from +x round to +y, so a cursor at 45° is on it.
-        const layout = specLayout({ kind: 'radius', operands: [arc], placement: { x: 407, y: 7 } }, index, 1);
+        const layout = specLayout(
+          { kind: 'radius', operands: [arc], placement: { x: 407, y: 7 } },
+          index,
+          1,
+        );
         const arrow = soleArrow(layout);
         expect(between(dir(ac, arrow.at), Math.PI / 4)).toBeCloseTo(0, 9);
         expect(distance(ac, arrow.at)).toBeCloseTo(10, 9);
@@ -835,7 +968,11 @@ describe('layoutDimension', () => {
           { x: 390, y: 10 },
           { x: 393, y: -7 },
         ]) {
-          const layout = specLayout({ kind: 'radius', operands: [arc], placement: cursor }, index, 1);
+          const layout = specLayout(
+            { kind: 'radius', operands: [arc], placement: cursor },
+            index,
+            1,
+          );
           const arrow = soleArrow(layout);
           expect(arrow.at.x).toBeCloseTo(400, 9);
           expect(arrow.at.y).toBeCloseTo(10, 9);
@@ -860,13 +997,21 @@ describe('layoutDimension', () => {
         const index = indexEntities(sketch);
         const c = at(index, center);
         // Inside the three-quarter sweep, at π: the leader follows the cursor.
-        const inside = specLayout({ kind: 'radius', operands: [wide], placement: { x: 490, y: 0 } }, index, 1);
+        const inside = specLayout(
+          { kind: 'radius', operands: [wide], placement: { x: 490, y: 0 } },
+          index,
+          1,
+        );
         const insideArrow = soleArrow(inside);
         expect(between(dir(c, insideArrow.at), Math.PI)).toBeCloseTo(0, 9);
         expect(distance(c, insideArrow.at)).toBeCloseTo(10, 9);
         // Past the sweep's end, at -π/4 — the same direction as 7π/4 — the
         // leader lands on the arc's end, at 3π/2.
-        const outside = specLayout({ kind: 'radius', operands: [wide], placement: { x: 507, y: -7 } }, index, 1);
+        const outside = specLayout(
+          { kind: 'radius', operands: [wide], placement: { x: 507, y: -7 } },
+          index,
+          1,
+        );
         expect(soleArrow(outside).at.x).toBeCloseTo(500, 9);
         expect(soleArrow(outside).at.y).toBeCloseTo(-10, 9);
       });
@@ -905,12 +1050,18 @@ describe('a stored placement', () => {
     // The offset a cursor resolved to and the one stored from it are the same
     // number, so the two lay out identically.
     expect(specLayout({ kind: 'distance', operands: [origin, far], offset: 60 }, index, 1)).toEqual(
-      specLayout({ kind: 'distance', operands: [origin, far], placement: { x: 50, y: -60 } }, index, 1),
+      specLayout(
+        { kind: 'distance', operands: [origin, far], placement: { x: 50, y: -60 } },
+        index,
+        1,
+      ),
     );
     expect(specLayout({ kind: 'distance', operands: [p, line], offset: 40 }, index, 1)).toEqual(
       specLayout({ kind: 'distance', operands: [p, line], placement: { x: 90, y: 40 } }, index, 1),
     );
-    expect(specLayout({ kind: 'radius', operands: [circle], offset: Math.PI / 2 }, index, 1)).toEqual(
+    expect(
+      specLayout({ kind: 'radius', operands: [circle], offset: Math.PI / 2 }, index, 1),
+    ).toEqual(
       specLayout({ kind: 'radius', operands: [circle], placement: { x: 0, y: 40 } }, index, 1),
     );
   });
@@ -920,7 +1071,9 @@ describe('a stored placement', () => {
     // The segment runs left to right, so its normal points up the screen and a
     // positive offset sits above it, 60 world px off.
     const above = specLayout({ kind: 'distance', operands: [origin, far], offset: 60 }, index, 1);
-    expect(perpendicularDistance(s(mid), s(firstLine(above)[0]), s(firstLine(above)[1]))).toBeCloseTo(60, 9);
+    expect(
+      perpendicularDistance(s(mid), s(firstLine(above)[0]), s(firstLine(above)[1])),
+    ).toBeCloseTo(60, 9);
     expect(s(above.textAt).y).toBeCloseTo(s(mid).y - 60, 9);
     // A negative offset puts it on the other side of the segment.
     const below = specLayout({ kind: 'distance', operands: [origin, far], offset: -60 }, index, 1);
@@ -948,10 +1101,14 @@ describe('a stored placement', () => {
     expect(distance(vertex, layout.textAt)).toBeCloseTo(80 + 8, 9);
   });
 
-  it("points a radius leader where it was placed", () => {
+  it('points a radius leader where it was placed', () => {
     // A circle at the origin, placed pointing down: atan2's +π/2 is +y, and Y
     // points down the screen.
-    const layout = specLayout({ kind: 'radius', operands: [circle], offset: Math.PI / 2 }, index, 1);
+    const layout = specLayout(
+      { kind: 'radius', operands: [circle], offset: Math.PI / 2 },
+      index,
+      1,
+    );
     const arrow = soleArrow(layout);
     expect(between(dir(centre, arrow.at), Math.PI / 2)).toBeCloseTo(0, 9);
     expect(distance(centre, arrow.at)).toBeCloseTo(40, 9);
@@ -962,13 +1119,23 @@ describe('a stored placement', () => {
     // A dimension being placed follows the cursor; the stored placement is only
     // what it falls back to once the cursor is gone.
     const above = { x: 50, y: -20 };
-    expect(specLayout({ kind: 'distance', operands: [origin, far], placement: above, offset: 60 }, index, 1)).toEqual(
+    expect(
+      specLayout(
+        { kind: 'distance', operands: [origin, far], placement: above, offset: 60 },
+        index,
+        1,
+      ),
+    ).toEqual(
       specLayout({ kind: 'distance', operands: [origin, far], placement: above }, index, 1),
     );
     const left = { x: -40, y: 0 };
-    expect(specLayout({ kind: 'radius', operands: [circle], placement: left, offset: Math.PI / 2 }, index, 1)).toEqual(
-      specLayout({ kind: 'radius', operands: [circle], placement: left }, index, 1),
-    );
+    expect(
+      specLayout(
+        { kind: 'radius', operands: [circle], placement: left, offset: Math.PI / 2 },
+        index,
+        1,
+      ),
+    ).toEqual(specLayout({ kind: 'radius', operands: [circle], placement: left }, index, 1));
   });
 
   it('runs the witness lines all the way to a placed dimension line', () => {
@@ -1008,12 +1175,21 @@ describe('a stored placement', () => {
     const builtIndex = indexEntities(built);
     const constraint = constraintAt(built, d);
     // The builder passes the field straight through to the constraint...
-    expect(constraint).toEqual({ kind: 'distance', id: d, a: first, b: second, value: 100, placement: 60 });
+    expect(constraint).toEqual({
+      kind: 'distance',
+      id: d,
+      a: first,
+      b: second,
+      value: 100,
+      placement: 60,
+    });
     // ...and the layout honours it: 60 above the segment, not the default 14.
     const s = toScreen(1);
     const layout = layoutOf(constraint, builtIndex, 1);
     const spread = midpoint(at(builtIndex, first), at(builtIndex, second));
-    expect(perpendicularDistance(s(spread), s(firstLine(layout)[0]), s(firstLine(layout)[1]))).toBeCloseTo(60, 9);
+    expect(
+      perpendicularDistance(s(spread), s(firstLine(layout)[0]), s(firstLine(layout)[1])),
+    ).toBeCloseTo(60, 9);
     expect(s(layout.textAt).y).toBeCloseTo(s(spread).y - 60, 9);
   });
 
@@ -1027,7 +1203,11 @@ describe('a stored placement', () => {
     expect(arrow.at.y).toBeCloseTo(-10, 9);
     expect(distance(ac, arrow.at)).toBeCloseTo(10, 9);
     // A cursor pointing the same way would have been clamped onto the arc's end.
-    const clamped = specLayout({ kind: 'radius', operands: [arc], placement: { x: 300, y: -10 } }, index, 1);
+    const clamped = specLayout(
+      { kind: 'radius', operands: [arc], placement: { x: 300, y: -10 } },
+      index,
+      1,
+    );
     expect(soleArrow(clamped).at.y).toBeCloseTo(10, 9);
   });
 
@@ -1037,36 +1217,72 @@ describe('a stored placement', () => {
         // A cursor 5 screen px from the segment is inside the floor at every
         // zoom, so the offset is the floor: 14 screen px, in world units.
         const near = 5 / scale;
-        const above = resolveOffset({ kind: 'distance', operands: [origin, far], placement: { x: 50, y: -near } }, index, scale);
-        const below = resolveOffset({ kind: 'distance', operands: [origin, far], placement: { x: 50, y: near } }, index, scale);
+        const above = resolveOffset(
+          { kind: 'distance', operands: [origin, far], placement: { x: 50, y: -near } },
+          index,
+          scale,
+        );
+        const below = resolveOffset(
+          { kind: 'distance', operands: [origin, far], placement: { x: 50, y: near } },
+          index,
+          scale,
+        );
         expect(above).toBeCloseTo(14 / scale, 9);
         expect(below).toBeCloseTo(-14 / scale, 9);
       }
       // Well clear of the floor, the cursor sets the offset exactly.
-      expect(resolveOffset({ kind: 'distance', operands: [origin, far], placement: { x: 50, y: -60 } }, index, 1)).toBeCloseTo(60, 9);
+      expect(
+        resolveOffset(
+          { kind: 'distance', operands: [origin, far], placement: { x: 50, y: -60 } },
+          index,
+          1,
+        ),
+      ).toBeCloseTo(60, 9);
     });
 
     it('takes a stored offset as it stands', () => {
-      expect(resolveOffset({ kind: 'distance', operands: [origin, far], offset: 60 }, index, 1)).toBe(60);
-      expect(resolveOffset({ kind: 'distance', operands: [p, line], offset: -40 }, index, 1)).toBe(-40);
-      expect(resolveOffset({ kind: 'angle', operands: [lineA, lineB], offset: 80 }, index, 1)).toBe(80);
-      expect(resolveOffset({ kind: 'radius', operands: [circle], offset: Math.PI / 2 }, index, 1)).toBe(Math.PI / 2);
+      expect(
+        resolveOffset({ kind: 'distance', operands: [origin, far], offset: 60 }, index, 1),
+      ).toBe(60);
+      expect(resolveOffset({ kind: 'distance', operands: [p, line], offset: -40 }, index, 1)).toBe(
+        -40,
+      );
+      expect(resolveOffset({ kind: 'angle', operands: [lineA, lineB], offset: 80 }, index, 1)).toBe(
+        80,
+      );
+      expect(
+        resolveOffset({ kind: 'radius', operands: [circle], offset: Math.PI / 2 }, index, 1),
+      ).toBe(Math.PI / 2);
     });
 
     it("falls back to each kind's default anchor with neither", () => {
       // The defaults, in world units: 14 off for a distance, a 30px arc for an
       // angle, and the mid-sweep for a radius — the top of a circle.
-      expect(resolveOffset({ kind: 'distance', operands: [origin, far] }, index, 1)).toBeCloseTo(14, 9);
+      expect(resolveOffset({ kind: 'distance', operands: [origin, far] }, index, 1)).toBeCloseTo(
+        14,
+        9,
+      );
       expect(resolveOffset({ kind: 'distance', operands: [p, line] }, index, 1)).toBeCloseTo(14, 9);
-      expect(resolveOffset({ kind: 'angle', operands: [lineA, lineB] }, index, 1)).toBeCloseTo(30, 9);
-      expect(resolveOffset({ kind: 'radius', operands: [circle] }, index, 1)).toBeCloseTo(-Math.PI / 2, 9);
-      expect(resolveOffset({ kind: 'radius', operands: [arc] }, index, 1)).toBeCloseTo(Math.PI / 4, 9);
+      expect(resolveOffset({ kind: 'angle', operands: [lineA, lineB] }, index, 1)).toBeCloseTo(
+        30,
+        9,
+      );
+      expect(resolveOffset({ kind: 'radius', operands: [circle] }, index, 1)).toBeCloseTo(
+        -Math.PI / 2,
+        9,
+      );
+      expect(resolveOffset({ kind: 'radius', operands: [arc] }, index, 1)).toBeCloseTo(
+        Math.PI / 4,
+        9,
+      );
     });
 
     it('returns undefined for degenerate geometry', () => {
       // Missing entities, operands of the wrong kind and a spec short of them
       // all measure nothing, so there is no offset to place a dimension at.
-      expect(resolveOffset({ kind: 'distance', operands: [origin, 'nope'] }, index, 1)).toBeUndefined();
+      expect(
+        resolveOffset({ kind: 'distance', operands: [origin, 'nope'] }, index, 1),
+      ).toBeUndefined();
       expect(resolveOffset({ kind: 'distance', operands: [line, line] }, index, 1)).toBeUndefined();
       expect(resolveOffset({ kind: 'distance', operands: [origin] }, index, 1)).toBeUndefined();
       expect(resolveOffset({ kind: 'radius', operands: [line] }, index, 1)).toBeUndefined();
@@ -1077,9 +1293,15 @@ describe('a stored placement', () => {
       const twin = b.point(5, 5);
       const short = b.line(same, twin);
       const degenerate = indexEntities(b.build());
-      expect(resolveOffset({ kind: 'distance', operands: [same, twin] }, degenerate, 1)).toBeUndefined();
-      expect(resolveOffset({ kind: 'distance', operands: [same, short] }, degenerate, 1)).toBeUndefined();
-      expect(resolveOffset({ kind: 'angle', operands: [short, short] }, degenerate, 1)).toBeUndefined();
+      expect(
+        resolveOffset({ kind: 'distance', operands: [same, twin] }, degenerate, 1),
+      ).toBeUndefined();
+      expect(
+        resolveOffset({ kind: 'distance', operands: [same, short] }, degenerate, 1),
+      ).toBeUndefined();
+      expect(
+        resolveOffset({ kind: 'angle', operands: [short, short] }, degenerate, 1),
+      ).toBeUndefined();
     });
   });
 });
@@ -1115,8 +1337,17 @@ describe('isDimensionKind', () => {
 
   it('rejects every other constraint kind', () => {
     const others = [
-      'coincident', 'fix', 'horizontal', 'vertical', 'parallel', 'perpendicular',
-      'equal', 'tangent', 'pointOnLine', 'pointOnCurve', 'midpoint',
+      'coincident',
+      'fix',
+      'horizontal',
+      'vertical',
+      'parallel',
+      'perpendicular',
+      'equal',
+      'tangent',
+      'pointOnLine',
+      'pointOnCurve',
+      'midpoint',
     ] as const;
     for (const kind of others) expect(isDimensionKind(kind)).toBe(false);
   });

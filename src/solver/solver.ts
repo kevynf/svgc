@@ -1,4 +1,10 @@
-import { Algorithm, DebugMode, GcsWrapper, init_planegcs_module, SolveStatus } from '@salusoft89/planegcs';
+import {
+  Algorithm,
+  DebugMode,
+  GcsWrapper,
+  init_planegcs_module,
+  SolveStatus,
+} from '@salusoft89/planegcs';
 import type { SketchPrimitive } from '@salusoft89/planegcs';
 import type { Entity, Id } from '../core/model';
 import type { Sketch } from '../core/sketch';
@@ -41,8 +47,13 @@ export class Solver {
 
     const status = this.gcs.solve(Algorithm.DogLeg);
     const outcome: SolveOutcome =
-      status === SolveStatus.Success ? 'solved' : status === SolveStatus.Converged ? 'converged' : 'failed';
-    const toSketchIds = (ids: string[]) => unique(ids.map((id) => translation.constraintOf.get(id)));
+      status === SolveStatus.Success
+        ? 'solved'
+        : status === SolveStatus.Converged
+          ? 'converged'
+          : 'failed';
+    const toSketchIds = (ids: string[]) =>
+      unique(ids.map((id) => translation.constraintOf.get(id)));
     const diagnostics = {
       dof: this.gcs.gcs.dof(),
       conflicting: toSketchIds(this.gcs.get_gcs_conflicting_constraints()),
@@ -105,7 +116,9 @@ export class Solver {
  * `planegcs.wasm`; in Node it is resolved next to the package's JS file.
  */
 export async function createSolver(wasmUrl?: string): Promise<Solver> {
-  const mod = await init_planegcs_module(wasmUrl === undefined ? undefined : { locateFile: () => wasmUrl });
+  const mod = await init_planegcs_module(
+    wasmUrl === undefined ? undefined : { locateFile: () => wasmUrl },
+  );
   return new Solver(new GcsWrapper(new mod.GcsSystem(), mod));
 }
 

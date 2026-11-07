@@ -69,7 +69,11 @@ export interface HitOptions {
  * The entity under `p`. Points win over curves when both are within
  * tolerance, so endpoints stay grabbable where curves meet.
  */
-export function hitTest(sketch: Sketch, p: Vec2, { tolerance, exclude }: HitOptions): Id | undefined {
+export function hitTest(
+  sketch: Sketch,
+  p: Vec2,
+  { tolerance, exclude }: HitOptions,
+): Id | undefined {
   const pt = pointLookup(sketch);
   let best: { id: Id; d: number; point: boolean } | undefined;
   for (const e of sketch.entities) {
@@ -89,7 +93,8 @@ function inside(p: Vec2, box: Box): boolean {
 }
 
 function segmentsIntersect(a: Vec2, b: Vec2, c: Vec2, d: Vec2): boolean {
-  const cross = (o: Vec2, p: Vec2, q: Vec2) => (p.x - o.x) * (q.y - o.y) - (p.y - o.y) * (q.x - o.x);
+  const cross = (o: Vec2, p: Vec2, q: Vec2) =>
+    (p.x - o.x) * (q.y - o.y) - (p.y - o.y) * (q.x - o.x);
   const d1 = cross(c, d, a);
   const d2 = cross(c, d, b);
   const d3 = cross(a, b, c);

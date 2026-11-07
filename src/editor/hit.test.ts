@@ -63,7 +63,10 @@ describe('sketchBounds and Viewport', () => {
     const vp = new Viewport();
     vp.resize(400, 300);
     vp.fit(bounds, 0);
-    const center = vp.toScreen({ x: (bounds.minX + bounds.maxX) / 2, y: (bounds.minY + bounds.maxY) / 2 });
+    const center = vp.toScreen({
+      x: (bounds.minX + bounds.maxX) / 2,
+      y: (bounds.minY + bounds.maxY) / 2,
+    });
     expect(center.x).toBeCloseTo(200);
     expect(center.y).toBeCloseTo(150);
     const p = { x: 12, y: 34 };

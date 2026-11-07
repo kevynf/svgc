@@ -28,14 +28,18 @@ export class Names {
     const e = this.kinds.get(id);
     if (e === undefined) return id;
     const name = this.t.t(`entities.${e.kind}`, { n: this.numbers.get(id) ?? 0 });
-    return e.kind !== 'point' && e.construction === true ? this.t.t('entities.construction', { name }) : name;
+    return e.kind !== 'point' && e.construction === true
+      ? this.t.t('entities.construction', { name })
+      : name;
   }
 
   constraint(c: Constraint): string {
     const targets = constraintRefs(c)
       .map((id) => {
         const e = this.kinds.get(id);
-        return e === undefined ? id : this.t.t(`entities.${e.kind}`, { n: this.numbers.get(id) ?? 0 });
+        return e === undefined
+          ? id
+          : this.t.t(`entities.${e.kind}`, { n: this.numbers.get(id) ?? 0 });
       })
       .join(this.t.locale === 'zh-CN' ? '、' : ', ');
     return this.t.t('constraints.label', { kind: this.t.t(`constraints.${c.kind}`), targets });

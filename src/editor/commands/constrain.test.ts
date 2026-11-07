@@ -25,7 +25,10 @@ afterAll(() => {
   solver.dispose();
 });
 
-const commands = new Map<string, CommandFactory>([['select', (e) => new SelectCommand(e)], ...CONSTRAINT_COMMANDS]);
+const commands = new Map<string, CommandFactory>([
+  ['select', (e) => new SelectCommand(e)],
+  ...CONSTRAINT_COMMANDS,
+]);
 
 function editorWith(sketch: Sketch = emptySketch()): Editor {
   const editor = new Editor(solver, sketch, commands, 'select');
@@ -118,7 +121,8 @@ function radiusOf(editor: Editor, id: Id): number {
   const e = editor.sketch.entities.find((x) => x.id === id);
   if (e?.kind === 'circle') return e.radius;
   if (e?.kind !== 'arc') throw new Error(`"${id}" is not a curve`);
-  return arcParams(pointOf(editor, e.center), pointOf(editor, e.start), pointOf(editor, e.end)).radius;
+  return arcParams(pointOf(editor, e.center), pointOf(editor, e.start), pointOf(editor, e.end))
+    .radius;
 }
 
 describe('coincident', () => {
@@ -395,7 +399,9 @@ describe('point on geometry', () => {
     clickEntity(editor, p);
     clickCurve(editor, circle);
     expect(kinds(editor.sketch)).toEqual(['fix', 'pointOnCurve']);
-    expect(Math.abs(distance(pointOf(editor, center), pointOf(editor, p)) - radiusOf(editor, circle))).toBeCloseTo(0, 6);
+    expect(
+      Math.abs(distance(pointOf(editor, center), pointOf(editor, p)) - radiusOf(editor, circle)),
+    ).toBeCloseTo(0, 6);
   });
 });
 

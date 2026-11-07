@@ -179,6 +179,9 @@
 @media (prefers-reduced-motion: no-preference) {
   .settings-close,
   .settings-action {
-    transition: background-color 80ms linear, border-color 80ms linear, color 80ms linear;
+    transition:
+      background-color 80ms linear,
+      border-color 80ms linear,
+      color 80ms linear;
   }
 }

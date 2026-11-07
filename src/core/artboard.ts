@@ -108,7 +108,12 @@ export function sameArtboard(a: Artboard | undefined, b: Artboard | undefined): 
  * about the centre and `keepAspect` preserves the original aspect ratio.
  * The result keeps at least 1 px per axis but is not snapped to whole px.
  */
-export function resizeArtboard(a: Artboard, handle: Handle, to: Vec2, opts: ResizeOptions = {}): Artboard {
+export function resizeArtboard(
+  a: Artboard,
+  handle: Handle,
+  to: Vec2,
+  opts: ResizeOptions = {},
+): Artboard {
   const keepAspect = opts.keepAspect ?? false;
   const fromCenter = opts.fromCenter ?? false;
   const aspect = a.height > 0 ? a.width / a.height : 1;

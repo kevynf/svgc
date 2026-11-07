@@ -46,8 +46,14 @@ describe('nextParamName', () => {
 
 describe('paramErrorMessage', () => {
   it('names the rule a bad name broke', () => {
-    expect(paramErrorMessage('invalidName', en)).toEqual({ key: 'parameters.invalidName', params: {} });
-    expect(paramErrorMessage('duplicateName', en)).toEqual({ key: 'parameters.duplicateName', params: {} });
+    expect(paramErrorMessage('invalidName', en)).toEqual({
+      key: 'parameters.invalidName',
+      params: {},
+    });
+    expect(paramErrorMessage('duplicateName', en)).toEqual({
+      key: 'parameters.duplicateName',
+      params: {},
+    });
   });
 
   it('reports a dependency cycle on its own key', () => {
@@ -55,19 +61,39 @@ describe('paramErrorMessage', () => {
   });
 
   it('reads every expression error as a syntax problem', () => {
-    for (const error of ['syntax', 'arity', 'unknownFunction', 'divisionByZero', 'domain', 'notFinite', 'unexpectedEnd']) {
+    for (const error of [
+      'syntax',
+      'arity',
+      'unknownFunction',
+      'divisionByZero',
+      'domain',
+      'notFinite',
+      'unexpectedEnd',
+    ]) {
       expect(paramErrorMessage(error, en)).toEqual({ key: 'parameters.syntax', params: {} });
     }
   });
 
   it('carries the unknown name from the detail into the message params', () => {
-    expect(paramErrorMessage('unknownName', en, 'd3')).toEqual({ key: 'parameters.unknownName', params: { name: 'd3' } });
-    expect(paramErrorMessage('unknownName', en)).toEqual({ key: 'parameters.unknownName', params: { name: '' } });
+    expect(paramErrorMessage('unknownName', en, 'd3')).toEqual({
+      key: 'parameters.unknownName',
+      params: { name: 'd3' },
+    });
+    expect(paramErrorMessage('unknownName', en)).toEqual({
+      key: 'parameters.unknownName',
+      params: { name: '' },
+    });
   });
 
   it('carries the reference count into the message params', () => {
-    expect(paramErrorMessage('inUse', en, undefined, 3)).toEqual({ key: 'parameters.inUse', params: { count: 3 } });
-    expect(paramErrorMessage('inUse', en)).toEqual({ key: 'parameters.inUse', params: { count: 0 } });
+    expect(paramErrorMessage('inUse', en, undefined, 3)).toEqual({
+      key: 'parameters.inUse',
+      params: { count: 3 },
+    });
+    expect(paramErrorMessage('inUse', en)).toEqual({
+      key: 'parameters.inUse',
+      params: { count: 0 },
+    });
   });
 
   it('maps a failed solve to the status message', () => {
@@ -80,6 +106,8 @@ describe('paramErrorMessage', () => {
 
   it('does not depend on the locale', () => {
     expect(paramErrorMessage('cycle', zh)).toEqual(paramErrorMessage('cycle', en));
-    expect(paramErrorMessage('unknownName', zh, 'd3')).toEqual(paramErrorMessage('unknownName', en, 'd3'));
+    expect(paramErrorMessage('unknownName', zh, 'd3')).toEqual(
+      paramErrorMessage('unknownName', en, 'd3'),
+    );
   });
 });

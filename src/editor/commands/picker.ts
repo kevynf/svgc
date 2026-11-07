@@ -71,7 +71,9 @@ export class Picker {
       result = { position: input.world, constraints: [], alignments: [] };
     }
     this.current = result;
-    const target = result.constraints.find((c) => c.kind === 'coincident' || c.kind === 'pointOnCurve');
+    const target = result.constraints.find(
+      (c) => c.kind === 'coincident' || c.kind === 'pointOnCurve',
+    );
     this.editor.setHover(target !== undefined && 'target' in target ? target.target : undefined);
     return result;
   }
@@ -84,7 +86,11 @@ export class Picker {
   overlay(): OverlayShape[] {
     const pick = this.current;
     if (pick === undefined) return [];
-    const shapes: OverlayShape[] = pick.alignments.map((alignment) => ({ kind: 'guide', alignment, to: pick.position }));
+    const shapes: OverlayShape[] = pick.alignments.map((alignment) => ({
+      kind: 'guide',
+      alignment,
+      to: pick.position,
+    }));
     if (pick.constraints.length > 0) {
       shapes.push({ kind: 'snap', at: pick.position });
       shapes.push({ kind: 'inferred', at: pick.position, constraints: pick.constraints });
@@ -113,5 +119,6 @@ export function applyInferred(
   pick: InferenceResult,
   ids: { readonly point: Id; readonly segment?: Id; readonly anchor?: Id },
 ): void {
-  for (const constraint of materialize(pick.constraints, ids, draft.sketch)) draft.constrain(constraint);
+  for (const constraint of materialize(pick.constraints, ids, draft.sketch))
+    draft.constrain(constraint);
 }

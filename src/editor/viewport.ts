@@ -8,7 +8,12 @@ export interface Box {
 }
 
 export function boxFrom(a: Vec2, b: Vec2): Box {
-  return { minX: Math.min(a.x, b.x), minY: Math.min(a.y, b.y), maxX: Math.max(a.x, b.x), maxY: Math.max(a.y, b.y) };
+  return {
+    minX: Math.min(a.x, b.x),
+    minY: Math.min(a.y, b.y),
+    maxX: Math.max(a.x, b.x),
+    maxY: Math.max(a.y, b.y),
+  };
 }
 
 export interface GridSteps {

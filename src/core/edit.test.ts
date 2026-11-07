@@ -56,7 +56,11 @@ describe('toggleConstruction', () => {
   it('turns a mixed selection into construction, then back', () => {
     const s = lShape();
     const once = toggleConstruction(toggleConstruction(s.sketch, [s.l1]), [s.l1, s.l2]);
-    expect(once.entities.filter((e) => e.kind === 'line').every((e) => e.kind === 'line' && e.construction)).toBe(true);
+    expect(
+      once.entities
+        .filter((e) => e.kind === 'line')
+        .every((e) => e.kind === 'line' && e.construction),
+    ).toBe(true);
     const twice = toggleConstruction(once, [s.l1, s.l2]);
     expect(twice.entities.some((e) => e.kind === 'line' && e.construction === true)).toBe(false);
   });
@@ -99,7 +103,8 @@ describe('setConstraintValue', () => {
     const out = setConstraintValue(setConstraintValue(s.sketch, s.dist, 12), s.rad, 'gap');
     expect(out.entities).toBe(s.sketch.entities);
     expect(out.params).toBe(s.sketch.params);
-    const others = (sketch: Sketch) => sketch.constraints.filter((c) => c.id !== s.dist && c.id !== s.rad);
+    const others = (sketch: Sketch) =>
+      sketch.constraints.filter((c) => c.id !== s.dist && c.id !== s.rad);
     expect(others(out)).toEqual(others(s.sketch));
   });
 

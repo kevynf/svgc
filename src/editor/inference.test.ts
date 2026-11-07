@@ -78,11 +78,15 @@ describe('infer', () => {
 
   it('reuses a nearby point instead of inferring anything else', () => {
     const s = curveScene();
-    const r = infer(s.sketch, { x: 100, y: 1.5 }, {
-      tolerance: 5,
-      enabled: true,
-      anchor: { position: { x: 0, y: 0 }, id: s.a },
-    });
+    const r = infer(
+      s.sketch,
+      { x: 100, y: 1.5 },
+      {
+        tolerance: 5,
+        enabled: true,
+        anchor: { position: { x: 0, y: 0 }, id: s.a },
+      },
+    );
     expect(r.position).toEqual({ x: 100, y: 0 });
     expect(r.constraints).toEqual([{ kind: 'coincident', target: s.c }]);
     expect(r.alignments).toEqual([]);
@@ -105,10 +109,14 @@ describe('infer', () => {
   it('projects the cursor onto an arc inside its sweep', () => {
     const s = curveScene();
     // Four units out along the radius at 30°, i.e. (338.10, 22).
-    const r = infer(s.sketch, { x: 300 + 44 * Math.cos(degToRad(30)), y: 44 * Math.sin(degToRad(30)) }, {
-      tolerance: 5,
-      enabled: true,
-    });
+    const r = infer(
+      s.sketch,
+      { x: 300 + 44 * Math.cos(degToRad(30)), y: 44 * Math.sin(degToRad(30)) },
+      {
+        tolerance: 5,
+        enabled: true,
+      },
+    );
     expect(r.constraints).toEqual([{ kind: 'pointOnCurve', target: s.arc }]);
     expect(r.position.x).toBeCloseTo(300 + 40 * Math.cos(degToRad(30)), 6);
     expect(r.position.y).toBeCloseTo(40 * Math.sin(degToRad(30)), 6);
@@ -127,11 +135,15 @@ describe('infer', () => {
 
   it('snaps horizontal against the anchor and skips the y alignment', () => {
     const s = anchorScene();
-    const r = infer(s.sketch, { x: 152, y: 252 }, {
-      tolerance: 5,
-      enabled: true,
-      anchor: { position: { x: 0, y: 250 }, id: s.free },
-    });
+    const r = infer(
+      s.sketch,
+      { x: 152, y: 252 },
+      {
+        tolerance: 5,
+        enabled: true,
+        anchor: { position: { x: 0, y: 250 }, id: s.free },
+      },
+    );
     expect(r.constraints).toEqual([{ kind: 'horizontal' }]);
     // x still aligns to p, but q (one unit off in y) is left alone.
     expect(r.alignments).toEqual([{ source: s.p, axis: 'x' }]);
@@ -140,11 +152,15 @@ describe('infer', () => {
 
   it('snaps vertical against the anchor and skips the x alignment', () => {
     const s = anchorScene();
-    const r = infer(s.sketch, { x: 3, y: 300 }, {
-      tolerance: 5,
-      enabled: true,
-      anchor: { position: { x: 0, y: 250 }, id: s.free },
-    });
+    const r = infer(
+      s.sketch,
+      { x: 3, y: 300 },
+      {
+        tolerance: 5,
+        enabled: true,
+        anchor: { position: { x: 0, y: 250 }, id: s.free },
+      },
+    );
     expect(r.constraints).toEqual([{ kind: 'vertical' }]);
     // t sits one unit off in x, but that axis is pinned by the constraint.
     expect(r.alignments).toEqual([]);
@@ -155,12 +171,16 @@ describe('infer', () => {
     const b = new SketchBuilder();
     const start = b.point(0, 250);
     const sketch = b.build();
-    const r = infer(sketch, { x: 2, y: 253 }, {
-      tolerance: 5,
-      enabled: true,
-      anchor: { position: { x: 0, y: 250 }, id: start },
-      exclude: new Set([start]),
-    });
+    const r = infer(
+      sketch,
+      { x: 2, y: 253 },
+      {
+        tolerance: 5,
+        enabled: true,
+        anchor: { position: { x: 0, y: 250 }, id: start },
+        exclude: new Set([start]),
+      },
+    );
     expect(r.constraints).toEqual([]);
     expect(r.alignments).toEqual([]);
     expect(r.position).toEqual({ x: 2, y: 253 });
@@ -172,8 +192,15 @@ describe('infer', () => {
     const sketch = b.build();
     const anchor = { position: { x: 0, y: 250 }, id: start };
     const cursor = { x: 148, y: 260 };
-    expect(infer(sketch, cursor, { tolerance: 5, enabled: true, anchor, angleTolerance: 2 }).constraints).toEqual([]);
-    const loose = infer(sketch, cursor, { tolerance: 5, enabled: true, anchor, angleTolerance: 10 });
+    expect(
+      infer(sketch, cursor, { tolerance: 5, enabled: true, anchor, angleTolerance: 2 }).constraints,
+    ).toEqual([]);
+    const loose = infer(sketch, cursor, {
+      tolerance: 5,
+      enabled: true,
+      anchor,
+      angleTolerance: 10,
+    });
     expect(loose.constraints).toEqual([{ kind: 'horizontal' }]);
     expect(loose.position).toEqual({ x: 148, y: 250 });
   });
@@ -181,7 +208,10 @@ describe('infer', () => {
   it('snaps parallel to a diagonal reference line', () => {
     const s = referenceScene();
     const ref = Math.atan2(50, 100);
-    const cursor = { x: 200 + 100 * Math.cos(ref + degToRad(2)), y: 200 + 100 * Math.sin(ref + degToRad(2)) };
+    const cursor = {
+      x: 200 + 100 * Math.cos(ref + degToRad(2)),
+      y: 200 + 100 * Math.sin(ref + degToRad(2)),
+    };
     const r = infer(s.sketch, cursor, {
       tolerance: 5,
       enabled: true,
@@ -197,7 +227,10 @@ describe('infer', () => {
   it('snaps perpendicular to a reference line', () => {
     const s = referenceScene();
     const ref = Math.atan2(50, 100) + Math.PI / 2;
-    const cursor = { x: 200 + 100 * Math.cos(ref + degToRad(2)), y: 200 + 100 * Math.sin(ref + degToRad(2)) };
+    const cursor = {
+      x: 200 + 100 * Math.cos(ref + degToRad(2)),
+      y: 200 + 100 * Math.sin(ref + degToRad(2)),
+    };
     const r = infer(s.sketch, cursor, {
       tolerance: 5,
       enabled: true,
@@ -213,7 +246,12 @@ describe('infer', () => {
     const b = new SketchBuilder();
     const start = b.point(0, 250);
     const sketch = b.build();
-    const opts = { tolerance: 5, enabled: true, anchor: { position: { x: 0, y: 250 }, id: start }, exclude: new Set([start]) };
+    const opts = {
+      tolerance: 5,
+      enabled: true,
+      anchor: { position: { x: 0, y: 250 }, id: start },
+      exclude: new Set([start]),
+    };
     const left = infer(sketch, { x: -150, y: 253 }, opts);
     expect(left.constraints).toEqual([{ kind: 'horizontal' }]);
     expect(left.position).toEqual({ x: -150, y: 250 });
@@ -224,15 +262,28 @@ describe('infer', () => {
 
   it('infers parallel and perpendicular against the reference in either direction', () => {
     const s = referenceScene();
-    const opts = { tolerance: 5, enabled: true, anchor: { position: { x: 200, y: 200 }, id: s.anchor }, reference: s.reference };
+    const opts = {
+      tolerance: 5,
+      enabled: true,
+      anchor: { position: { x: 200, y: 200 }, id: s.anchor },
+      reference: s.reference,
+    };
     const back = Math.atan2(50, 100) + Math.PI;
-    const r = infer(s.sketch, { x: 200 + 100 * Math.cos(back + degToRad(2)), y: 200 + 100 * Math.sin(back + degToRad(2)) }, opts);
+    const r = infer(
+      s.sketch,
+      { x: 200 + 100 * Math.cos(back + degToRad(2)), y: 200 + 100 * Math.sin(back + degToRad(2)) },
+      opts,
+    );
     expect(r.constraints).toEqual([{ kind: 'parallel', target: s.reference }]);
     expect(r.position.x).toBeCloseTo(200 + 100 * Math.cos(back), 6);
     expect(r.position.y).toBeCloseTo(200 + 100 * Math.sin(back), 6);
 
     const down = Math.atan2(50, 100) - Math.PI / 2;
-    const p = infer(s.sketch, { x: 200 + 100 * Math.cos(down - degToRad(2)), y: 200 + 100 * Math.sin(down - degToRad(2)) }, opts);
+    const p = infer(
+      s.sketch,
+      { x: 200 + 100 * Math.cos(down - degToRad(2)), y: 200 + 100 * Math.sin(down - degToRad(2)) },
+      opts,
+    );
     expect(p.constraints).toEqual([{ kind: 'perpendicular', target: s.reference }]);
     expect(p.position.x).toBeCloseTo(200 + 100 * Math.cos(down), 6);
   });
@@ -254,11 +305,15 @@ describe('infer', () => {
 
   it('continues an arc smoothly from its start endpoint', () => {
     const s = arcScene();
-    const r = infer(s.sketch, { x: 52, y: -60 }, {
-      tolerance: 5,
-      enabled: true,
-      anchor: { position: { x: 50, y: 0 }, id: s.start },
-    });
+    const r = infer(
+      s.sketch,
+      { x: 52, y: -60 },
+      {
+        tolerance: 5,
+        enabled: true,
+        anchor: { position: { x: 50, y: 0 }, id: s.start },
+      },
+    );
     expect(r.constraints).toEqual([{ kind: 'tangent', target: s.arc }]);
     expect(r.position.x).toBeCloseTo(50, 6);
     expect(r.position.y).toBeCloseTo(-Math.hypot(2, 60), 6);
@@ -267,11 +322,15 @@ describe('infer', () => {
 
   it('continues an arc smoothly from its end endpoint', () => {
     const s = arcScene();
-    const r = infer(s.sketch, { x: -60, y: 52 }, {
-      tolerance: 5,
-      enabled: true,
-      anchor: { position: { x: 0, y: 50 }, id: s.end },
-    });
+    const r = infer(
+      s.sketch,
+      { x: -60, y: 52 },
+      {
+        tolerance: 5,
+        enabled: true,
+        anchor: { position: { x: 0, y: 50 }, id: s.end },
+      },
+    );
     expect(r.constraints).toEqual([{ kind: 'tangent', target: s.arc }]);
     expect(r.position.x).toBeCloseTo(-Math.hypot(60, 2), 6);
     expect(r.position.y).toBeCloseTo(50, 6);
@@ -293,12 +352,19 @@ describe('infer', () => {
 
   it('combines a horizontal constraint with a circle intersection', () => {
     const s = curveScene();
-    const r = infer(s.sketch, { x: 163, y: 2 }, {
-      tolerance: 5,
-      enabled: true,
-      anchor: { position: { x: 0, y: 0 }, id: s.a },
-    });
-    expect(r.constraints).toEqual([{ kind: 'horizontal' }, { kind: 'pointOnCurve', target: s.circle }]);
+    const r = infer(
+      s.sketch,
+      { x: 163, y: 2 },
+      {
+        tolerance: 5,
+        enabled: true,
+        anchor: { position: { x: 0, y: 0 }, id: s.a },
+      },
+    );
+    expect(r.constraints).toEqual([
+      { kind: 'horizontal' },
+      { kind: 'pointOnCurve', target: s.circle },
+    ]);
     expect(r.position).toEqual({ x: 160, y: 0 });
     expect(r.alignments).toEqual([]);
   });
@@ -321,11 +387,15 @@ describe('infer', () => {
 
   it('skips a point already on the horizontal line through the anchor', () => {
     const s = anchorScene();
-    const r = infer(s.sketch, { x: 148, y: 260 }, {
-      tolerance: 5,
-      enabled: true,
-      anchor: { position: { x: 0, y: 250 }, id: s.free },
-    });
+    const r = infer(
+      s.sketch,
+      { x: 148, y: 260 },
+      {
+        tolerance: 5,
+        enabled: true,
+        anchor: { position: { x: 0, y: 250 }, id: s.free },
+      },
+    );
     expect(r.constraints).toEqual([{ kind: 'horizontal' }]);
     // s is nearer in x but already tied to the anchor by the constraint.
     expect(r.alignments).toEqual([{ source: s.p, axis: 'x' }]);
@@ -334,11 +404,19 @@ describe('infer', () => {
 
   it('honors the exclude set', () => {
     const s = curveScene();
-    const noLine = infer(s.sketch, { x: 50, y: 8 }, { tolerance: 5, enabled: true, exclude: new Set([s.line]) });
+    const noLine = infer(
+      s.sketch,
+      { x: 50, y: 8 },
+      { tolerance: 5, enabled: true, exclude: new Set([s.line]) },
+    );
     expect(noLine.constraints).toEqual([]);
     expect(noLine.position).toEqual({ x: 50, y: 8 });
 
-    const noPoint = infer(s.sketch, { x: 100, y: 1 }, { tolerance: 5, enabled: true, exclude: new Set([s.c]) });
+    const noPoint = infer(
+      s.sketch,
+      { x: 100, y: 1 },
+      { tolerance: 5, enabled: true, exclude: new Set([s.c]) },
+    );
     expect(noPoint.constraints).toEqual([{ kind: 'pointOnCurve', target: s.line }]);
     expect(noPoint.position).toEqual({ x: 100, y: 0 });
   });
@@ -372,25 +450,37 @@ describe('materialize', () => {
 
   it('falls back to anchor and point without a segment', () => {
     const s = materializeScene();
-    expect(materialize([{ kind: 'pointOnCurve', target: s.circle }], { point: 'new' }, s.sketch)).toEqual([
-      { kind: 'pointOnCurve', point: 'new', curve: s.circle },
-    ]);
-    expect(materialize([{ kind: 'horizontal' }], { point: 'new', anchor: 'anc' }, s.sketch)).toEqual([
-      { kind: 'horizontal', a: 'anc', b: 'new' },
-    ]);
+    expect(
+      materialize([{ kind: 'pointOnCurve', target: s.circle }], { point: 'new' }, s.sketch),
+    ).toEqual([{ kind: 'pointOnCurve', point: 'new', curve: s.circle }]);
+    expect(
+      materialize([{ kind: 'horizontal' }], { point: 'new', anchor: 'anc' }, s.sketch),
+    ).toEqual([{ kind: 'horizontal', a: 'anc', b: 'new' }]);
     expect(materialize([{ kind: 'vertical' }], { point: 'new' }, s.sketch)).toEqual([]);
-    expect(materialize([{ kind: 'parallel', target: s.ref }], { point: 'new', anchor: 'anc' }, s.sketch)).toEqual([]);
-    expect(materialize([{ kind: 'tangent', target: s.arc }], { point: 'new' }, s.sketch)).toEqual([]);
+    expect(
+      materialize([{ kind: 'parallel', target: s.ref }], { point: 'new', anchor: 'anc' }, s.sketch),
+    ).toEqual([]);
+    expect(materialize([{ kind: 'tangent', target: s.arc }], { point: 'new' }, s.sketch)).toEqual(
+      [],
+    );
   });
 
   it('turns an inference result into constraints', () => {
     const s = curveScene();
-    const r = infer(s.sketch, { x: 163, y: 2 }, {
-      tolerance: 5,
-      enabled: true,
-      anchor: { position: { x: 0, y: 0 }, id: s.a },
-    });
-    const inputs = materialize(r.constraints, { point: 'p1', segment: 'l1', anchor: s.a }, s.sketch);
+    const r = infer(
+      s.sketch,
+      { x: 163, y: 2 },
+      {
+        tolerance: 5,
+        enabled: true,
+        anchor: { position: { x: 0, y: 0 }, id: s.a },
+      },
+    );
+    const inputs = materialize(
+      r.constraints,
+      { point: 'p1', segment: 'l1', anchor: s.a },
+      s.sketch,
+    );
     expect(inputs).toEqual([
       { kind: 'horizontal', a: 'l1' },
       { kind: 'pointOnCurve', point: 'p1', curve: s.circle },

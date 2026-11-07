@@ -98,7 +98,9 @@ function snapAt(editor: Editor): Vec2 | undefined {
 /** The entities the command is highlighting. */
 function highlightIds(editor: Editor): readonly Id[] {
   type Highlight = Extract<OverlayShape, { kind: 'highlight' }>;
-  const shape = (editor.activeCommand.overlay?.() ?? []).find((s): s is Highlight => s.kind === 'highlight');
+  const shape = (editor.activeCommand.overlay?.() ?? []).find(
+    (s): s is Highlight => s.kind === 'highlight',
+  );
   return shape?.ids ?? [];
 }
 
@@ -125,7 +127,9 @@ describe('trim and extend', () => {
     // The end landed exactly on the other line, and the curve is shorter for it.
     expectAt(editor, c, { x: 50, y: 0 });
     expect(distance(pointOf(editor, a), pointOf(editor, c))).toBeCloseTo(50, 9);
-    expect(perpendicularDistance(pointOf(editor, c), pointOf(editor, top), pointOf(editor, bottom))).toBeCloseTo(0, 9);
+    expect(
+      perpendicularDistance(pointOf(editor, c), pointOf(editor, top), pointOf(editor, bottom)),
+    ).toBeCloseTo(0, 9);
     expectUnmovedExcept(editor, before, [c]);
     // The command stays active for the next trim.
     expect(editor.activeCommand.id).toBe('trim');
@@ -247,7 +251,9 @@ describe('trim and extend', () => {
     // The end lands on the crossing inside the sweep, never on the one past it.
     const landing = { x: 50 * Math.cos(dir), y: 50 * Math.sin(dir) };
     expectAt(editor, end, landing);
-    expect(perpendicularDistance(pointOf(editor, end), pointOf(editor, far), pointOf(editor, near))).toBeCloseTo(0, 9);
+    expect(
+      perpendicularDistance(pointOf(editor, end), pointOf(editor, far), pointOf(editor, near)),
+    ).toBeCloseTo(0, 9);
     // The arc kept its centre and radius, and is shorter for it.
     const params = arcParams(pointOf(editor, center), pointOf(editor, start), pointOf(editor, end));
     expect(params.radius).toBeCloseTo(50, 9);
@@ -265,7 +271,10 @@ describe('trim and extend', () => {
     // A line through the centre at 100°: both of its crossings sit past the
     // quarter turn's end angle, so neither of them is on the arc.
     const dir = (100 * Math.PI) / 180;
-    b.line(b.point(-100 * Math.cos(dir), -100 * Math.sin(dir)), b.point(100 * Math.cos(dir), 100 * Math.sin(dir)));
+    b.line(
+      b.point(-100 * Math.cos(dir), -100 * Math.sin(dir)),
+      b.point(100 * Math.cos(dir), 100 * Math.sin(dir)),
+    );
 
     const editor = editorWith(b.build());
     editor.startCommand('trim');

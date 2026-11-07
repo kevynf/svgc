@@ -8,7 +8,10 @@ const SVG_NS = 'http://www.w3.org/2000/svg';
 /** Side of a resize grip, in screen px. */
 const HANDLE_PX = 7;
 
-function svgEl<K extends keyof SVGElementTagNameMap>(tag: K, attrs: Record<string, string | number> = {}): SVGElementTagNameMap[K] {
+function svgEl<K extends keyof SVGElementTagNameMap>(
+  tag: K,
+  attrs: Record<string, string | number> = {},
+): SVGElementTagNameMap[K] {
   const el = document.createElementNS(SVG_NS, tag);
   for (const [name, value] of Object.entries(attrs)) el.setAttribute(name, String(value));
   return el;

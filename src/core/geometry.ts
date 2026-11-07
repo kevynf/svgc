@@ -91,7 +91,8 @@ export function midpoint(a: Vec2, b: Vec2): Vec2 {
 export function closestOnSegment(p: Vec2, a: Vec2, b: Vec2): Vec2 {
   const d = sub(b, a);
   const len2 = d.x * d.x + d.y * d.y;
-  const t = len2 === 0 ? 0 : Math.max(0, Math.min(1, ((p.x - a.x) * d.x + (p.y - a.y) * d.y) / len2));
+  const t =
+    len2 === 0 ? 0 : Math.max(0, Math.min(1, ((p.x - a.x) * d.x + (p.y - a.y) * d.y) / len2));
   return { x: a.x + t * d.x, y: a.y + t * d.y };
 }
 

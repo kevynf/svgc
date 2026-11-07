@@ -69,6 +69,8 @@
 @media (prefers-reduced-motion: no-preference) {
   .app-menu-button,
   .app-menu-item {
-    transition: background-color 80ms linear, color 80ms linear;
+    transition:
+      background-color 80ms linear,
+      color 80ms linear;
   }
 }

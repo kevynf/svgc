@@ -55,12 +55,22 @@ const constraint = (kind: Constraint['kind']): Constraint => {
 const horizontal = constraint('horizontal');
 const radius = constraint('radius');
 
-function context(selection: readonly string[], statuses: Readonly<Record<string, 'fully' | 'under'>> = {}): ModelContext {
+function context(
+  selection: readonly string[],
+  statuses: Readonly<Record<string, 'fully' | 'under'>> = {},
+): ModelContext {
   return {
     sketch,
     selection: new Set(selection),
     status: new Map(Object.entries(statuses)),
-    solve: { outcome: 'solved', sketch, dof: 2, conflicting: [], redundant: [], partiallyRedundant: [] },
+    solve: {
+      outcome: 'solved',
+      sketch,
+      dof: 2,
+      conflicting: [],
+      redundant: [],
+      partiallyRedundant: [],
+    },
     names: new Names(sketch, t),
     t,
   };
@@ -69,7 +79,8 @@ function context(selection: readonly string[], statuses: Readonly<Record<string,
 const field = (entity: Entity, suffix: string) => {
   const fields = entityFields(entity, indexEntities(sketch), t);
   const found = fields.find((f) => f.key.endsWith(`.${suffix}`));
-  if (found === undefined) throw new Error(`No field "${suffix}" in ${fields.map((f) => f.key).join(', ')}`);
+  if (found === undefined)
+    throw new Error(`No field "${suffix}" in ${fields.map((f) => f.key).join(', ')}`);
   return found;
 };
 
@@ -94,7 +105,14 @@ describe('screenAngle', () => {
 describe('entityFields', () => {
   it('edits both ends of a line and reads back its length and angle', () => {
     const fields = entityFields(line, indexEntities(sketch), t);
-    expect(fields.map((f) => f.label)).toEqual(['Start X', 'Start Y', 'End X', 'End Y', 'Length', 'Angle']);
+    expect(fields.map((f) => f.label)).toEqual([
+      'Start X',
+      'Start Y',
+      'End X',
+      'End Y',
+      'Length',
+      'Angle',
+    ]);
     expect(fields.map((f) => f.editable)).toEqual([true, true, true, true, false, false]);
     expect(fields[4]!.value).toBeCloseTo(Math.hypot(100, 100), 10);
     expect(fields[5]!.value).toBe(45);
@@ -105,13 +123,23 @@ describe('entityFields', () => {
   it('edits a circle radius and derives the diameter', () => {
     const fields = entityFields(circle, indexEntities(sketch), t);
     expect(fields.map((f) => f.label)).toEqual(['Center X', 'Center Y', 'Radius', 'Diameter']);
-    expect(fields[2]).toMatchObject({ editable: true, value: 30, target: { kind: 'radius', curve: circle.id } });
+    expect(fields[2]).toMatchObject({
+      editable: true,
+      value: 30,
+      target: { kind: 'radius', curve: circle.id },
+    });
     expect(fields[3]).toMatchObject({ editable: false, value: 60 });
   });
 
   it('reads an arc radius, start angle and sweep from its three points', () => {
     const fields = entityFields(arc, indexEntities(sketch), t);
-    expect(fields.map((f) => f.label)).toEqual(['Center X', 'Center Y', 'Radius', 'Start angle', 'Sweep']);
+    expect(fields.map((f) => f.label)).toEqual([
+      'Center X',
+      'Center Y',
+      'Radius',
+      'Start angle',
+      'Sweep',
+    ]);
     expect(fields.slice(2).map((f) => f.editable)).toEqual([false, false, false]);
     expect(fields[2]!.value).toBe(50);
     expect(fields[3]!.value).toBe(0);
@@ -127,7 +155,12 @@ describe('entityFields', () => {
 
 describe('selectionBounds', () => {
   it('is the common bounding box of the selected entities', () => {
-    expect(selectionBounds(sketch, [line.id, circle.id])).toEqual({ x: 0, y: -100, width: 230, height: 180 });
+    expect(selectionBounds(sketch, [line.id, circle.id])).toEqual({
+      x: 0,
+      y: -100,
+      width: 230,
+      height: 180,
+    });
   });
 
   it('is exact for arcs, including the axis crossings inside the sweep', () => {
@@ -178,7 +211,9 @@ describe('buildModel', () => {
     expect(summary).toMatchObject({ kind: 'rows', title: 'Sketch' });
     expect(params).toMatchObject({ kind: 'rows', title: 'Parameters' });
     const rows = (section: (typeof model.sections)[number] | undefined, kind: string) =>
-      section?.kind === kind && section.kind === 'rows' ? section.rows.map((r) => [r.label, r.text]) : undefined;
+      section?.kind === kind && section.kind === 'rows'
+        ? section.rows.map((r) => [r.label, r.text])
+        : undefined;
     expect(rows(summary, 'rows')).toEqual([
       ['Point', '6'],
       ['Line', '1'],
@@ -199,9 +234,16 @@ describe('buildModel', () => {
     expect(model.status).toBe('under');
     const [fields, construction, items] = model.sections;
     expect(fields).toMatchObject({ kind: 'fields', title: 'Line1' });
-    expect(construction).toEqual({ kind: 'construction', title: 'Construction', curves: [line.id], state: 'off' });
+    expect(construction).toEqual({
+      kind: 'construction',
+      title: 'Construction',
+      curves: [line.id],
+      state: 'off',
+    });
     expect(items).toMatchObject({ kind: 'items', title: 'Constraints' });
-    expect(items?.kind === 'items' && items.items.map((i) => i.name)).toEqual(['Horizontal (Line1)']);
+    expect(items?.kind === 'items' && items.items.map((i) => i.name)).toEqual([
+      'Horizontal (Line1)',
+    ]);
     expect(items?.kind === 'items' && items.items[0]?.glyph).toBe('horizontal');
   });
 
@@ -222,7 +264,10 @@ describe('buildModel', () => {
     expect(model.title).toBe('2 objects selected');
     const [construction, bounds] = model.sections;
     expect(construction).toMatchObject({ kind: 'construction', state: 'mixed' });
-    expect(construction?.kind === 'construction' && construction.curves).toEqual([line.id, circle.id]);
+    expect(construction?.kind === 'construction' && construction.curves).toEqual([
+      line.id,
+      circle.id,
+    ]);
     expect(bounds?.kind === 'rows' && bounds.rows.map((r) => [r.label, r.text])).toEqual([
       ['X', '0.00'],
       ['Y', '-100.00'],
@@ -248,7 +293,10 @@ describe('findField', () => {
 
   it('exposes the field the caller asked for', () => {
     expect(field(line, 'angle')).toMatchObject({ editable: false, value: 45 });
-    expect(field(circle, 'radius')).toMatchObject({ editable: true, target: { kind: 'radius', curve: circle.id } });
+    expect(field(circle, 'radius')).toMatchObject({
+      editable: true,
+      target: { kind: 'radius', curve: circle.id },
+    });
   });
 
   it('finds the value field of a selected dimension constraint', () => {

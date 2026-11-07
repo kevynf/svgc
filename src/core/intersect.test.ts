@@ -10,7 +10,11 @@ import type { EntityIndex } from './sketch';
 
 const at = (x: number, y: number): Vec2 => ({ x, y });
 const line = (a: Vec2, b: Vec2): Intersectable => ({ kind: 'line', a, b });
-const circle = (center: Vec2, radius: number): Intersectable => ({ kind: 'circle', center, radius });
+const circle = (center: Vec2, radius: number): Intersectable => ({
+  kind: 'circle',
+  center,
+  radius,
+});
 const vertical = (x: number): Intersectable => line(at(x, -50), at(x, 50));
 const horizontal = (y: number): Intersectable => line(at(-50, y), at(50, y));
 
@@ -61,7 +65,11 @@ describe('curveOf', () => {
   const index = indexEntities(sketch);
 
   it('reads a line as its two endpoints', () => {
-    expect(curveOf(entityAt(index, lineId), index)).toEqual({ kind: 'line', a: at(0, 0), b: at(10, 0) });
+    expect(curveOf(entityAt(index, lineId), index)).toEqual({
+      kind: 'line',
+      a: at(0, 0),
+      b: at(10, 0),
+    });
   });
 
   it('reads a circle as its centre and radius', () => {
@@ -89,8 +97,17 @@ describe('curveOf', () => {
 
   it('is undefined for a curve missing one of its points', () => {
     const orphanLine: Line = { kind: 'line', id: 'orphan-line', p1: 'gone', p2: 'gone' };
-    const orphanArc: Arc = { kind: 'arc', id: 'orphan-arc', center: arcCenter, start: 'gone', end: 'gone' };
-    const orphanIndex = indexEntities({ ...sketch, entities: [...sketch.entities, orphanLine, orphanArc] });
+    const orphanArc: Arc = {
+      kind: 'arc',
+      id: 'orphan-arc',
+      center: arcCenter,
+      start: 'gone',
+      end: 'gone',
+    };
+    const orphanIndex = indexEntities({
+      ...sketch,
+      entities: [...sketch.entities, orphanLine, orphanArc],
+    });
     expect(curveOf(orphanLine, orphanIndex)).toBeUndefined();
     expect(curveOf(orphanArc, orphanIndex)).toBeUndefined();
   });

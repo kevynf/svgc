@@ -33,7 +33,11 @@ export type OverlayShape =
   /** Dotted alignment guide from an existing point to the cursor (world space). */
   | { readonly kind: 'guide'; readonly alignment: Alignment; readonly to: Vec2 }
   /** Glyphs for the constraints that will be created, next to a world point. */
-  | { readonly kind: 'inferred'; readonly at: Vec2; readonly constraints: readonly InferredConstraint[] }
+  | {
+      readonly kind: 'inferred';
+      readonly at: Vec2;
+      readonly constraints: readonly InferredConstraint[];
+    }
   /** Marker on the point or curve position the cursor snapped to. */
   | { readonly kind: 'snap'; readonly at: Vec2 }
   /** The eight resize grips of an artboard, drawn while it is being edited. */
@@ -43,7 +47,12 @@ export type OverlayShape =
    * draw the measured value as text (it follows the cursor); absent = the
    * inline edit box shows the value instead. `radius` prefixes the text with R.
    */
-  | { readonly kind: 'dimension'; readonly layout: DimensionLayout; readonly value?: number; readonly radius?: boolean };
+  | {
+      readonly kind: 'dimension';
+      readonly layout: DimensionLayout;
+      readonly value?: number;
+      readonly radius?: boolean;
+    };
 
 export interface MenuItem {
   readonly label: Message;

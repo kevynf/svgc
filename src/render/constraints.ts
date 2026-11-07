@@ -167,7 +167,9 @@ function constraintAnchor(c: Constraint, index: EntityIndex, scale: number): Anc
     }
     case 'fix': {
       const p = pointAt(index, c.point);
-      return p === undefined ? undefined : { glyph: 'fix', at: shift(p, scale, FIX_PX.x, FIX_PX.y) };
+      return p === undefined
+        ? undefined
+        : { glyph: 'fix', at: shift(p, scale, FIX_PX.x, FIX_PX.y) };
     }
     case 'horizontal':
     case 'vertical': {
@@ -242,7 +244,10 @@ const DIMENSION_GLYPHS: readonly ConstraintGlyph[] = DIMENSION_KINDS;
  * `hitConstraint` off the text the user sees and clicks. It still registers
  * its position, so the ordinary chips around it are the ones that give way.
  */
-function separate(anchors: readonly ConstraintPlacement[], scale: number): readonly ConstraintPlacement[] {
+function separate(
+  anchors: readonly ConstraintPlacement[],
+  scale: number,
+): readonly ConstraintPlacement[] {
   const k = 1 / Math.max(scale, MIN_SCALE);
   const gap = MIN_GAP_PX * k;
   const taken: Vec2[] = [];
@@ -322,7 +327,8 @@ function curvePoint(e: Entity, index: EntityIndex): Vec2 | undefined {
 function frame(e: Circle | Arc, index: EntityIndex): { radius: number; mid: number } | undefined {
   const c = pointAt(index, e.center);
   if (c === undefined) return undefined;
-  if (e.kind === 'circle') return e.radius === 0 ? undefined : { radius: e.radius, mid: -Math.PI / 2 };
+  if (e.kind === 'circle')
+    return e.radius === 0 ? undefined : { radius: e.radius, mid: -Math.PI / 2 };
   const start = pointAt(index, e.start) ?? c;
   const end = pointAt(index, e.end) ?? c;
   const { radius, startAngle, endAngle } = arcParams(c, start, end);

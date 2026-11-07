@@ -118,7 +118,7 @@ export const zhCN = {
       pointOnLine: '点在直线上约束与现有约束冲突',
       pointOnCurve: '点在曲线上约束与现有约束冲突',
       midpoint: '中点约束与现有约束冲突',
-    symmetric: '对称约束与现有约束冲突',
+      symmetric: '对称约束与现有约束冲突',
       distance: '距离约束与现有约束冲突',
       radius: '半径约束与现有约束冲突',
       angle: '角度约束与现有约束冲突',

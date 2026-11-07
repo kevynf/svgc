@@ -30,10 +30,16 @@ const FIX_POINT: OperandSpec = { kinds: ['point'], prompt: 'prompts.pickFixPoint
 const LINE: OperandSpec = { kinds: ['line'], prompt: 'prompts.pickLine' };
 const CURVE: OperandSpec = { kinds: ['circle', 'arc'], prompt: 'prompts.pickCurve' };
 const LINE_OR_POINT: OperandSpec = { kinds: ['line', 'point'], prompt: 'prompts.pickLineOrPoint' };
-const LINE_OR_CURVE: OperandSpec = { kinds: ['line', 'circle', 'arc'], prompt: 'prompts.pickLineOrCurve' };
+const LINE_OR_CURVE: OperandSpec = {
+  kinds: ['line', 'circle', 'arc'],
+  prompt: 'prompts.pickLineOrCurve',
+};
 const SECOND_POINT: OperandSpec = { kinds: ['point'], prompt: 'prompts.pickSecondPoint' };
 const SECOND_LINE: OperandSpec = { kinds: ['line'], prompt: 'prompts.pickSecondLine' };
-const SECOND_OBJECT: OperandSpec = { kinds: ['line', 'circle', 'arc'], prompt: 'prompts.pickSecondObject' };
+const SECOND_OBJECT: OperandSpec = {
+  kinds: ['line', 'circle', 'arc'],
+  prompt: 'prompts.pickSecondObject',
+};
 /** Horizontal/vertical: a line alone completes the constraint, two points make the pair. */
 const AXIS: readonly OperandSpec[] = [LINE_OR_POINT, SECOND_POINT];
 
@@ -62,7 +68,9 @@ export abstract class ConstraintCommand implements Command {
 
   pointerMove(input: PointerInput): void {
     const step = this.operands[this.picks.length];
-    this.editor.setHover(step === undefined ? undefined : this.operandAt(input.world, step.kinds)?.id);
+    this.editor.setHover(
+      step === undefined ? undefined : this.operandAt(input.world, step.kinds)?.id,
+    );
   }
 
   pointerUp(input: PointerInput): void {
@@ -72,7 +80,10 @@ export abstract class ConstraintCommand implements Command {
     const operand = this.operandAt(input.world, step.kinds);
     if (operand === undefined) return;
     const previous = this.picks[this.picks.length - 1];
-    if (previous !== undefined && (previous.id === operand.id || !this.compatible(previous.kind, operand.kind))) {
+    if (
+      previous !== undefined &&
+      (previous.id === operand.id || !this.compatible(previous.kind, operand.kind))
+    ) {
       this.reject({ key: 'prompts.incompatible' });
       return;
     }
@@ -173,7 +184,8 @@ export abstract class ConstraintCommand implements Command {
     const tolerance = this.editor.viewport.toWorldLength(HIT_PX);
     const hit = hitTest(sketch, world, { tolerance });
     const entity = sketch.entities.find((e) => e.id === hit);
-    if (entity !== undefined && kinds.includes(entity.kind)) return { id: entity.id, kind: entity.kind };
+    if (entity !== undefined && kinds.includes(entity.kind))
+      return { id: entity.id, kind: entity.kind };
 
     const pt = pointLookup(sketch);
     let best: { operand: Operand; d: number } | undefined;
@@ -337,7 +349,10 @@ export class PointOnCurveCommand extends ConstraintCommand {
 }
 
 /** The constraint commands, keyed by the ids the ribbon and the aliases reference. */
-export const CONSTRAINT_COMMANDS: ReadonlyMap<string, CommandFactory> = new Map<string, CommandFactory>([
+export const CONSTRAINT_COMMANDS: ReadonlyMap<string, CommandFactory> = new Map<
+  string,
+  CommandFactory
+>([
   ['coincident', (editor) => new CoincidentCommand(editor)],
   ['fix', (editor) => new FixCommand(editor)],
   ['horizontal', (editor) => new HorizontalCommand(editor)],

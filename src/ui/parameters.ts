@@ -169,7 +169,10 @@ export class ParametersDialog {
 
     const actions = document.createElement('footer');
     actions.className = 'parameters-actions';
-    actions.append(this.addButton, this.action('parameters.close', () => this.close()));
+    actions.append(
+      this.addButton,
+      this.action('parameters.close', () => this.close()),
+    );
 
     this.element.append(header, help, this.list, this.emptyHint, actions);
 
@@ -440,7 +443,10 @@ export class ParametersDialog {
     const result = this.runCommit(() => this.editor.addParam(name, expression));
     if (!result.ok) {
       // A rejected name is fixed in the name field; anything else in the expression.
-      const input = result.error === 'invalidName' || result.error === 'duplicateName' ? row.name : row.expression;
+      const input =
+        result.error === 'invalidName' || result.error === 'duplicateName'
+          ? row.name
+          : row.expression;
       this.showFailure(row, input, result, true);
       return;
     }
@@ -470,7 +476,12 @@ export class ParametersDialog {
   }
 
   /** Maps an edit failure onto its localized message and shows it under the row. */
-  private showFailure(row: Row, input: HTMLInputElement, failure: ParamFailure, keepFocus: boolean): void {
+  private showFailure(
+    row: Row,
+    input: HTMLInputElement,
+    failure: ParamFailure,
+    keepFocus: boolean,
+  ): void {
     const { key, params } = paramErrorMessage(failure.error, this.t, failure.detail, failure.count);
     this.showError(row, input, this.t.t(key, params), keepFocus);
   }
@@ -557,7 +568,12 @@ export class ParametersDialog {
     if (!(active instanceof HTMLInputElement) || !this.element.contains(active)) return undefined;
     const key = active.dataset['key'];
     if (key === undefined) return undefined;
-    return { key, value: active.value, start: active.selectionStart ?? 0, end: active.selectionEnd ?? 0 };
+    return {
+      key,
+      value: active.value,
+      start: active.selectionStart ?? 0,
+      end: active.selectionEnd ?? 0,
+    };
   }
 
   private restoreFocus(focus: FocusState | undefined): void {

@@ -12,7 +12,12 @@ const DRAG_PX = 3;
 
 type State =
   | { readonly kind: 'idle' }
-  | { readonly kind: 'pressed'; readonly at: Vec2; readonly hit: Id | undefined; readonly input: PointerInput }
+  | {
+      readonly kind: 'pressed';
+      readonly at: Vec2;
+      readonly hit: Id | undefined;
+      readonly input: PointerInput;
+    }
   | { readonly kind: 'dragging'; readonly point: Id }
   | { readonly kind: 'boxing'; readonly from: Vec2; to: Vec2; readonly additive: boolean };
 
@@ -32,7 +37,9 @@ export class SelectCommand implements Command {
       case 'dragging':
         return { key: 'prompts.drag' };
       case 'boxing':
-        return { key: this.boxMode() === 'window' ? 'prompts.windowSelect' : 'prompts.crossingSelect' };
+        return {
+          key: this.boxMode() === 'window' ? 'prompts.windowSelect' : 'prompts.crossingSelect',
+        };
       default:
         return { key: 'prompts.select' };
     }
@@ -50,12 +57,18 @@ export class SelectCommand implements Command {
     }
     if (s.kind === 'pressed') {
       if (Math.hypot(input.screen.x - s.at.x, input.screen.y - s.at.y) < DRAG_PX) return;
-      const target = s.hit === undefined ? undefined : this.editor.sketch.entities.find((e) => e.id === s.hit);
+      const target =
+        s.hit === undefined ? undefined : this.editor.sketch.entities.find((e) => e.id === s.hit);
       if (target?.kind === 'point') {
         this.state = { kind: 'dragging', point: target.id };
         this.editor.beginDrag();
       } else {
-        this.state = { kind: 'boxing', from: s.at, to: input.screen, additive: s.input.shift || s.input.ctrl };
+        this.state = {
+          kind: 'boxing',
+          from: s.at,
+          to: input.screen,
+          additive: s.input.shift || s.input.ctrl,
+        };
         this.editor.setHover(undefined);
       }
     }
@@ -123,6 +136,8 @@ export class SelectCommand implements Command {
   }
 
   private hit(world: Vec2): Id | undefined {
-    return hitTest(this.editor.sketch, world, { tolerance: this.editor.viewport.toWorldLength(HIT_PX) });
+    return hitTest(this.editor.sketch, world, {
+      tolerance: this.editor.viewport.toWorldLength(HIT_PX),
+    });
   }
 }

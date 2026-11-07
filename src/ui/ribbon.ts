@@ -112,13 +112,17 @@ export class Ribbon {
     label.className = 'label';
     label.textContent = this.t.t(def.label);
     const size = def.size === 'small' ? 16 : 24;
-    el.append(def.glyph === undefined ? icon(def.icon, size) : constraintIcon(def.glyph, size), label);
+    el.append(
+      def.glyph === undefined ? icon(def.icon, size) : constraintIcon(def.glyph, size),
+      label,
+    );
 
     const tips = [this.t.t(def.label)];
     if (def.shortcut !== undefined) tips.push(this.t.t('ribbon.shortcut', { keys: def.shortcut }));
     if (!def.available) tips.push(this.t.t('ribbon.comingSoon'));
     el.title = tips.join('\n');
-    if (def.shortcut !== undefined) el.setAttribute('aria-keyshortcuts', def.shortcut.replace(/\s/g, ''));
+    if (def.shortcut !== undefined)
+      el.setAttribute('aria-keyshortcuts', def.shortcut.replace(/\s/g, ''));
 
     el.addEventListener('click', () => def.run());
     this.buttons.set(def.id, { def, el });

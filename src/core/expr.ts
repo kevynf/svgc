@@ -205,13 +205,28 @@ function normalizeSource(source: string): string {
   return source.replace(FULLWIDTH_PATTERN, (ch) => FULLWIDTH_MAP.get(ch) ?? ch);
 }
 
-type NameToken = { readonly type: 'name'; readonly name: string; readonly start: number; readonly end: number };
+type NameToken = {
+  readonly type: 'name';
+  readonly name: string;
+  readonly start: number;
+  readonly end: number;
+};
 
 type Token =
   | { readonly type: 'num'; readonly value: number; readonly start: number; readonly end: number }
   | NameToken
-  | { readonly type: 'op'; readonly op: '+' | '-' | '*' | '/' | '^'; readonly start: number; readonly end: number }
-  | { readonly type: 'punct'; readonly char: '(' | ')' | ','; readonly start: number; readonly end: number };
+  | {
+      readonly type: 'op';
+      readonly op: '+' | '-' | '*' | '/' | '^';
+      readonly start: number;
+      readonly end: number;
+    }
+  | {
+      readonly type: 'punct';
+      readonly char: '(' | ')' | ',';
+      readonly start: number;
+      readonly end: number;
+    };
 
 const SPACE_PATTERN = /\s/;
 
@@ -335,7 +350,12 @@ class Parser {
       throw new ExprError('unexpectedEnd', 'Expected ")"', this.sourceEnd, this.sourceEnd);
     }
     if (token.type !== 'punct' || token.char !== ')') {
-      throw new ExprError('syntax', `Expected ")" but found ${describeToken(token)}`, token.start, token.end);
+      throw new ExprError(
+        'syntax',
+        `Expected ")" but found ${describeToken(token)}`,
+        token.start,
+        token.end,
+      );
     }
     this.pos += 1;
     return token;
@@ -410,7 +430,12 @@ class Parser {
   private primary(): Expr {
     const token = this.peek();
     if (token === undefined) {
-      throw new ExprError('unexpectedEnd', 'Unexpected end of expression', this.sourceEnd, this.sourceEnd);
+      throw new ExprError(
+        'unexpectedEnd',
+        'Unexpected end of expression',
+        this.sourceEnd,
+        this.sourceEnd,
+      );
     }
     if (token.type === 'num') {
       this.pos += 1;
@@ -440,7 +465,12 @@ class Parser {
           );
         }
       }
-      return this.applyUnits({ kind: 'name', name: token.name, start: token.start, end: token.end });
+      return this.applyUnits({
+        kind: 'name',
+        name: token.name,
+        start: token.start,
+        end: token.end,
+      });
     }
     if (token.type === 'punct' && token.char === '(') {
       this.pos += 1;
@@ -455,7 +485,9 @@ class Parser {
 
   private parseCall(fn: NameToken): Expr {
     if (!FUNCTIONS.has(fn.name)) {
-      throw new ExprError('unknownFunction', `Unknown function "${fn.name}"`, fn.start, fn.end, { fn: fn.name });
+      throw new ExprError('unknownFunction', `Unknown function "${fn.name}"`, fn.start, fn.end, {
+        fn: fn.name,
+      });
     }
     this.pos += 2; // function name and '('
     this.enter();
@@ -509,10 +541,16 @@ class Parser {
 /** Parses `source` into an AST. Throws {@link ExprError} on invalid input. */
 export function parse(source: string): Expr {
   if (source.length > MAX_SOURCE_LENGTH) {
-    throw new ExprError('syntax', `Expression is too long (${source.length} characters)`, 0, source.length, {
-      length: source.length,
-      max: MAX_SOURCE_LENGTH,
-    });
+    throw new ExprError(
+      'syntax',
+      `Expression is too long (${source.length} characters)`,
+      0,
+      source.length,
+      {
+        length: source.length,
+        max: MAX_SOURCE_LENGTH,
+      },
+    );
   }
   return new Parser(source, tokenize(normalizeSource(source))).parse();
 }
@@ -535,9 +573,15 @@ function evalNode(expr: Expr, lookup: (name: string) => number | undefined): num
         });
       }
       if (!Number.isFinite(value)) {
-        throw new ExprError('notFinite', `Value of "${expr.name}" is not finite`, expr.start, expr.end, {
-          name: expr.name,
-        });
+        throw new ExprError(
+          'notFinite',
+          `Value of "${expr.name}" is not finite`,
+          expr.start,
+          expr.end,
+          {
+            name: expr.name,
+          },
+        );
       }
       return value;
     }
@@ -567,9 +611,14 @@ function evalNode(expr: Expr, lookup: (name: string) => number | undefined): num
     case 'call': {
       const spec = FUNCTIONS.get(expr.fn);
       if (spec === undefined) {
-        throw new ExprError('unknownFunction', `Unknown function "${expr.fn}"`, ...rangeSpan(expr), {
-          fn: expr.fn,
-        });
+        throw new ExprError(
+          'unknownFunction',
+          `Unknown function "${expr.fn}"`,
+          ...rangeSpan(expr),
+          {
+            fn: expr.fn,
+          },
+        );
       }
       if (expr.args.length < spec.min || expr.args.length > spec.max) {
         throw new ExprError(
@@ -614,7 +663,10 @@ export function evaluate(expr: Expr, lookup: (name: string) => number | undefine
 }
 
 /** Parses and evaluates `source` in one step. */
-export function evaluateSource(source: string, lookup: (name: string) => number | undefined): number {
+export function evaluateSource(
+  source: string,
+  lookup: (name: string) => number | undefined,
+): number {
   return evaluate(parse(source), lookup);
 }
 
@@ -819,12 +871,30 @@ export function resolveParams(defs: readonly ParamDef[]): Resolution {
   for (const def of defs) {
     if (!isValidName(def.name)) {
       if (!errors.has(def.name)) {
-        errors.set(def.name, new ExprError('invalidName', `"${def.name}" is not a valid parameter name`, undefined, undefined, { name: def.name }));
+        errors.set(
+          def.name,
+          new ExprError(
+            'invalidName',
+            `"${def.name}" is not a valid parameter name`,
+            undefined,
+            undefined,
+            { name: def.name },
+          ),
+        );
       }
       continue;
     }
     if (sources.has(def.name)) {
-      errors.set(def.name, new ExprError('duplicateName', `Duplicate parameter name "${def.name}"`, undefined, undefined, { name: def.name }));
+      errors.set(
+        def.name,
+        new ExprError(
+          'duplicateName',
+          `Duplicate parameter name "${def.name}"`,
+          undefined,
+          undefined,
+          { name: def.name },
+        ),
+      );
       continue;
     }
     sources.set(def.name, def.expression);
@@ -855,7 +925,10 @@ export function resolveParams(defs: readonly ParamDef[]): Resolution {
   // 4. Cycles: every member of a cycle fails, with its own path.
   const cycles = findCycles(deps);
   for (const [name, path] of cycles) {
-    errors.set(name, new ExprError('cycle', `Parameter cycle: ${path}`, undefined, undefined, { cycle: path }));
+    errors.set(
+      name,
+      new ExprError('cycle', `Parameter cycle: ${path}`, undefined, undefined, { cycle: path }),
+    );
   }
 
   // 5. Kahn's algorithm over the parameters that are not in a cycle.
@@ -883,7 +956,10 @@ export function resolveParams(defs: readonly ParamDef[]): Resolution {
     const ast = asts.get(name);
     if (ast !== undefined) {
       try {
-        values.set(name, evaluate(ast, (ref) => values.get(ref)));
+        values.set(
+          name,
+          evaluate(ast, (ref) => values.get(ref)),
+        );
         order.push(name);
       } catch (err) {
         if (err instanceof ExprError) errors.set(name, err);
@@ -909,9 +985,15 @@ export function resolveParams(defs: readonly ParamDef[]): Resolution {
     }
     errors.set(
       name,
-      new ExprError('unknownName', `Cannot resolve "${name}": "${missing ?? name}" has no value`, undefined, undefined, {
-        name: missing ?? name,
-      }),
+      new ExprError(
+        'unknownName',
+        `Cannot resolve "${name}": "${missing ?? name}" has no value`,
+        undefined,
+        undefined,
+        {
+          name: missing ?? name,
+        },
+      ),
     );
   }
 
@@ -923,7 +1005,11 @@ export function resolveParams(defs: readonly ParamDef[]): Resolution {
  * (e.g. `['d1', 'd0', 'd1']`) or undefined. Used to reject an edit before
  * applying it.
  */
-export function findCycle(defs: readonly ParamDef[], name: string, expression: string): string[] | undefined {
+export function findCycle(
+  defs: readonly ParamDef[],
+  name: string,
+  expression: string,
+): string[] | undefined {
   if (!isValidName(name)) return undefined;
   const sources = new Map<string, string>();
   for (const def of defs) {

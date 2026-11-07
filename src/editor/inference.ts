@@ -85,7 +85,9 @@ function angleDelta(a: number, b: number): number {
 function alongLine(theta: number, base: number): { angle: number; delta: number } {
   const forward = angleDelta(theta, base);
   const backward = angleDelta(theta, base + Math.PI);
-  return forward <= backward ? { angle: base, delta: forward } : { angle: base + Math.PI, delta: backward };
+  return forward <= backward
+    ? { angle: base, delta: forward }
+    : { angle: base + Math.PI, delta: backward };
 }
 
 function unit(v: Vec2): Vec2 | undefined {
@@ -133,7 +135,12 @@ function arcTangentAngle(center: Vec2, endpoint: Vec2, atStart: boolean): number
   return atStart ? a - Math.PI / 2 : a + Math.PI / 2;
 }
 
-function nearestPoint(sketch: Sketch, p: Vec2, tolerance: number, isExcluded: (id: Id) => boolean): Point | undefined {
+function nearestPoint(
+  sketch: Sketch,
+  p: Vec2,
+  tolerance: number,
+  isExcluded: (id: Id) => boolean,
+): Point | undefined {
   let best: { point: Point; d: number } | undefined;
   for (const e of sketch.entities) {
     if (e.kind !== 'point' || isExcluded(e.id)) continue;
@@ -189,10 +196,18 @@ function inferDirection(
   }
 
   if (alongLine(theta, 0).delta <= angleTol) {
-    return { constraint: { kind: 'horizontal' }, axis: 'y', position: { x: cursor.x, y: anchor.position.y } };
+    return {
+      constraint: { kind: 'horizontal' },
+      axis: 'y',
+      position: { x: cursor.x, y: anchor.position.y },
+    };
   }
   if (alongLine(theta, Math.PI / 2).delta <= angleTol) {
-    return { constraint: { kind: 'vertical' }, axis: 'x', position: { x: anchor.position.x, y: cursor.y } };
+    return {
+      constraint: { kind: 'vertical' },
+      axis: 'x',
+      position: { x: anchor.position.x, y: cursor.y },
+    };
   }
 
   if (reference === undefined || isExcluded(reference)) return undefined;
@@ -250,7 +265,13 @@ function projectOnto(entity: Curve, p: Vec2, pt: PointLookup): Vec2 {
  * already on that line; a collinear segment is met along its whole length, so
  * the closest point on it is the intersection.
  */
-function lineCurveIntersections(origin: Vec2, dir: Vec2, entity: Curve, pt: PointLookup, onLine: Vec2): Vec2[] {
+function lineCurveIntersections(
+  origin: Vec2,
+  dir: Vec2,
+  entity: Curve,
+  pt: PointLookup,
+  onLine: Vec2,
+): Vec2[] {
   switch (entity.kind) {
     case 'line': {
       const a = pt(entity.p1);
@@ -267,7 +288,11 @@ function lineCurveIntersections(origin: Vec2, dir: Vec2, entity: Curve, pt: Poin
       return [{ x: origin.x + t * dir.x, y: origin.y + t * dir.y }];
     }
     case 'circle':
-      return circleLineHits(origin, dir, pt(entity.center), { radius: entity.radius, startAngle: 0, endAngle: TAU });
+      return circleLineHits(origin, dir, pt(entity.center), {
+        radius: entity.radius,
+        startAngle: 0,
+        endAngle: TAU,
+      });
     case 'arc': {
       const c = pt(entity.center);
       return circleLineHits(origin, dir, c, arcParams(c, pt(entity.start), pt(entity.end)));
@@ -324,7 +349,8 @@ function snapToCurve(
   let hit: Vec2 | undefined;
   for (const candidate of lineCurveIntersections(anchor, dir, best.entity, pt, position)) {
     if (distance(candidate, position) > tolerance) continue;
-    if (hit === undefined || distance(candidate, position) < distance(hit, position)) hit = candidate;
+    if (hit === undefined || distance(candidate, position) < distance(hit, position))
+      hit = candidate;
   }
   return hit === undefined ? undefined : { id: best.entity.id, position: hit };
 }
@@ -352,7 +378,9 @@ function nearestOnAxis(
     if (d > tolerance) continue;
     if (best === undefined || d < best.d) best = { id: e.id, coordinate, d };
   }
-  return best === undefined ? undefined : { alignment: { source: best.id, axis }, coordinate: best.coordinate };
+  return best === undefined
+    ? undefined
+    : { alignment: { source: best.id, axis }, coordinate: best.coordinate };
 }
 
 /**
@@ -382,8 +410,10 @@ function alignTo(
     }
     return false;
   };
-  const onX = axis === 'x' ? undefined : nearestOnAxis(sketch, position, 'x', tolerance, isExcluded, skip);
-  const onY = axis === 'y' ? undefined : nearestOnAxis(sketch, position, 'y', tolerance, isExcluded, skip);
+  const onX =
+    axis === 'x' ? undefined : nearestOnAxis(sketch, position, 'x', tolerance, isExcluded, skip);
+  const onY =
+    axis === 'y' ? undefined : nearestOnAxis(sketch, position, 'y', tolerance, isExcluded, skip);
   if (onX !== undefined) {
     x = onX.coordinate;
     alignments.push(onX.alignment);
@@ -428,7 +458,15 @@ export function infer(sketch: Sketch, cursor: Vec2, options: InferenceOptions): 
     if (direction !== undefined) position = direction.position;
   }
 
-  const curve = snapToCurve(sketch, position, anchor?.position, direction !== undefined, tolerance, isExcluded, pt);
+  const curve = snapToCurve(
+    sketch,
+    position,
+    anchor?.position,
+    direction !== undefined,
+    tolerance,
+    isExcluded,
+    pt,
+  );
   if (curve !== undefined) position = curve.position;
 
   const constraints: InferredConstraint[] = [];

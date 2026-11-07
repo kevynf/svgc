@@ -109,7 +109,9 @@ export class Browser {
     this.applyWidth(Number.isFinite(stored) ? stored : DEFAULT_WIDTH);
 
     this.tree.addEventListener('click', (event) => this.onClick(event));
-    this.tree.addEventListener('pointerover', (event) => editor.setHover(this.itemId(event.target)));
+    this.tree.addEventListener('pointerover', (event) =>
+      editor.setHover(this.itemId(event.target)),
+    );
     this.tree.addEventListener('pointerleave', () => editor.setHover(undefined));
     this.tree.addEventListener('keydown', (event) => this.onKey(event));
   }
@@ -117,7 +119,9 @@ export class Browser {
   update(): void {
     const { sketch } = this.editor;
     const signature = [
-      ...sketch.entities.map((e) => `${e.id}:${e.kind !== 'point' && e.construction === true ? 'c' : ''}`),
+      ...sketch.entities.map(
+        (e) => `${e.id}:${e.kind !== 'point' && e.construction === true ? 'c' : ''}`,
+      ),
       ...sketch.constraints.map((c) => c.id),
     ].join(',');
     if (signature !== this.signature) {
@@ -143,13 +147,24 @@ export class Browser {
       const key = g.dataset['group'];
       if (key !== undefined) expanded.set(key, g.getAttribute('aria-expanded') === 'true');
     }
-    const active = document.activeElement instanceof HTMLElement ? document.activeElement : undefined;
+    const active =
+      document.activeElement instanceof HTMLElement ? document.activeElement : undefined;
     const focusId = active?.dataset['id'];
-    const focusGroup = active?.classList.contains('browser-group') ? active.dataset['group'] : undefined;
+    const focusGroup = active?.classList.contains('browser-group')
+      ? active.dataset['group']
+      : undefined;
 
     this.tree.replaceChildren(
-      this.group('geometry', this.t.t('browser.geometry'), sketch.entities.filter((e) => e.kind !== 'point').map((e) => this.geometryItem(e, names))),
-      this.group('constraints', this.t.t('browser.constraints'), sketch.constraints.map((c) => this.constraintItem(c, names))),
+      this.group(
+        'geometry',
+        this.t.t('browser.geometry'),
+        sketch.entities.filter((e) => e.kind !== 'point').map((e) => this.geometryItem(e, names)),
+      ),
+      this.group(
+        'constraints',
+        this.t.t('browser.constraints'),
+        sketch.constraints.map((c) => this.constraintItem(c, names)),
+      ),
     );
 
     for (const g of this.tree.querySelectorAll<HTMLElement>('.browser-group')) {
@@ -226,7 +241,11 @@ export class Browser {
   }
 
   private constraintItem(c: Constraint, names: Names): TreeItem {
-    return { id: c.id, label: names.constraint(c), icon: constraintIcon(CONSTRAINT_ICON[c.kind], 16) };
+    return {
+      id: c.id,
+      label: names.constraint(c),
+      icon: constraintIcon(CONSTRAINT_ICON[c.kind], 16),
+    };
   }
 
   // ── Interaction ────────────────────────────────────────────────────────
@@ -236,7 +255,10 @@ export class Browser {
     const target = event.target instanceof Element ? event.target : null;
     const itemEl = target?.closest<HTMLElement>('.browser-item');
     if (itemEl !== undefined && itemEl !== null) {
-      this.editor.select([itemEl.dataset['id']!], event.shiftKey || event.ctrlKey ? 'toggle' : 'replace');
+      this.editor.select(
+        [itemEl.dataset['id']!],
+        event.shiftKey || event.ctrlKey ? 'toggle' : 'replace',
+      );
       this.setRoving(itemEl);
       itemEl.focus();
       return;
@@ -252,7 +274,8 @@ export class Browser {
 
   private onKey(event: KeyboardEvent): void {
     const items = this.visibleItems();
-    const current = document.activeElement instanceof HTMLElement ? document.activeElement : undefined;
+    const current =
+      document.activeElement instanceof HTMLElement ? document.activeElement : undefined;
     const index = items.findIndex((el) => el === current);
     if (index < 0) return;
     const el = items[index]!;
@@ -275,7 +298,8 @@ export class Browser {
       case 'ArrowRight':
         event.preventDefault();
         event.stopPropagation();
-        if (isGroup && el.getAttribute('aria-expanded') === 'false') this.setGroupExpanded(el, true);
+        if (isGroup && el.getAttribute('aria-expanded') === 'false')
+          this.setGroupExpanded(el, true);
         else if (isGroup) next = index + 1;
         break;
       case 'ArrowLeft':
@@ -297,7 +321,11 @@ export class Browser {
         event.preventDefault();
         event.stopPropagation();
         if (isGroup) this.toggleGroup(el);
-        else this.editor.select([el.dataset['id']!], event.shiftKey || event.ctrlKey ? 'toggle' : 'replace');
+        else
+          this.editor.select(
+            [el.dataset['id']!],
+            event.shiftKey || event.ctrlKey ? 'toggle' : 'replace',
+          );
         return;
     }
 
@@ -331,11 +359,15 @@ export class Browser {
 
   /** Tree items that are not hidden inside a collapsed group. */
   private visibleItems(): HTMLElement[] {
-    return this.items().filter((el) => el.parentElement?.closest('.browser-group[aria-expanded="false"]') == null);
+    return this.items().filter(
+      (el) => el.parentElement?.closest('.browser-group[aria-expanded="false"]') == null,
+    );
   }
 
   private itemId(target: EventTarget | null): Id | undefined {
-    return target instanceof Element ? target.closest<HTMLElement>('[data-id]')?.dataset['id'] : undefined;
+    return target instanceof Element
+      ? target.closest<HTMLElement>('[data-id]')?.dataset['id']
+      : undefined;
   }
 
   // ── Resizing ───────────────────────────────────────────────────────────

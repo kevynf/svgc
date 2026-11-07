@@ -1,6 +1,15 @@
 import { Draft } from '../../core/draft';
 import { evaluateSource } from '../../core/expr';
-import { add, arcParams, distance, midpoint, scaled, segmentNormal, sub, unit } from '../../core/geometry';
+import {
+  add,
+  arcParams,
+  distance,
+  midpoint,
+  scaled,
+  segmentNormal,
+  sub,
+  unit,
+} from '../../core/geometry';
 import type { Vec2 } from '../../core/geometry';
 import type { Id, Value } from '../../core/model';
 import type { Command, EditRequest, Message, OverlayShape, PointerInput } from '../command';
@@ -26,7 +35,13 @@ const MIN_RADIUS = 1e-6;
  */
 type Source =
   | { readonly kind: 'line'; readonly id: Id; readonly a: Vec2; readonly b: Vec2 }
-  | { readonly kind: 'circle'; readonly id: Id; readonly centerId: Id; readonly center: Vec2; readonly radius: number }
+  | {
+      readonly kind: 'circle';
+      readonly id: Id;
+      readonly centerId: Id;
+      readonly center: Vec2;
+      readonly radius: number;
+    }
   | {
       readonly kind: 'arc';
       readonly id: Id;
@@ -213,7 +228,9 @@ export class OffsetCommand implements Command {
 
   /** Takes the curve under `world`; a point, or one with nothing to offset, is no pick. */
   private pick(world: Vec2): void {
-    const hit = hitTest(this.editor.sketch, world, { tolerance: this.editor.viewport.toWorldLength(HIT_PX) });
+    const hit = hitTest(this.editor.sketch, world, {
+      tolerance: this.editor.viewport.toWorldLength(HIT_PX),
+    });
     const source = hit === undefined ? undefined : this.sourceOf(hit);
     if (source === undefined) return;
     this.phase = { kind: 'placing', source: source.id, cursor: world };

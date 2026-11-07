@@ -153,7 +153,12 @@ export class FilletCommand implements Command {
       // Back to placing, with the fillet where it was put. A rejection recorded
       // while the box was open is stale now, so it goes too.
       this.status = undefined;
-      this.phase = { kind: 'placing', line1: phase.line1, line2: phase.line2, cursor: phase.cursor };
+      this.phase = {
+        kind: 'placing',
+        line1: phase.line1,
+        line2: phase.line2,
+        cursor: phase.cursor,
+      };
       this.editor.viewChanged();
       return true;
     }
@@ -235,8 +240,11 @@ export class FilletCommand implements Command {
   private pick(world: Vec2): void {
     const phase = this.phase;
     if (phase.kind !== 'pick') return;
-    const hit = hitTest(this.editor.sketch, world, { tolerance: this.editor.viewport.toWorldLength(HIT_PX) });
-    const entity = hit === undefined ? undefined : this.editor.sketch.entities.find((e) => e.id === hit);
+    const hit = hitTest(this.editor.sketch, world, {
+      tolerance: this.editor.viewport.toWorldLength(HIT_PX),
+    });
+    const entity =
+      hit === undefined ? undefined : this.editor.sketch.entities.find((e) => e.id === hit);
     // Only a line can be filleted; a point, circle or arc is no pick.
     if (entity?.kind !== 'line') return;
     const first = phase.first;
@@ -302,13 +310,15 @@ export class FilletCommand implements Command {
     const a2 = this.pointAt(line1.p2);
     const b1 = this.pointAt(line2.p1);
     const b2 = this.pointAt(line2.p2);
-    if (a1 === undefined || a2 === undefined || b1 === undefined || b2 === undefined) return undefined;
+    if (a1 === undefined || a2 === undefined || b1 === undefined || b2 === undefined)
+      return undefined;
     const v = lineIntersection(a1, a2, b1, b2);
     // No intersection means the lines are parallel: there is no corner to fillet.
     if (v === undefined) return undefined;
     const rayA = rayFrom(line1, a1, a2, v);
     const rayB = rayFrom(line2, b1, b2, v);
-    const half = rayA !== undefined && rayB !== undefined ? halfAngle(rayA.dir, rayB.dir) : undefined;
+    const half =
+      rayA !== undefined && rayB !== undefined ? halfAngle(rayA.dir, rayB.dir) : undefined;
     if (rayA === undefined || rayB === undefined || half === undefined) return undefined;
     return {
       v,
@@ -399,7 +409,9 @@ export class FilletCommand implements Command {
     const assembled: Sketch = { ...sketch, entities, constraints };
     // Drop the vertex points the fillet consumed once nothing else references them.
     const referenced = referencedPoints(assembled);
-    const kept = entities.filter((e) => !(e.kind === 'point' && replaced.has(e.id) && !referenced.has(e.id)));
+    const kept = entities.filter(
+      (e) => !(e.kind === 'point' && replaced.has(e.id) && !referenced.has(e.id)),
+    );
     return { ...assembled, entities: kept };
   }
 

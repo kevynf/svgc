@@ -1,7 +1,16 @@
 import type { Expr, ExprErrorCode, ParamDef, Resolution } from './expr';
 import type { Constraint, Value } from './model';
 import type { Sketch } from './sketch';
-import { ExprError, evaluate, findCycle, format, isValidName, parse, references, resolveParams } from './expr';
+import {
+  ExprError,
+  evaluate,
+  findCycle,
+  format,
+  isValidName,
+  parse,
+  references,
+  resolveParams,
+} from './expr';
 
 /**
  * Creating, editing, renaming and deleting sketch parameters.
@@ -17,7 +26,12 @@ export type ParamError = ExprErrorCode | 'inUse';
 
 export type ParamResult =
   | { readonly ok: true; readonly sketch: Sketch }
-  | { readonly ok: false; readonly error: ParamError; readonly detail?: string; readonly count?: number };
+  | {
+      readonly ok: false;
+      readonly error: ParamError;
+      readonly detail?: string;
+      readonly count?: number;
+    };
 
 // ---------------------------------------------------------------------------
 // Reading
@@ -162,7 +176,9 @@ function checkExpression(sketch: Sketch, name: string, expression: string): Chec
     throw err;
   }
   try {
-    const value = evaluate(ast, (ref) => (ref === name ? sketch.params[name] ?? 0 : sketch.params[ref]));
+    const value = evaluate(ast, (ref) =>
+      ref === name ? (sketch.params[name] ?? 0) : sketch.params[ref],
+    );
     return { ok: true, value };
   } catch (err) {
     if (err instanceof ExprError) return failed(err);
@@ -214,8 +230,14 @@ function renamedSource(source: string, from: string, to: string): string {
  * The shared tail of adding and editing a parameter: refuse the cycle, then
  * store the source and re-resolve every parameter from it.
  */
-function replaceParam(sketch: Sketch, name: string, expression: string, value: number): ParamResult {
-  if (findCycle(paramDefs(sketch), name, expression) !== undefined) return { ok: false, error: 'cycle' };
+function replaceParam(
+  sketch: Sketch,
+  name: string,
+  expression: string,
+  value: number,
+): ParamResult {
+  if (findCycle(paramDefs(sketch), name, expression) !== undefined)
+    return { ok: false, error: 'cycle' };
   const params = { ...sketch.params, [name]: value };
   const sources = { ...sketch.expressions, [name]: expression };
   return commit(withExpressions({ ...sketch, params }, sources));
@@ -245,7 +267,8 @@ function commit(next: Sketch): ParamResult {
   const params: Record<string, number> = {};
   for (const def of defs) {
     const value = resolution.values.get(def.name);
-    if (value === undefined) return { ok: false, error: resolution.errors.get(def.name)?.code ?? 'unknownName' };
+    if (value === undefined)
+      return { ok: false, error: resolution.errors.get(def.name)?.code ?? 'unknownName' };
     params[def.name] = value;
   }
   return { ok: true, sketch: { ...next, params } };

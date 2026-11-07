@@ -48,7 +48,13 @@ export type Value = number | string;
 export type Constraint =
   | { readonly kind: 'coincident'; readonly id: Id; readonly a: Id; readonly b: Id }
   /** Locks a point at the given position. */
-  | { readonly kind: 'fix'; readonly id: Id; readonly point: Id; readonly x: number; readonly y: number }
+  | {
+      readonly kind: 'fix';
+      readonly id: Id;
+      readonly point: Id;
+      readonly x: number;
+      readonly y: number;
+    }
   /** A line, or two points when `b` is given. */
   | { readonly kind: 'horizontal'; readonly id: Id; readonly a: Id; readonly b?: Id }
   /** A line, or two points when `b` is given. */
@@ -63,7 +69,13 @@ export type Constraint =
   | { readonly kind: 'pointOnCurve'; readonly id: Id; readonly point: Id; readonly curve: Id }
   | { readonly kind: 'midpoint'; readonly id: Id; readonly point: Id; readonly line: Id }
   /** Two points mirrored about a line. */
-  | { readonly kind: 'symmetric'; readonly id: Id; readonly a: Id; readonly b: Id; readonly line: Id }
+  | {
+      readonly kind: 'symmetric';
+      readonly id: Id;
+      readonly a: Id;
+      readonly b: Id;
+      readonly line: Id;
+    }
   /**
    * The dimensions: the constraints that carry a measured value. Each may also
    * carry a `placement` — where the user put the dimension when they placed it,
@@ -81,13 +93,36 @@ export type Constraint =
    * distance (world px) along the line, from the perpendicular foot, that the
    * dimension line is shifted.
    */
-  | { readonly kind: 'distance'; readonly id: Id; readonly a: Id; readonly b: Id; readonly value: Value; readonly placement?: number; readonly driven?: boolean }
+  | {
+      readonly kind: 'distance';
+      readonly id: Id;
+      readonly a: Id;
+      readonly b: Id;
+      readonly value: Value;
+      readonly placement?: number;
+      readonly driven?: boolean;
+    }
   /** `placement` is the leader's direction in radians — atan2, Y pointing down — clamped onto the arc's sweep for an arc. */
-  | { readonly kind: 'radius'; readonly id: Id; readonly curve: Id; readonly value: Value; readonly placement?: number; readonly driven?: boolean }
+  | {
+      readonly kind: 'radius';
+      readonly id: Id;
+      readonly curve: Id;
+      readonly value: Value;
+      readonly placement?: number;
+      readonly driven?: boolean;
+    }
   /**
    * Degrees, measured counterclockwise on screen from line `a` to line `b`.
    * `placement` is the dimension arc's radius, in world px.
    */
-  | { readonly kind: 'angle'; readonly id: Id; readonly a: Id; readonly b: Id; readonly value: Value; readonly placement?: number; readonly driven?: boolean };
+  | {
+      readonly kind: 'angle';
+      readonly id: Id;
+      readonly a: Id;
+      readonly b: Id;
+      readonly value: Value;
+      readonly placement?: number;
+      readonly driven?: boolean;
+    };
 
 export type ConstraintKind = Constraint['kind'];

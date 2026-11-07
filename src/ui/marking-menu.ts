@@ -43,7 +43,8 @@ export class MarkingMenu {
   open(at: Vec2, items: readonly MenuItem[]): void {
     this.items = items.slice(0, SLOTS.length);
     this.center = at;
-    this.restoreFocus = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    this.restoreFocus =
+      document.activeElement instanceof HTMLElement ? document.activeElement : null;
     this.element.style.left = `${at.x}px`;
     this.element.style.top = `${at.y}px`;
     this.element.replaceChildren(
@@ -52,7 +53,9 @@ export class MarkingMenu {
       ...this.items.map((item, i) => this.itemElement(item, SLOTS[i]!)),
     );
     this.element.hidden = false;
-    this.buttons().find((b) => !b.disabled)?.focus();
+    this.buttons()
+      .find((b) => !b.disabled)
+      ?.focus();
   }
 
   /** Completes a right-drag gesture released at `at`. Returns true when an item ran. */
@@ -93,7 +96,8 @@ export class MarkingMenu {
     return el;
   }
 
-  private itemElement(item: MenuItem, degrees: number): HTMLButtonElement {    const el = document.createElement('button');
+  private itemElement(item: MenuItem, degrees: number): HTMLButtonElement {
+    const el = document.createElement('button');
     el.type = 'button';
     el.className = 'marking-menu-item';
     el.setAttribute('role', 'menuitem');
@@ -101,7 +105,8 @@ export class MarkingMenu {
     const rad = (degrees * Math.PI) / 180;
     el.style.setProperty('--dx', `${Math.cos(rad) * RADIUS_PX}px`);
     el.style.setProperty('--dy', `${Math.sin(rad) * RADIUS_PX}px`);
-    el.dataset['side'] = Math.abs(Math.cos(rad)) < 0.01 ? 'center' : Math.cos(rad) > 0 ? 'right' : 'left';
+    el.dataset['side'] =
+      Math.abs(Math.cos(rad)) < 0.01 ? 'center' : Math.cos(rad) > 0 ? 'right' : 'left';
     const label = document.createElement('span');
     label.textContent = this.t.t(item.label.key, item.label.params);
     if (item.icon !== undefined) el.append(icon(item.icon, 16));
@@ -129,9 +134,13 @@ export class MarkingMenu {
     }
     const enabled = this.buttons().filter((b) => !b.disabled);
     const index = enabled.indexOf(document.activeElement as HTMLButtonElement);
-    const step = { ArrowDown: 1, ArrowRight: 1, ArrowUp: -1, ArrowLeft: -1, Tab: event.shiftKey ? -1 : 1 }[
-      event.key
-    ];
+    const step = {
+      ArrowDown: 1,
+      ArrowRight: 1,
+      ArrowUp: -1,
+      ArrowLeft: -1,
+      Tab: event.shiftKey ? -1 : 1,
+    }[event.key];
     if (step === undefined || enabled.length === 0) return;
     event.preventDefault();
     event.stopPropagation();

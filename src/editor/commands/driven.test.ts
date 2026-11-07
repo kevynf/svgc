@@ -34,7 +34,10 @@ const commands = new Map<string, CommandFactory>([
   ['dimension', (e) => new DimensionCommand(e)],
 ]);
 
-function editorWith(sketch: Sketch = emptySketch(), driven: CommandFactory = (e) => new DrivenDimensionCommand(e)): Editor {
+function editorWith(
+  sketch: Sketch = emptySketch(),
+  driven: CommandFactory = (e) => new DrivenDimensionCommand(e),
+): Editor {
   const editor = new Editor(solver, sketch, new Map([...commands, ['driven', driven]]), 'select');
   editor.viewport.resize(800, 600);
   return editor;
@@ -144,7 +147,9 @@ function expectUnmoved(editor: Editor, before: Map<Id, Vec2>): void {
 /** The entities a command is highlighting, e.g. the operands it has picked. */
 function highlightIds(editor: Editor): readonly Id[] {
   type Highlight = Extract<OverlayShape, { kind: 'highlight' }>;
-  const shape = (editor.activeCommand.overlay?.() ?? []).find((s): s is Highlight => s.kind === 'highlight');
+  const shape = (editor.activeCommand.overlay?.() ?? []).find(
+    (s): s is Highlight => s.kind === 'highlight',
+  );
   return shape?.ids ?? [];
 }
 
@@ -238,12 +243,23 @@ describe('driven', () => {
     editor.startCommand('driven');
     const before = snapshot(editor);
     const dof = editor.solve.dof;
-    const expected = lineAngleDeg(pointOf(editor, v), pointOf(editor, end), pointOf(editor, v), pointOf(editor, tip));
+    const expected = lineAngleDeg(
+      pointOf(editor, v),
+      pointOf(editor, end),
+      pointOf(editor, v),
+      pointOf(editor, tip),
+    );
     hand(editor, { id: first, kind: 'line' }, { id: second, kind: 'line' });
     expect(dimensionShape(editor)?.layout.kind).toBe('angle');
     expect(dimensionShape(editor)?.value).toBe(expected);
     place(editor, 140, 260);
-    expect(last(editor)).toMatchObject({ kind: 'angle', a: first, b: second, value: expected, driven: true });
+    expect(last(editor)).toMatchObject({
+      kind: 'angle',
+      a: first,
+      b: second,
+      value: expected,
+      driven: true,
+    });
     expect(editor.solve.dof).toBe(dof);
     expectUnmoved(editor, before);
   });
@@ -278,8 +294,17 @@ describe('driven', () => {
     const dof = editor.solve.dof;
     clickCurve(editor, arc);
     place(editor, 90, 90);
-    const expected = arcParams(pointOf(editor, center), pointOf(editor, start), pointOf(editor, end)).radius;
-    expect(last(editor)).toMatchObject({ kind: 'radius', curve: arc, value: expected, driven: true });
+    const expected = arcParams(
+      pointOf(editor, center),
+      pointOf(editor, start),
+      pointOf(editor, end),
+    ).radius;
+    expect(last(editor)).toMatchObject({
+      kind: 'radius',
+      curve: arc,
+      value: expected,
+      driven: true,
+    });
     expect(editor.solve.dof).toBe(dof);
     expectUnmoved(editor, before);
   });

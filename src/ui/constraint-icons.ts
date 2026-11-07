@@ -54,7 +54,11 @@ const paths: Record<ConstraintGlyph, readonly string[]> = {
   midpoint: ['M4 9v6', 'M20 9v6', 'M4 12h6', 'M14 12h6', ring(12, 12)],
   // Two segments on one dotted line.
   collinear: ['M3 21l6 -6', 'M15 9l6 -6', 'M11 13v.01', 'M13 11v.01'],
-  concentric: ['M3 12a9 9 0 1 0 18 0a9 9 0 1 0 -18 0', 'M8 12a4 4 0 1 0 8 0a4 4 0 1 0 -8 0', 'M12 12v.01'],
+  concentric: [
+    'M3 12a9 9 0 1 0 18 0a9 9 0 1 0 -18 0',
+    'M8 12a4 4 0 1 0 8 0a4 4 0 1 0 -8 0',
+    'M12 12v.01',
+  ],
   // Two points mirrored about a dashed axis.
   symmetric: ['M12 3v3', 'M12 10.5v3', 'M12 18v3', ring(6, 12), ring(18, 12)],
   // Two curves meeting at a point with matching curvature.

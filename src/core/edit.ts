@@ -66,7 +66,10 @@ export function deleteItems(sketch: Sketch, ids: Iterable<Id>): Sketch {
   const constraints = sketch.constraints.filter(
     (c) => !requested.has(c.id) && !constraintRefs(c).some((id) => removed.has(id)),
   );
-  if (entities.length === sketch.entities.length && constraints.length === sketch.constraints.length) {
+  if (
+    entities.length === sketch.entities.length &&
+    constraints.length === sketch.constraints.length
+  ) {
     return sketch;
   }
   return { ...sketch, entities, constraints };
@@ -103,7 +106,10 @@ function isDimension(c: Constraint): c is DimensionConstraint {
  * named parameters resolved against `params`. Undefined for any other kind
  * and for a name the sketch does not define.
  */
-export function constraintValue(c: Constraint, params: Readonly<Record<string, number>>): number | undefined {
+export function constraintValue(
+  c: Constraint,
+  params: Readonly<Record<string, number>>,
+): number | undefined {
   if (!isDimension(c)) return undefined;
   return typeof c.value === 'number' ? c.value : params[c.value];
 }

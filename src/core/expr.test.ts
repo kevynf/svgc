@@ -96,7 +96,12 @@ describe('operators', () => {
   });
 
   it('exposes the operators in the AST', () => {
-    expect(parse('1 + 2')).toEqual({ kind: 'binary', op: '+', left: { kind: 'number', value: 1 }, right: { kind: 'number', value: 2 } });
+    expect(parse('1 + 2')).toEqual({
+      kind: 'binary',
+      op: '+',
+      left: { kind: 'number', value: 1 },
+      right: { kind: 'number', value: 2 },
+    });
     expect(parse('-2')).toEqual({ kind: 'unary', op: '-', operand: { kind: 'number', value: 2 } });
     expect(parse('+2')).toEqual({ kind: 'unary', op: '+', operand: { kind: 'number', value: 2 } });
     expect(parse('2^-1')).toEqual({
@@ -112,14 +117,28 @@ describe('operators', () => {
       kind: 'binary',
       op: '+',
       left: { kind: 'number', value: 1 },
-      right: { kind: 'binary', op: '*', left: { kind: 'number', value: 2 }, right: { kind: 'number', value: 3 } },
+      right: {
+        kind: 'binary',
+        op: '*',
+        left: { kind: 'number', value: 2 },
+        right: { kind: 'number', value: 3 },
+      },
     });
     expect(parse('-2^2')).toEqual({
       kind: 'unary',
       op: '-',
-      operand: { kind: 'binary', op: '^', left: { kind: 'number', value: 2 }, right: { kind: 'number', value: 2 } },
+      operand: {
+        kind: 'binary',
+        op: '^',
+        left: { kind: 'number', value: 2 },
+        right: { kind: 'number', value: 2 },
+      },
     });
-    expect(parse('sin(30)')).toEqual({ kind: 'call', fn: 'sin', args: [{ kind: 'number', value: 30 }] });
+    expect(parse('sin(30)')).toEqual({
+      kind: 'call',
+      fn: 'sin',
+      args: [{ kind: 'number', value: 30 }],
+    });
     const name = parse('d0');
     expect(name.kind).toBe('name');
     if (name.kind === 'name') {
@@ -279,7 +298,7 @@ describe('parse errors', () => {
     expectCode(() => parse(`${'sin('.repeat(120)}1${')'.repeat(120)}`), 'syntax');
     expect(evaluateSource(`${'sin('.repeat(40)}1${')'.repeat(40)}`, noLookup)).toBeCloseTo(0, 12);
     expectCode(() => parse(`${'2^'.repeat(200)}2`), 'syntax');
-    expect(evaluateSource(`${'2^'.repeat(3)}2`, noLookup)).toBe(2 ** 2 ** 2 ** 2);
+    expect(evaluateSource(`${'2^'.repeat(3)}2`, noLookup)).toBe(2 ** (2 ** (2 ** 2)));
   });
 });
 
@@ -306,7 +325,10 @@ describe('evaluate errors', () => {
     expectCode(() => evaluateSource('sqrt(-1)', noLookup), 'domain');
     expectCode(() => evaluateSource('asin(2)', noLookup), 'domain');
     expectCode(() => evaluateSource('acos(-3)', noLookup), 'domain');
-    const err = expectCode(() => evaluateSource('sqrt(d2)', (name) => (name === 'd2' ? -1 : undefined)), 'domain');
+    const err = expectCode(
+      () => evaluateSource('sqrt(d2)', (name) => (name === 'd2' ? -1 : undefined)),
+      'domain',
+    );
     expect(err.params.fn).toBe('sqrt');
     expect(err.start).toBe(5);
     expect(err.end).toBe(7);
@@ -327,8 +349,24 @@ describe('evaluate errors', () => {
   it('checks arity and function names again when evaluating a hand-built AST', () => {
     expectCode(() => evaluate({ kind: 'call', fn: 'nope', args: [] }, noLookup), 'unknownFunction');
     expectCode(() => evaluate({ kind: 'call', fn: 'sin', args: [] }, noLookup), 'arity');
-    expectCode(() => evaluate({ kind: 'call', fn: 'sin', args: [{ kind: 'number', value: 1 }, { kind: 'number', value: 2 }] }, noLookup), 'arity');
-    expect(evaluate({ kind: 'call', fn: 'sin', args: [{ kind: 'number', value: 30 }] }, noLookup)).toBeCloseTo(0.5, 12);
+    expectCode(
+      () =>
+        evaluate(
+          {
+            kind: 'call',
+            fn: 'sin',
+            args: [
+              { kind: 'number', value: 1 },
+              { kind: 'number', value: 2 },
+            ],
+          },
+          noLookup,
+        ),
+      'arity',
+    );
+    expect(
+      evaluate({ kind: 'call', fn: 'sin', args: [{ kind: 'number', value: 30 }] }, noLookup),
+    ).toBeCloseTo(0.5, 12);
   });
 });
 

@@ -283,7 +283,9 @@ function nearestCrossing(
 
 /** The curve with its span opened out: an arc becomes the circle it lies on. */
 function fullOf(curve: Ended): Intersectable {
-  return curve.kind === 'arc' ? { kind: 'circle', center: curve.center, radius: curve.radius } : curve;
+  return curve.kind === 'arc'
+    ? { kind: 'circle', center: curve.center, radius: curve.radius }
+    : curve;
 }
 
 function sideOf(curve: Ended, end: 'start' | 'end', p: Vec2): SpanSide {
@@ -353,7 +355,9 @@ function measureAlong(curve: Ended, end: 'start' | 'end', p: Vec2): number {
 function sameCurve(x: Intersectable, y: Intersectable): boolean {
   if (x.kind === 'line' && y.kind === 'line') {
     // Either order: the same two points describe the same segment.
-    return (samePoint(x.a, y.a) && samePoint(x.b, y.b)) || (samePoint(x.a, y.b) && samePoint(x.b, y.a));
+    return (
+      (samePoint(x.a, y.a) && samePoint(x.b, y.b)) || (samePoint(x.a, y.b) && samePoint(x.b, y.a))
+    );
   }
   if (x.kind === 'circle' && y.kind === 'circle') {
     return samePoint(x.center, y.center) && Math.abs(x.radius - y.radius) <= EPS;

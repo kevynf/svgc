@@ -73,7 +73,10 @@ export class DimensionCommand extends ConstraintCommand {
     const [first, second] = picks;
     // Only the single-line case remembers its line; every other build starts
     // from a clean slate, so a stale one can never convert a later dimension.
-    this.lengthOf = second === undefined && first?.kind === 'line' && measured !== undefined ? first.id : undefined;
+    this.lengthOf =
+      second === undefined && first?.kind === 'line' && measured !== undefined
+        ? first.id
+        : undefined;
     return measured;
   }
 
@@ -83,7 +86,9 @@ export class DimensionCommand extends ConstraintCommand {
    * second line — and neither does a click on a curve.
    */
   private lineAt(world: Vec2): Id | undefined {
-    const hit = hitTest(this.editor.sketch, world, { tolerance: this.editor.viewport.toWorldLength(HIT_PX) });
+    const hit = hitTest(this.editor.sketch, world, {
+      tolerance: this.editor.viewport.toWorldLength(HIT_PX),
+    });
     const e = this.editor.sketch.entities.find((x) => x.id === hit);
     return e?.kind === 'line' ? e.id : undefined;
   }
@@ -107,7 +112,11 @@ export class DimensionCommand extends ConstraintCommand {
   protected override complete(constraint: ConstraintInput): void {
     // `build()` only produces the three dimensional kinds; the test is what
     // narrows the constraint to them.
-    if (constraint.kind === 'distance' || constraint.kind === 'radius' || constraint.kind === 'angle') {
+    if (
+      constraint.kind === 'distance' ||
+      constraint.kind === 'radius' ||
+      constraint.kind === 'angle'
+    ) {
       this.phase = { kind: 'placing', constraint, cursor: this.cursor, fromLine: this.lengthOf };
     }
     this.editor.viewChanged();
@@ -163,7 +172,11 @@ export class DimensionCommand extends ConstraintCommand {
   get edit(): EditRequest | undefined {
     const phase = this.phase;
     if (phase.kind !== 'entering') return undefined;
-    return { at: phase.at, value: this.measured(phase.constraint), label: { key: 'prompts.dimensionValue' } };
+    return {
+      at: phase.at,
+      value: this.measured(phase.constraint),
+      label: { key: 'prompts.dimensionValue' },
+    };
   }
 
   /**
@@ -228,8 +241,15 @@ export class DimensionCommand extends ConstraintCommand {
       if (from === undefined || this.cursor === undefined) return shapes;
       return [...shapes, { kind: 'previewLine', from, to: this.cursor }];
     }
-    const spec = { ...specOf(phase.constraint), placement: phase.kind === 'placing' ? phase.cursor : phase.placement };
-    const layout = layoutDimension(spec, indexEntities(this.editor.sketch), this.editor.viewport.scale);
+    const spec = {
+      ...specOf(phase.constraint),
+      placement: phase.kind === 'placing' ? phase.cursor : phase.placement,
+    };
+    const layout = layoutDimension(
+      spec,
+      indexEntities(this.editor.sketch),
+      this.editor.viewport.scale,
+    );
     const highlight: OverlayShape = { kind: 'highlight', ids: spec.operands };
     // Degenerate operands have no layout to draw, but their highlight stands.
     if (layout === undefined) return [highlight];
@@ -282,7 +302,12 @@ export class DimensionCommand extends ConstraintCommand {
     // Degenerate operands (coincident points, a zero-radius curve) leave nowhere
     // to draw the dimension, so the click is ignored.
     if (layout === undefined) return;
-    this.phase = { kind: 'entering', constraint: phase.constraint, placement: at, at: layout.textAt };
+    this.phase = {
+      kind: 'entering',
+      constraint: phase.constraint,
+      placement: at,
+      at: layout.textAt,
+    };
     this.editor.viewChanged();
   }
 

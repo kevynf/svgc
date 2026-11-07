@@ -1,6 +1,12 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { SketchBuilder } from '../../core/builder';
-import { arcParams, directionDeg, distance, lineAngleDeg, perpendicularDistance } from '../../core/geometry';
+import {
+  arcParams,
+  directionDeg,
+  distance,
+  lineAngleDeg,
+  perpendicularDistance,
+} from '../../core/geometry';
 import type { Vec2 } from '../../core/geometry';
 import type { Constraint, Id } from '../../core/model';
 import { emptySketch, indexEntities } from '../../core/sketch';
@@ -31,8 +37,16 @@ const commands = new Map<string, CommandFactory>([
   ['dimension', (e) => new DimensionCommand(e)],
 ]);
 
-function editorWith(sketch: Sketch = emptySketch(), dimension: CommandFactory = (e) => new DimensionCommand(e)): Editor {
-  const editor = new Editor(solver, sketch, new Map([...commands, ['dimension', dimension]]), 'select');
+function editorWith(
+  sketch: Sketch = emptySketch(),
+  dimension: CommandFactory = (e) => new DimensionCommand(e),
+): Editor {
+  const editor = new Editor(
+    solver,
+    sketch,
+    new Map([...commands, ['dimension', dimension]]),
+    'select',
+  );
   editor.viewport.resize(800, 600);
   return editor;
 }
@@ -140,7 +154,9 @@ function expectUnmoved(editor: Editor, before: Map<Id, Vec2>): void {
 /** The entities a command is highlighting, e.g. the operands it has picked. */
 function highlightIds(editor: Editor): readonly Id[] {
   type Highlight = Extract<OverlayShape, { kind: 'highlight' }>;
-  const shape = (editor.activeCommand.overlay?.() ?? []).find((s): s is Highlight => s.kind === 'highlight');
+  const shape = (editor.activeCommand.overlay?.() ?? []).find(
+    (s): s is Highlight => s.kind === 'highlight',
+  );
   return shape?.ids ?? [];
 }
 
@@ -148,7 +164,8 @@ function radiusOf(editor: Editor, id: Id): number {
   const e = editor.sketch.entities.find((x) => x.id === id);
   if (e?.kind === 'circle') return e.radius;
   if (e?.kind !== 'arc') throw new Error(`"${id}" is not a curve`);
-  return arcParams(pointOf(editor, e.center), pointOf(editor, e.start), pointOf(editor, e.end)).radius;
+  return arcParams(pointOf(editor, e.center), pointOf(editor, e.start), pointOf(editor, e.end))
+    .radius;
 }
 
 /** The dimension shape a command is drawing, or undefined when it draws none. */
@@ -305,7 +322,12 @@ describe('dimension', () => {
     const editor = editorWith(b.build());
     editor.startCommand('dimension');
     const before = snapshot(editor);
-    const expected = lineAngleDeg(pointOf(editor, v), pointOf(editor, end), pointOf(editor, v), pointOf(editor, tip));
+    const expected = lineAngleDeg(
+      pointOf(editor, v),
+      pointOf(editor, end),
+      pointOf(editor, v),
+      pointOf(editor, tip),
+    );
     clickCurve(editor, first);
     // The length is pending, and the hint says a second line would take over.
     expect(editor.activeCommand.prompt()).toEqual({ key: 'prompts.dimensionPlaceLine' });
@@ -317,7 +339,9 @@ describe('dimension', () => {
     expect(editor.activeCommand.prompt()).toEqual({ key: 'prompts.dimensionPlace' });
     const shape = dimensionShape(editor);
     expect(shape?.layout.kind).toBe('angle');
-    expect(shape?.layout).toEqual(specLayout({ kind: 'angle', operands: [first, second], placement: on }, editor.sketch));
+    expect(shape?.layout).toEqual(
+      specLayout({ kind: 'angle', operands: [first, second], placement: on }, editor.sketch),
+    );
     expect(shape?.value).toBe(expected);
     expect(highlightIds(editor)).toEqual([first, second]);
     editor.activeCommand.pointerMove?.(at(on.x + 40, on.y - 40));
@@ -484,7 +508,10 @@ describe('dimension', () => {
     const value = distance(pointOf(editor, p1), pointOf(editor, p2));
     place(editor, 10, 90);
     expect(editor.activeCommand.edit).toEqual({
-      at: specLayout({ kind: 'distance', operands: [p1, p2], placement: { x: 10, y: 90 } }, editor.sketch).textAt,
+      at: specLayout(
+        { kind: 'distance', operands: [p1, p2], placement: { x: 10, y: 90 } },
+        editor.sketch,
+      ).textAt,
       value,
       label: { key: 'prompts.dimensionValue' },
     });
@@ -692,7 +719,10 @@ describe('dimension', () => {
     expect(editor.activeCommand.keyDown!({ key: 'Enter' } as unknown as KeyboardEvent)).toBe(true);
     // The box opens where the dimension was following the cursor.
     expect(editor.activeCommand.edit?.at).toEqual(
-      specLayout({ kind: 'radius', operands: [circle], placement: { x: 120, y: 50 } }, editor.sketch).textAt,
+      specLayout(
+        { kind: 'radius', operands: [circle], placement: { x: 120, y: 50 } },
+        editor.sketch,
+      ).textAt,
     );
     expect(editor.activeCommand.prompt()).toEqual({ key: 'prompts.dimensionValue' });
   });
@@ -708,7 +738,11 @@ describe('dimension', () => {
     const before = snapshot(editor);
     clickCurve(editor, arc);
     acceptMeasurement(editor, 90, 90);
-    const expected = arcParams(pointOf(editor, center), pointOf(editor, start), pointOf(editor, end)).radius;
+    const expected = arcParams(
+      pointOf(editor, center),
+      pointOf(editor, start),
+      pointOf(editor, end),
+    ).radius;
     expect(last(editor)).toMatchObject({ kind: 'radius', curve: arc, value: expected });
     expectUnmoved(editor, before);
   });

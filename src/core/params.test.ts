@@ -139,13 +139,20 @@ describe('withParam', () => {
     expect(withParam(s.sketch, 'side', 'foo(1)')).toEqual({ ok: false, error: 'unknownFunction' });
     expect(withParam(s.sketch, 'side', 'sin(1, 2)')).toEqual({ ok: false, error: 'arity' });
     expect(withParam(s.sketch, 'side', 'sqrt(0 - 1)')).toEqual({ ok: false, error: 'domain' });
-    expect(withParam(s.sketch, 'side', 'gap / (span - 40)')).toEqual({ ok: false, error: 'divisionByZero' });
+    expect(withParam(s.sketch, 'side', 'gap / (span - 40)')).toEqual({
+      ok: false,
+      error: 'divisionByZero',
+    });
     expect(withParam(s.sketch, 'side', '1e308 * 10')).toEqual({ ok: false, error: 'notFinite' });
   });
 
   it('names the unknown parameter in a refused expression', () => {
     const s = dims();
-    expect(withParam(s.sketch, 'side', 'nope * 2')).toEqual({ ok: false, error: 'unknownName', detail: 'nope' });
+    expect(withParam(s.sketch, 'side', 'nope * 2')).toEqual({
+      ok: false,
+      error: 'unknownName',
+      detail: 'nope',
+    });
   });
 
   it('refuses a parameter that references itself', () => {
@@ -156,7 +163,12 @@ describe('withParam', () => {
   it('refuses an expression that would close a cycle', () => {
     // `b` reads a parameter that does not exist yet; adding it as a reader of
     // `b` would close b → a → b.
-    const dangling: Sketch = { entities: [], constraints: [], params: { b: 4 }, expressions: { b: 'a * 2' } };
+    const dangling: Sketch = {
+      entities: [],
+      constraints: [],
+      params: { b: 4 },
+      expressions: { b: 'a * 2' },
+    };
     expect(withParam(dangling, 'a', 'b * 3')).toEqual({ ok: false, error: 'cycle' });
   });
 });
@@ -177,8 +189,16 @@ describe('withParamExpression', () => {
   });
 
   it('refuses a parameter the sketch does not have', () => {
-    expect(withParamExpression(chain(), 'nope', '1')).toEqual({ ok: false, error: 'unknownName', detail: 'nope' });
-    expect(withParamExpression(chain(), 'a', 'nope')).toEqual({ ok: false, error: 'unknownName', detail: 'nope' });
+    expect(withParamExpression(chain(), 'nope', '1')).toEqual({
+      ok: false,
+      error: 'unknownName',
+      detail: 'nope',
+    });
+    expect(withParamExpression(chain(), 'a', 'nope')).toEqual({
+      ok: false,
+      error: 'unknownName',
+      detail: 'nope',
+    });
   });
 
   it('refuses an edit that would close a cycle', () => {
@@ -232,7 +252,11 @@ describe('withRenamedParam', () => {
     const sketch = named();
     expect(withRenamedParam(sketch, 'gap', '2x')).toEqual({ ok: false, error: 'invalidName' });
     expect(withRenamedParam(sketch, 'gap', 'span')).toEqual({ ok: false, error: 'duplicateName' });
-    expect(withRenamedParam(sketch, 'nope', 'width')).toEqual({ ok: false, error: 'unknownName', detail: 'nope' });
+    expect(withRenamedParam(sketch, 'nope', 'width')).toEqual({
+      ok: false,
+      error: 'unknownName',
+      detail: 'nope',
+    });
   });
 });
 
@@ -270,7 +294,11 @@ describe('withoutParam', () => {
   });
 
   it('refuses a parameter the sketch does not have', () => {
-    expect(withoutParam(dims().sketch, 'nope')).toEqual({ ok: false, error: 'unknownName', detail: 'nope' });
+    expect(withoutParam(dims().sketch, 'nope')).toEqual({
+      ok: false,
+      error: 'unknownName',
+      detail: 'nope',
+    });
   });
 });
 

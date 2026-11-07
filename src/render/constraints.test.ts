@@ -259,9 +259,20 @@ describe('constraintPlacements', () => {
     expect(placements).toHaveLength(14);
     expect(placements.map((p) => p.glyph).sort()).toEqual(
       [
-        'coincident', 'fix', 'horizontal', 'vertical', 'parallel', 'perpendicular',
-        'equal', 'tangent', 'pointOnLine', 'pointOnCurve', 'midpoint',
-        'distance', 'radius', 'angle',
+        'coincident',
+        'fix',
+        'horizontal',
+        'vertical',
+        'parallel',
+        'perpendicular',
+        'equal',
+        'tangent',
+        'pointOnLine',
+        'pointOnCurve',
+        'midpoint',
+        'distance',
+        'radius',
+        'angle',
       ].sort(),
     );
     for (const p of placements) {
@@ -421,10 +432,16 @@ describe('constraintPlacements', () => {
     const pair = b.constrain({ kind: 'horizontal', a: a1, b: a2 });
     const sketch = b.build();
 
-    expect(constraintPlacements(sketch, 1, { only: new Set([first]) }).map((p) => p.constraint)).toEqual([h]);
-    expect(constraintPlacements(sketch, 1, { only: new Set([second]) }).map((p) => p.constraint)).toEqual([v]);
+    expect(
+      constraintPlacements(sketch, 1, { only: new Set([first]) }).map((p) => p.constraint),
+    ).toEqual([h]);
+    expect(
+      constraintPlacements(sketch, 1, { only: new Set([second]) }).map((p) => p.constraint),
+    ).toEqual([v]);
     // A point-to-point horizontal refers to its two points, not the line.
-    expect(constraintPlacements(sketch, 1, { only: new Set([a2]) }).map((p) => p.constraint)).toEqual([pair]);
+    expect(
+      constraintPlacements(sketch, 1, { only: new Set([a2]) }).map((p) => p.constraint),
+    ).toEqual([pair]);
     expect(constraintPlacements(sketch, 1, { only: new Set(['nope']) })).toEqual([]);
     expect(constraintPlacements(sketch, 1)).toHaveLength(3);
   });

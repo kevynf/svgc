@@ -132,7 +132,9 @@ export class SketchView {
     // A dimension being placed formats its value the way the committed one is
     // labelled; the fallback is for callers that supply no formatter.
     const format = state.formatNumber ?? ((n: number) => n.toFixed(1));
-    this.overlay.replaceChildren(...state.overlay.flatMap((shape) => overlayElements(shape, sketch, s, vp.scale, vp, format)));
+    this.overlay.replaceChildren(
+      ...state.overlay.flatMap((shape) => overlayElements(shape, sketch, s, vp.scale, vp, format)),
+    );
   }
 
   private renderConstraints(state: ViewState, s: (p: Vec2) => Vec2): void {
@@ -145,8 +147,13 @@ export class SketchView {
     // per render and reused; the per-constraint work is then just a lookup.
     const index = indexEntities(sketch);
     const placements = constraintPlacements(sketch, vp.scale);
-    const hovered = state.cursor === undefined ? undefined : hitConstraint(placements, state.cursor, 12 / vp.scale);
-    const selected = new Set([...state.selection].filter((id) => sketch.constraints.some((c) => c.id === id)));
+    const hovered =
+      state.cursor === undefined
+        ? undefined
+        : hitConstraint(placements, state.cursor, 12 / vp.scale);
+    const selected = new Set(
+      [...state.selection].filter((id) => sketch.constraints.some((c) => c.id === id)),
+    );
     const constraints = new Map(sketch.constraints.map((c) => [c.id, c] as const));
     const dimensions = placements.flatMap((placement) => {
       const c = constraints.get(placement.constraint);
@@ -238,7 +245,9 @@ function overlayElements(
     }
     case 'previewCircle': {
       const c = s(shape.center);
-      return [svgElement('circle', { class: 'preview', cx: c.x, cy: c.y, r: shape.radius * scale })];
+      return [
+        svgElement('circle', { class: 'preview', cx: c.x, cy: c.y, r: shape.radius * scale }),
+      ];
     }
     case 'guide': {
       const source = sketch.entities.find((e) => e.id === shape.alignment.source);
@@ -254,8 +263,20 @@ function overlayElements(
     case 'inferred': {
       const p = s(shape.at);
       return shape.constraints.map((c, i) => {
-        const g = svgElement('g', { class: 'inferred', transform: `translate(${p.x + 12 + i * (GLYPH_PX + 4)} ${p.y + 12})` });
-        g.append(svgElement('rect', { class: 'inferred-bg', x: -2, y: -2, width: GLYPH_PX + 4, height: GLYPH_PX + 4, rx: 3 }));
+        const g = svgElement('g', {
+          class: 'inferred',
+          transform: `translate(${p.x + 12 + i * (GLYPH_PX + 4)} ${p.y + 12})`,
+        });
+        g.append(
+          svgElement('rect', {
+            class: 'inferred-bg',
+            x: -2,
+            y: -2,
+            width: GLYPH_PX + 4,
+            height: GLYPH_PX + 4,
+            rx: 3,
+          }),
+        );
         g.append(constraintIcon(INFERRED_GLYPH[c.kind], GLYPH_PX));
         return g;
       });
@@ -267,7 +288,9 @@ function overlayElements(
       // not a constraint in the sketch. With no value the inline edit box
       // carries it, so the text is left off rather than drawn under the box.
       const label =
-        shape.value === undefined ? undefined : dimensionText(shape.value, shape.radius === true, format);
+        shape.value === undefined
+          ? undefined
+          : dimensionText(shape.value, shape.radius === true, format);
       const g = svgElement('g', { class: 'dimension' });
       g.append(...dimensionParts(shape.layout, s, label));
       return [g];
@@ -342,7 +365,11 @@ const ARROW_HALF_WIDTH_PX = 3;
  * by a committed constraint and a dimension being placed, so the two read
  * identically on the canvas.
  */
-function dimensionParts(layout: DimensionLayout, s: (p: Vec2) => Vec2, label?: string): SVGElement[] {
+function dimensionParts(
+  layout: DimensionLayout,
+  s: (p: Vec2) => Vec2,
+  label?: string,
+): SVGElement[] {
   const parts: SVGElement[] = [];
   const lineTo = (cls: string, seg: readonly [Vec2, Vec2]) => {
     const a = s(seg[0]);
@@ -385,7 +412,11 @@ function dimensionElement(
   index: EntityIndex,
   s: (p: Vec2) => Vec2,
   scale: number,
-  state: { readonly hovered: boolean; readonly selected: boolean; readonly label: string | undefined },
+  state: {
+    readonly hovered: boolean;
+    readonly selected: boolean;
+    readonly label: string | undefined;
+  },
 ): SVGElement | undefined {
   const layout = dimensionLayout(c, index, scale);
   if (layout === undefined) return undefined;

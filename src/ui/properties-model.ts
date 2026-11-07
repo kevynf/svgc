@@ -58,7 +58,12 @@ export type Section =
   | { readonly kind: 'fields'; readonly title: string; readonly fields: readonly Field[] }
   | { readonly kind: 'rows'; readonly title: string; readonly rows: readonly Row[] }
   | { readonly kind: 'items'; readonly title: string; readonly items: readonly ConstraintItem[] }
-  | { readonly kind: 'construction'; readonly title: string; readonly curves: readonly Id[]; readonly state: TriState };
+  | {
+      readonly kind: 'construction';
+      readonly title: string;
+      readonly curves: readonly Id[];
+      readonly state: TriState;
+    };
 
 export interface PropertiesModel {
   /** Panel header text: the entity name, the selection count, or the sketch name. */
@@ -84,7 +89,8 @@ export interface Bounds {
   readonly height: number;
 }
 
-export type ParsedNumber = { readonly ok: true; readonly value: number } | { readonly ok: false; readonly error: string };
+export type ParsedNumber =
+  { readonly ok: true; readonly value: number } | { readonly ok: false; readonly error: string };
 
 // ── Angles ───────────────────────────────────────────────────────────────
 
@@ -107,8 +113,20 @@ function coordinates(index: EntityIndex, id: Id, labels: readonly [x: string, y:
   const point = pointAt(index, id);
   if (point === undefined) return [];
   return [
-    { key: `${id}.x`, label: labels[0], value: point.x, editable: true, target: { kind: 'point', point: id, axis: 'x' } },
-    { key: `${id}.y`, label: labels[1], value: point.y, editable: true, target: { kind: 'point', point: id, axis: 'y' } },
+    {
+      key: `${id}.x`,
+      label: labels[0],
+      value: point.x,
+      editable: true,
+      target: { kind: 'point', point: id, axis: 'x' },
+    },
+    {
+      key: `${id}.y`,
+      label: labels[1],
+      value: point.y,
+      editable: true,
+      target: { kind: 'point', point: id, axis: 'y' },
+    },
   ];
 }
 
@@ -145,21 +163,37 @@ export function entityFields(entity: Entity, index: EntityIndex, t: Translator):
         editable: true,
         target: { kind: 'radius', curve: entity.id },
       };
-      const fields = [...coordinates(index, entity.center, [t.t('properties.centerX'), t.t('properties.centerY')]), radius];
-      return [...fields, ...readout(`${entity.id}.diameter`, t.t('properties.diameter'), entity.radius * 2)];
+      const fields = [
+        ...coordinates(index, entity.center, [
+          t.t('properties.centerX'),
+          t.t('properties.centerY'),
+        ]),
+        radius,
+      ];
+      return [
+        ...fields,
+        ...readout(`${entity.id}.diameter`, t.t('properties.diameter'), entity.radius * 2),
+      ];
     }
     case 'arc': {
       const center = pointAt(index, entity.center);
       const start = pointAt(index, entity.start);
       const end = pointAt(index, entity.end);
-      const fields = coordinates(index, entity.center, [t.t('properties.centerX'), t.t('properties.centerY')]);
+      const fields = coordinates(index, entity.center, [
+        t.t('properties.centerX'),
+        t.t('properties.centerY'),
+      ]);
       if (center === undefined || start === undefined || end === undefined) return fields;
       const { radius, startAngle, endAngle } = arcParams(center, start, end);
       return [
         ...fields,
         ...readout(`${entity.id}.radius`, t.t('properties.radius'), radius),
         ...readout(`${entity.id}.startAngle`, t.t('properties.startAngle'), screenDeg(startAngle)),
-        ...readout(`${entity.id}.sweep`, t.t('properties.sweep'), (endAngle - startAngle) * (180 / Math.PI)),
+        ...readout(
+          `${entity.id}.sweep`,
+          t.t('properties.sweep'),
+          (endAngle - startAngle) * (180 / Math.PI),
+        ),
       ];
     }
   }
@@ -202,7 +236,12 @@ function extentOf(points: readonly Vec2[]): Extent {
   if (first === undefined) throw new Error('Empty extent');
   let box: Extent = { minX: first.x, minY: first.y, maxX: first.x, maxY: first.y };
   for (const p of rest) {
-    box = { minX: Math.min(box.minX, p.x), minY: Math.min(box.minY, p.y), maxX: Math.max(box.maxX, p.x), maxY: Math.max(box.maxY, p.y) };
+    box = {
+      minX: Math.min(box.minX, p.x),
+      minY: Math.min(box.minY, p.y),
+      maxX: Math.max(box.maxX, p.x),
+      maxY: Math.max(box.maxY, p.y),
+    };
   }
   return box;
 }
@@ -272,7 +311,9 @@ export function selectionBounds(sketch: Sketch, ids: Iterable<Id>): Bounds | und
             maxY: Math.max(box.maxY, extent.maxY),
           };
   }
-  return box === undefined ? undefined : { x: box.minX, y: box.minY, width: box.maxX - box.minX, height: box.maxY - box.minY };
+  return box === undefined
+    ? undefined
+    : { x: box.minX, y: box.minY, width: box.maxX - box.minX, height: box.maxY - box.minY };
 }
 
 // ── Input ────────────────────────────────────────────────────────────────
@@ -281,7 +322,10 @@ export function selectionBounds(sketch: Sketch, ids: Iterable<Id>): Bounds | und
  * Evaluates what the user typed in a field: `10*2`, `25.4mm`, full-width
  * digits and parameter names all resolve against the sketch's parameters.
  */
-export function parseNumber(source: string, params: Readonly<Record<string, number>>): ParsedNumber {
+export function parseNumber(
+  source: string,
+  params: Readonly<Record<string, number>>,
+): ParsedNumber {
   const text = source.trim();
   if (text === '') return { ok: false, error: 'Empty expression' };
   try {
@@ -295,7 +339,8 @@ export function parseNumber(source: string, params: Readonly<Record<string, numb
 
 /** Constraint state of the whole sketch, worded exactly like the status bar. */
 function stateText(solve: SolveResult, t: Translator): string {
-  if (solve.conflicting.length > 0) return t.t('status.conflicting', { count: solve.conflicting.length });
+  if (solve.conflicting.length > 0)
+    return t.t('status.conflicting', { count: solve.conflicting.length });
   if (solve.outcome === 'failed') return t.t('status.solveFailed');
   if (solve.dof === 0) return t.t('status.fullyConstrained');
   return t.t('status.dimensionsNeeded', { count: solve.dof });
@@ -305,9 +350,14 @@ function sketchSummary({ sketch, solve, t }: ModelContext): PropertiesModel {
   const rows: Row[] = [];
   for (const kind of ['point', 'line', 'circle', 'arc'] as const) {
     const count = sketch.entities.filter((e) => e.kind === kind).length;
-    if (count > 0) rows.push({ key: `count.${kind}`, label: t.t(KIND_LABEL[kind]), text: t.number(count, 0) });
+    if (count > 0)
+      rows.push({ key: `count.${kind}`, label: t.t(KIND_LABEL[kind]), text: t.number(count, 0) });
   }
-  rows.push({ key: 'count.constraints', label: t.t('browser.constraints'), text: t.number(sketch.constraints.length, 0) });
+  rows.push({
+    key: 'count.constraints',
+    label: t.t('browser.constraints'),
+    text: t.number(sketch.constraints.length, 0),
+  });
   rows.push({ key: 'state', label: t.t('properties.status'), text: stateText(solve, t) });
   const params: Row[] = Object.entries(sketch.params).map(([name, value]) => ({
     key: `param.${name}`,
@@ -328,7 +378,11 @@ function sketchSummary({ sketch, solve, t }: ModelContext): PropertiesModel {
 function singleEntity(entity: Entity, ctx: ModelContext): PropertiesModel {
   const { sketch, status, names, t } = ctx;
   const sections: Section[] = [
-    { kind: 'fields', title: names.entity(entity.id), fields: entityFields(entity, indexEntities(sketch), t) },
+    {
+      kind: 'fields',
+      title: names.entity(entity.id),
+      fields: entityFields(entity, indexEntities(sketch), t),
+    },
   ];
   if (entity.kind !== 'point') {
     sections.push({
@@ -341,7 +395,11 @@ function singleEntity(entity: Entity, ctx: ModelContext): PropertiesModel {
   sections.push({
     kind: 'items',
     title: t.t('browser.constraints'),
-    items: constraintsOf(sketch, entity.id).map((c) => ({ id: c.id, name: names.constraint(c), glyph: c.kind })),
+    items: constraintsOf(sketch, entity.id).map((c) => ({
+      id: c.id,
+      name: names.constraint(c),
+      glyph: c.kind,
+    })),
   });
   return { title: names.entity(entity.id), status: status.get(entity.id), sections };
 }
@@ -369,7 +427,11 @@ function multipleEntities(selected: readonly Entity[], ctx: ModelContext): Prope
           { key: 'bounds.height', label: t.t('properties.height'), text: t.number(bounds.height) },
         ];
   sections.push({ kind: 'rows', title: t.t('properties.bounds'), rows: boundsRows });
-  return { title: t.t('properties.selected', { count: selected.length }), status: undefined, sections };
+  return {
+    title: t.t('properties.selected', { count: selected.length }),
+    status: undefined,
+    sections,
+  };
 }
 
 /** One selected constraint: a dimension gets an editable value, the rest just a name. */
@@ -400,7 +462,10 @@ function singleConstraint(c: Constraint, ctx: ModelContext): PropertiesModel {
   return { title: names.constraint(c), status: undefined, sections };
 }
 
-function multipleConstraints(constraints: readonly Constraint[], ctx: ModelContext): PropertiesModel {
+function multipleConstraints(
+  constraints: readonly Constraint[],
+  ctx: ModelContext,
+): PropertiesModel {
   const { sketch, names, t } = ctx;
   const rows: Row[] = constraints.map((c) => {
     const value = constraintValue(c, sketch.params);

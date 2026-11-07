@@ -129,7 +129,11 @@ export interface DimensionSpec {
  * lines with their gap and overshoot, the arrowheads and where the value sits
  * — derives from that as it always has.
  */
-export function layoutDimension(spec: DimensionSpec, index: EntityIndex, scale: number): DimensionLayout | undefined {
+export function layoutDimension(
+  spec: DimensionSpec,
+  index: EntityIndex,
+  scale: number,
+): DimensionLayout | undefined {
   const offset = resolveOffset(spec, index, scale);
   if (offset === undefined) return undefined;
   const k = 1 / Math.max(scale, MIN_SCALE);
@@ -161,7 +165,11 @@ export function layoutDimension(spec: DimensionSpec, index: EntityIndex, scale: 
  * offset, so a dimension being placed follows the cursor; with neither, each
  * kind's default anchor.
  */
-export function resolveOffset(spec: DimensionSpec, index: EntityIndex, scale: number): number | undefined {
+export function resolveOffset(
+  spec: DimensionSpec,
+  index: EntityIndex,
+  scale: number,
+): number | undefined {
   const k = 1 / Math.max(scale, MIN_SCALE);
   const { kind, operands, placement, offset } = spec;
   switch (kind) {
@@ -233,12 +241,20 @@ function operandsOf(c: DimensionConstraint): readonly Id[] {
  * moving — draws. A dimension being placed is laid out by `layoutDimension`
  * instead, with the cursor's position.
  */
-export function dimensionLayout(c: Constraint, index: EntityIndex, scale: number): DimensionLayout | undefined {
+export function dimensionLayout(
+  c: Constraint,
+  index: EntityIndex,
+  scale: number,
+): DimensionLayout | undefined {
   // Not a dimension: the glyph chip in constraints.ts carries its symbol.
   if (!isDimension(c)) return undefined;
   // A committed dimension's spec is its own constraint: the operands, and the
   // placement it was given, so it draws where the user put it.
-  return layoutDimension({ kind: c.kind, operands: operandsOf(c), offset: c.placement }, index, scale);
+  return layoutDimension(
+    { kind: c.kind, operands: operandsOf(c), offset: c.placement },
+    index,
+    scale,
+  );
 }
 
 /**
@@ -246,7 +262,11 @@ export function dimensionLayout(c: Constraint, index: EntityIndex, scale: number
  * every other kind the plain number. Formatting is the caller's — a locale's
  * number format, say — so only the prefix is decided here.
  */
-export function dimensionText(value: number, radius: boolean, format: (n: number) => string): string {
+export function dimensionText(
+  value: number,
+  radius: boolean,
+  format: (n: number) => string,
+): string {
   const text = format(value);
   return radius ? `R${text}` : text;
 }
@@ -299,7 +319,10 @@ function curveFrame(curveId: Id, index: EntityIndex): CurveFrame | undefined {
   if (e === undefined || (e.kind !== 'circle' && e.kind !== 'arc')) return undefined;
   const center = pointAt(index, e.center);
   if (center === undefined) return undefined;
-  if (e.kind === 'circle') return e.radius === 0 ? undefined : { center: pos(center), radius: e.radius, mid: -Math.PI / 2 };
+  if (e.kind === 'circle')
+    return e.radius === 0
+      ? undefined
+      : { center: pos(center), radius: e.radius, mid: -Math.PI / 2 };
   // An arc's endpoints are part of its definition, so a missing one leaves
   // nothing to sweep — unlike constraints.ts, which only needs a nearby point.
   const start = pointAt(index, e.start);
@@ -308,7 +331,12 @@ function curveFrame(curveId: Id, index: EntityIndex): CurveFrame | undefined {
   const { radius, startAngle, endAngle } = arcParams(center, start, end);
   return radius === 0
     ? undefined
-    : { center: pos(center), radius, mid: (startAngle + endAngle) / 2, sweep: { startAngle, endAngle } };
+    : {
+        center: pos(center),
+        radius,
+        mid: (startAngle + endAngle) / 2,
+        sweep: { startAngle, endAngle },
+      };
 }
 
 // ── Measured geometry ───────────────────────────────────────────────────────
@@ -375,7 +403,9 @@ function angleFrame(aId: Id, bId: Id, index: EntityIndex): AngleFrame | undefine
   if (dirA === undefined || dirB === undefined) return undefined; // a zero-length line
   // Where the two infinite lines meet; parallel lines fall back the way
   // constraints.ts's lineTouch does, to the midpoint between the two midpoints.
-  const vertex = lineIntersection(sa.a, sa.b, sb.a, sb.b) ?? midpoint(midpoint(sa.a, sa.b), midpoint(sb.a, sb.b));
+  const vertex =
+    lineIntersection(sa.a, sa.b, sb.a, sb.b) ??
+    midpoint(midpoint(sa.a, sa.b), midpoint(sb.a, sb.b));
   return { dirA, dirB, vertex };
 }
 
@@ -510,7 +540,13 @@ function pointToPoint(a: Point, b: Point, k: number, offset: number): DimensionL
  * line, the foot's up the gap, and both leave a gap from the feature they
  * measure and run past the dimension line.
  */
-function pointToLine(p: Point, line: Line, index: EntityIndex, k: number, offset: number): DimensionLayout | undefined {
+function pointToLine(
+  p: Point,
+  line: Line,
+  index: EntityIndex,
+  k: number,
+  offset: number,
+): DimensionLayout | undefined {
   const gap = pointGap(p, line, index);
   if (gap === undefined) return undefined;
   const { along, foot, side } = gap;
@@ -549,7 +585,12 @@ function pointToLine(p: Point, line: Line, index: EntityIndex, k: number, offset
 // ── Radius ──────────────────────────────────────────────────────────────────
 
 /** A leader from the centre, through the curve, out to where the value sits. */
-function radiusLayout(curveId: Id, index: EntityIndex, k: number, offset: number): DimensionLayout | undefined {
+function radiusLayout(
+  curveId: Id,
+  index: EntityIndex,
+  k: number,
+  offset: number,
+): DimensionLayout | undefined {
   const f = curveFrame(curveId, index);
   if (f === undefined) return undefined;
   // The resolved offset is the leader's angle, so the leader points wherever
@@ -585,7 +626,13 @@ function radialWitness(vertex: Vec2, dir: Vec2, reach: number, k: number): reado
  * or the radius the dimension was placed at — so the arc grows to meet the
  * cursor and never collapses onto the lines.
  */
-function angleLayout(aId: Id, bId: Id, index: EntityIndex, k: number, offset: number): DimensionLayout | undefined {
+function angleLayout(
+  aId: Id,
+  bId: Id,
+  index: EntityIndex,
+  k: number,
+  offset: number,
+): DimensionLayout | undefined {
   const angle = angleFrame(aId, bId, index);
   if (angle === undefined) return undefined;
   const { dirA, dirB, vertex } = angle;

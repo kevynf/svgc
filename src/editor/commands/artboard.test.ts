@@ -37,10 +37,21 @@ function withArtboard(artboard: Artboard): Sketch {
 }
 
 function at(x: number, y: number, mods: { shift?: boolean; alt?: boolean } = {}): PointerInput {
-  return { screen: { x, y }, world: { x, y }, shift: mods.shift ?? false, ctrl: false, alt: mods.alt ?? false };
+  return {
+    screen: { x, y },
+    world: { x, y },
+    shift: mods.shift ?? false,
+    ctrl: false,
+    alt: mods.alt ?? false,
+  };
 }
 
-function drag(editor: Editor, from: [number, number], to: [number, number], mods: { shift?: boolean; alt?: boolean } = {}): void {
+function drag(
+  editor: Editor,
+  from: [number, number],
+  to: [number, number],
+  mods: { shift?: boolean; alt?: boolean } = {},
+): void {
   editor.activeCommand.pointerDown!(at(from[0], from[1], mods));
   editor.activeCommand.pointerMove!(at(to[0], to[1], mods));
   editor.activeCommand.pointerUp!(at(to[0], to[1], mods));
@@ -129,7 +140,9 @@ describe('ArtboardCommand — editing', () => {
   it('applies a preset centred on the current artboard', () => {
     const editor = editorWith(withArtboard({ x: 0, y: 0, width: 100, height: 100 }));
     editor.startCommand('artboard');
-    const preset = editor.activeCommand.menu!().find((i) => i.label.key === 'artboard.preset.square1080')!;
+    const preset = editor.activeCommand.menu!().find(
+      (i) => i.label.key === 'artboard.preset.square1080',
+    )!;
     preset.run();
     expect(artboard(editor)).toEqual({ x: -490, y: -490, width: 1080, height: 1080 });
   });
@@ -179,7 +192,9 @@ describe('ArtboardCommand — overlay and prompts', () => {
   it('exposes the resize grips through the overlay while an artboard exists', () => {
     const editor = editorWith(withArtboard({ x: 0, y: 0, width: 100, height: 100 }));
     editor.startCommand('artboard');
-    expect(editor.activeCommand.overlay!()).toEqual([{ kind: 'artboardHandles', artboard: { x: 0, y: 0, width: 100, height: 100 } }]);
+    expect(editor.activeCommand.overlay!()).toEqual([
+      { kind: 'artboardHandles', artboard: { x: 0, y: 0, width: 100, height: 100 } },
+    ]);
   });
 
   it('has no overlay before an artboard exists', () => {

@@ -130,7 +130,8 @@ function radiusOf(editor: Editor, id: Id): number {
   const e = editor.sketch.entities.find((x) => x.id === id);
   if (e?.kind === 'circle') return e.radius;
   if (e?.kind !== 'arc') throw new Error(`"${id}" is not a curve`);
-  return arcParams(pointOf(editor, e.center), pointOf(editor, e.start), pointOf(editor, e.end)).radius;
+  return arcParams(pointOf(editor, e.center), pointOf(editor, e.start), pointOf(editor, e.end))
+    .radius;
 }
 
 /** An arc's start and end angles, as `arcParams` measures them. */
@@ -209,13 +210,25 @@ describe('offset', () => {
     expect(editor.activeCommand.edit).toBeUndefined();
     expect(highlightIds(editor)).toEqual([line]);
     // The click landed on the line, so the copy sits the minimum distance off it.
-    expect(previewLine(editor)).toEqual({ kind: 'previewLine', from: { x: 0, y: -14 }, to: { x: 100, y: -14 } });
+    expect(previewLine(editor)).toEqual({
+      kind: 'previewLine',
+      from: { x: 0, y: -14 },
+      to: { x: 100, y: -14 },
+    });
     // The cursor picks the side and the distance: below the line, 50 away…
     editor.activeCommand.pointerMove?.(at(50, 50));
-    expect(previewLine(editor)).toEqual({ kind: 'previewLine', from: { x: 0, y: 50 }, to: { x: 100, y: 50 } });
+    expect(previewLine(editor)).toEqual({
+      kind: 'previewLine',
+      from: { x: 0, y: 50 },
+      to: { x: 100, y: 50 },
+    });
     // …and above it, mirrored, at whatever distance the cursor is.
     editor.activeCommand.pointerMove?.(at(50, -30));
-    expect(previewLine(editor)).toEqual({ kind: 'previewLine', from: { x: 0, y: -30 }, to: { x: 100, y: -30 } });
+    expect(previewLine(editor)).toEqual({
+      kind: 'previewLine',
+      from: { x: 0, y: -30 },
+      to: { x: 100, y: -30 },
+    });
     // Nothing is committed while the copy follows the cursor.
     expect(editor.sketch.constraints).toEqual([]);
     expect(editor.sketch.entities).toHaveLength(3);
@@ -254,7 +267,8 @@ describe('offset', () => {
     const added = editor.sketch.constraints.slice(-2);
     expect(added.map((x) => x.kind)).toEqual(['parallel', 'distance']);
     const [parallel, offset] = added;
-    if (parallel?.kind !== 'parallel' || offset?.kind !== 'distance') throw new Error('not the offset constraints');
+    if (parallel?.kind !== 'parallel' || offset?.kind !== 'distance')
+      throw new Error('not the offset constraints');
     expect(parallel.a).toBe(line);
     const copy = copyLine(editor);
     expect(parallel.b).toBe(copy.id);
@@ -265,7 +279,9 @@ describe('offset', () => {
     expectPoint(editor, copy.p1, 0, 50);
     expectPoint(editor, copy.p2, 100, 50);
     expect(distance(pointOf(editor, copy.p1), pointOf(editor, copy.p2))).toBeCloseTo(100, 9);
-    expect(perpendicularDistance(pointOf(editor, copy.p1), pointOf(editor, a), pointOf(editor, c))).toBeCloseTo(50, 9);
+    expect(
+      perpendicularDistance(pointOf(editor, copy.p1), pointOf(editor, a), pointOf(editor, c)),
+    ).toBeCloseTo(50, 9);
     expectUnmoved(editor, before);
     // The command stays active, ready for the next offset.
     expect(editor.activeCommand.id).toBe('offset');
@@ -288,7 +304,9 @@ describe('offset', () => {
     const copy = copyLine(editor);
     expectPoint(editor, copy.p1, 0, 40);
     expectPoint(editor, copy.p2, 100, 40);
-    expect(perpendicularDistance(pointOf(editor, copy.p1), pointOf(editor, a), pointOf(editor, c))).toBeCloseTo(40, 9);
+    expect(
+      perpendicularDistance(pointOf(editor, copy.p1), pointOf(editor, a), pointOf(editor, c)),
+    ).toBeCloseTo(40, 9);
     expect(last(editor)).toMatchObject({ kind: 'distance', a: copy.p1, b: line, value: 40 });
     // The original never moved.
     expectPoint(editor, a, 0, 0);
@@ -320,13 +338,25 @@ describe('offset', () => {
     clickCurve(editor, circle);
     expect(highlightIds(editor)).toEqual([circle]);
     // The click landed on the rim, so the copy is the minimum distance outside it.
-    expect(previewCircle(editor)).toEqual({ kind: 'previewCircle', center: { x: 50, y: 50 }, radius: 44 });
+    expect(previewCircle(editor)).toEqual({
+      kind: 'previewCircle',
+      center: { x: 50, y: 50 },
+      radius: 44,
+    });
     // The cursor measures from the centre: 20 from it, inside a circle of 30.
     editor.activeCommand.pointerMove?.(at(50, 30));
-    expect(previewCircle(editor)).toEqual({ kind: 'previewCircle', center: { x: 50, y: 50 }, radius: 16 });
+    expect(previewCircle(editor)).toEqual({
+      kind: 'previewCircle',
+      center: { x: 50, y: 50 },
+      radius: 16,
+    });
     // …and outside it, where the distance is taken as it stands.
     editor.activeCommand.pointerMove?.(at(50, 150));
-    expect(previewCircle(editor)).toEqual({ kind: 'previewCircle', center: { x: 50, y: 50 }, radius: 100 });
+    expect(previewCircle(editor)).toEqual({
+      kind: 'previewCircle',
+      center: { x: 50, y: 50 },
+      radius: 100,
+    });
     click(editor, 50, 150);
     const before = snapshot(editor);
     expect(commitEdit(editor, '', false)).toBe(true);
@@ -369,10 +399,18 @@ describe('offset', () => {
     editor.startCommand('offset');
     const before = snapshot(editor);
     clickCurve(editor, arc);
-    expect(previewCircle(editor)).toEqual({ kind: 'previewCircle', center: { x: 0, y: 0 }, radius: 64 });
+    expect(previewCircle(editor)).toEqual({
+      kind: 'previewCircle',
+      center: { x: 0, y: 0 },
+      radius: 64,
+    });
     // The cursor measures from the centre: 80 from it puts the copy outside the arc.
     editor.activeCommand.pointerMove?.(at(80, 0));
-    expect(previewCircle(editor)).toEqual({ kind: 'previewCircle', center: { x: 0, y: 0 }, radius: 80 });
+    expect(previewCircle(editor)).toEqual({
+      kind: 'previewCircle',
+      center: { x: 0, y: 0 },
+      radius: 80,
+    });
     click(editor, 80, 0);
     expect(commitEdit(editor, '', false)).toBe(true);
     const copy = copyCurve(editor);
@@ -429,7 +467,11 @@ describe('offset', () => {
     expect(editor.sketch.entities).toHaveLength(2);
     // Clear of the centre the copy is placed again.
     editor.activeCommand.pointerMove?.(at(50, 20));
-    expect(previewCircle(editor)).toEqual({ kind: 'previewCircle', center: { x: 50, y: 50 }, radius: 30 });
+    expect(previewCircle(editor)).toEqual({
+      kind: 'previewCircle',
+      center: { x: 50, y: 50 },
+      radius: 30,
+    });
     click(editor, 50, 20);
     expect(editor.activeCommand.prompt()).toEqual({ key: 'prompts.offsetValue' });
   });
@@ -489,7 +531,11 @@ describe('offset', () => {
     editor.escape();
     expect(editor.activeCommand.edit).toBeUndefined();
     expect(editor.activeCommand.prompt()).toEqual({ key: 'prompts.offsetPlace' });
-    expect(previewLine(editor)).toEqual({ kind: 'previewLine', from: { x: 0, y: 50 }, to: { x: 100, y: 50 } });
+    expect(previewLine(editor)).toEqual({
+      kind: 'previewLine',
+      from: { x: 0, y: 50 },
+      to: { x: 100, y: 50 },
+    });
     expect(editor.sketch.constraints).toEqual([]);
     // The placement: back to picking, with nothing left to draw.
     editor.escape();

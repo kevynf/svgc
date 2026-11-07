@@ -15,7 +15,8 @@ const measure = (name: string, make: () => SVGSVGElement) => {
   const svg = make();
   // Tabler ships a transparent full-canvas background path; it dominates getBBox.
   for (const path of [...svg.querySelectorAll('path')]) {
-    if (path.getAttribute('stroke') === 'none' && path.getAttribute('fill') === 'none') path.remove();
+    if (path.getAttribute('stroke') === 'none' && path.getAttribute('fill') === 'none')
+      path.remove();
   }
   host.append(svg);
   const b = svg.getBBox();
@@ -29,9 +30,34 @@ const measure = (name: string, make: () => SVGSVGElement) => {
 };
 
 const tabler: IconName[] = [
-  'line', 'circle', 'arc', 'rectangle', 'point', 'trim', 'extend', 'offset', 'mirror', 'fillet',
-  'dimension', 'fix', 'equal', 'horizontal', 'vertical', 'construction', 'driven', 'artboard',
-  'undo', 'redo', 'delete', 'zoomAll', 'language', 'repeat', 'chevronDown', 'chevronUp', 'ok', 'cancel',
+  'line',
+  'circle',
+  'arc',
+  'rectangle',
+  'point',
+  'trim',
+  'extend',
+  'offset',
+  'mirror',
+  'fillet',
+  'dimension',
+  'fix',
+  'equal',
+  'horizontal',
+  'vertical',
+  'construction',
+  'driven',
+  'artboard',
+  'undo',
+  'redo',
+  'delete',
+  'zoomAll',
+  'language',
+  'repeat',
+  'chevronDown',
+  'chevronUp',
+  'ok',
+  'cancel',
 ];
 for (const name of tabler) measure(`tabler:${name}`, () => icon(name, 24));
 for (const glyph of CONSTRAINT_GLYPHS) measure(`glyph:${glyph}`, () => constraintIcon(glyph, 24));

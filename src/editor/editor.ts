@@ -198,7 +198,9 @@ export class Editor {
   setPointPosition(point: Id, x: number, y: number): void {
     const current = this.sketch.entities.find((e) => e.id === point);
     if (current?.kind !== 'point' || (current.x === x && current.y === y)) return;
-    const entities = this.sketch.entities.map((e): Entity => (e.kind === 'point' && e.id === point ? { ...e, x, y } : e));
+    const entities = this.sketch.entities.map((e): Entity =>
+      e.kind === 'point' && e.id === point ? { ...e, x, y } : e,
+    );
     this.commit({ ...this.sketch, entities });
   }
 
@@ -206,7 +208,9 @@ export class Editor {
   setCircleRadius(curve: Id, radius: number): void {
     const current = this.sketch.entities.find((e) => e.id === curve);
     if (current?.kind !== 'circle' || current.radius === radius || !Number.isFinite(radius)) return;
-    const entities = this.sketch.entities.map((e): Entity => (e.kind === 'circle' && e.id === curve ? { ...e, radius } : e));
+    const entities = this.sketch.entities.map((e): Entity =>
+      e.kind === 'circle' && e.id === curve ? { ...e, radius } : e,
+    );
     this.commit({ ...this.sketch, entities });
   }
 
@@ -226,7 +230,11 @@ export class Editor {
   /** Sets the value of a dimensional constraint (distance, radius, angle); the solver re-solves and may move geometry. */
   setConstraintValue(id: Id, value: Value): void {
     const current = this.sketch.constraints.find((c) => c.id === id);
-    if (current === undefined || !(current.kind === 'distance' || current.kind === 'radius' || current.kind === 'angle')) return;
+    if (
+      current === undefined ||
+      !(current.kind === 'distance' || current.kind === 'radius' || current.kind === 'angle')
+    )
+      return;
     // A parameter name the sketch does not define would make translate() throw a SketchError.
     if (typeof value === 'string' && this.sketch.params[value] === undefined) return;
     this.commit(setConstraintValue(this.sketch, id, value));

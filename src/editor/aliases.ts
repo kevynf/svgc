@@ -30,7 +30,9 @@ export class AliasMatcher {
     }
     this.buffer = candidate;
     const command = this.aliases.get(candidate);
-    const longer = [...this.aliases.keys()].some((a) => a.length > candidate.length && a.startsWith(candidate));
+    const longer = [...this.aliases.keys()].some(
+      (a) => a.length > candidate.length && a.startsWith(candidate),
+    );
     if (command !== undefined && !longer) {
       this.reset();
       this.fire(command);

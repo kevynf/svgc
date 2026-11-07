@@ -130,7 +130,15 @@ describe('translate', () => {
     const { primitives, constraintOf } = translate(b.build());
     // Points and curves only: no constraint primitive was pushed, so a driven
     // dimension is never even mapped back to a sketch constraint.
-    expect(primitives.map((p) => p.type)).toEqual(['point', 'point', 'point', 'point', 'line', 'line', 'circle']);
+    expect(primitives.map((p) => p.type)).toEqual([
+      'point',
+      'point',
+      'point',
+      'point',
+      'line',
+      'line',
+      'circle',
+    ]);
     expect(constraintOf.size).toBe(0);
   });
 
@@ -148,7 +156,11 @@ describe('translate', () => {
     b.constrain({ kind: 'angle', a: line, b: other, value: 45 });
 
     const { primitives, constraintOf } = translate(b.build());
-    expect(primitives.slice(-3).map((p) => p.type)).toEqual(['p2p_distance', 'circle_radius', 'l2l_angle_ll']);
+    expect(primitives.slice(-3).map((p) => p.type)).toEqual([
+      'p2p_distance',
+      'circle_radius',
+      'l2l_angle_ll',
+    ]);
     // planegcs measures angles in math orientation, so counterclockwise on
     // screen — positive here — is negative there.
     expect(primitives.at(-1)).toMatchObject({ type: 'l2l_angle_ll', angle: -Math.PI / 4 });

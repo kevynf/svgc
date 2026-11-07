@@ -35,7 +35,17 @@ describe('appMenuItems', () => {
   });
 
   it('labels every item in both locales', () => {
-    expect(appMenuItems().map((item) => zh.t(item.labelKey))).toEqual(['新建', '打开…', '保存', '导出 SVG…']);
-    expect(appMenuItems().map((item) => en.t(item.labelKey))).toEqual(['New', 'Open…', 'Save', 'Export SVG…']);
+    expect(appMenuItems().map((item) => zh.t(item.labelKey))).toEqual([
+      '新建',
+      '打开…',
+      '保存',
+      '导出 SVG…',
+    ]);
+    expect(appMenuItems().map((item) => en.t(item.labelKey))).toEqual([
+      'New',
+      'Open…',
+      'Save',
+      'Export SVG…',
+    ]);
   });
 });

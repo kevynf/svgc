@@ -11,7 +11,12 @@ import {
 } from './artboard';
 import type { Artboard } from './sketch';
 
-const box = (x: number, y: number, width: number, height: number): Artboard => ({ x, y, width, height });
+const box = (x: number, y: number, width: number, height: number): Artboard => ({
+  x,
+  y,
+  width,
+  height,
+});
 
 describe('normalizeArtboard', () => {
   it('keeps a top-left origin with positive size', () => {
@@ -26,11 +31,15 @@ describe('normalizeArtboard', () => {
 
 describe('artboardFromBounds', () => {
   it('adds a margin and rounds outward to whole px', () => {
-    expect(artboardFromBounds({ minX: 10.2, minY: 20.7, maxX: 90.3, maxY: 70.1 }, 5)).toEqual(box(5, 15, 91, 61));
+    expect(artboardFromBounds({ minX: 10.2, minY: 20.7, maxX: 90.3, maxY: 70.1 }, 5)).toEqual(
+      box(5, 15, 91, 61),
+    );
   });
 
   it('touches the bounds exactly with no margin', () => {
-    expect(artboardFromBounds({ minX: 0, minY: 0, maxX: 100, maxY: 50 }, 0)).toEqual(box(0, 0, 100, 50));
+    expect(artboardFromBounds({ minX: 0, minY: 0, maxX: 100, maxY: 50 }, 0)).toEqual(
+      box(0, 0, 100, 50),
+    );
   });
 
   it('never collapses below 1 px', () => {
@@ -78,37 +87,57 @@ describe('resizeArtboard', () => {
   });
 
   it('does not snap fractional results', () => {
-    expect(resizeArtboard(box(0, 0, 100, 100), 'e', { x: 150.5, y: 50 })).toEqual(box(0, 0, 150.5, 100));
+    expect(resizeArtboard(box(0, 0, 100, 100), 'e', { x: 150.5, y: 50 })).toEqual(
+      box(0, 0, 150.5, 100),
+    );
   });
 
   it('keeps the aspect ratio from a corner grip (dominant axis drives)', () => {
     const square = box(0, 0, 100, 100);
-    expect(resizeArtboard(square, 'se', { x: 200, y: 80 }, { keepAspect: true })).toEqual(box(0, 0, 200, 200));
-    expect(resizeArtboard(square, 'se', { x: 80, y: 200 }, { keepAspect: true })).toEqual(box(0, 0, 200, 200));
-    expect(resizeArtboard(box(0, 0, 100, 50), 'se', { x: 200, y: 80 }, { keepAspect: true })).toEqual(box(0, 0, 200, 100));
+    expect(resizeArtboard(square, 'se', { x: 200, y: 80 }, { keepAspect: true })).toEqual(
+      box(0, 0, 200, 200),
+    );
+    expect(resizeArtboard(square, 'se', { x: 80, y: 200 }, { keepAspect: true })).toEqual(
+      box(0, 0, 200, 200),
+    );
+    expect(
+      resizeArtboard(box(0, 0, 100, 50), 'se', { x: 200, y: 80 }, { keepAspect: true }),
+    ).toEqual(box(0, 0, 200, 100));
   });
 
   it('keeps the aspect ratio from an edge grip (dragged axis drives)', () => {
     const wide = box(0, 0, 100, 50);
-    expect(resizeArtboard(wide, 'e', { x: 200, y: 25 }, { keepAspect: true })).toEqual(box(0, -25, 200, 100));
-    expect(resizeArtboard(wide, 'n', { x: 50, y: -50 }, { keepAspect: true })).toEqual(box(-50, -50, 200, 100));
+    expect(resizeArtboard(wide, 'e', { x: 200, y: 25 }, { keepAspect: true })).toEqual(
+      box(0, -25, 200, 100),
+    );
+    expect(resizeArtboard(wide, 'n', { x: 50, y: -50 }, { keepAspect: true })).toEqual(
+      box(-50, -50, 200, 100),
+    );
   });
 
   it('resizes about the centre with fromCenter', () => {
-    expect(resizeArtboard(box(0, 0, 100, 100), 'se', { x: 150, y: 150 }, { fromCenter: true })).toEqual(box(-50, -50, 200, 200));
-    expect(resizeArtboard(box(0, 0, 100, 100), 'e', { x: 150, y: 50 }, { fromCenter: true })).toEqual(box(-50, 0, 200, 100));
+    expect(
+      resizeArtboard(box(0, 0, 100, 100), 'se', { x: 150, y: 150 }, { fromCenter: true }),
+    ).toEqual(box(-50, -50, 200, 200));
+    expect(
+      resizeArtboard(box(0, 0, 100, 100), 'e', { x: 150, y: 50 }, { fromCenter: true }),
+    ).toEqual(box(-50, 0, 200, 100));
   });
 
   it('clamps to a 1 px minimum without inverting', () => {
     expect(resizeArtboard(box(0, 0, 100, 100), 'e', { x: 0.5, y: 50 })).toEqual(box(0, 0, 1, 100));
     expect(resizeArtboard(box(0, 0, 100, 100), 'e', { x: -50, y: 50 })).toEqual(box(0, 0, 1, 100));
-    expect(resizeArtboard(box(0, 0, 100, 100), 'se', { x: 0.5, y: 0.5 }, { keepAspect: true })).toEqual(box(0, 0, 1, 1));
+    expect(
+      resizeArtboard(box(0, 0, 100, 100), 'se', { x: 0.5, y: 0.5 }, { keepAspect: true }),
+    ).toEqual(box(0, 0, 1, 1));
   });
 });
 
 describe('presetArtboard', () => {
   it('centres a preset on a point', () => {
-    expect(presetArtboard({ id: 'x', width: 100, height: 50 }, { x: 200, y: 200 })).toEqual(box(150, 175, 100, 50));
+    expect(presetArtboard({ id: 'x', width: 100, height: 50 }, { x: 200, y: 200 })).toEqual(
+      box(150, 175, 100, 50),
+    );
   });
 });
 

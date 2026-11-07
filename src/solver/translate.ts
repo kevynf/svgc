@@ -102,7 +102,10 @@ function lowerCurve(
       return;
     case 'circle':
       expectEntity(index, entity.center, 'point');
-      gcsIdOf.set(entity.id, push({ type: 'circle', c_id: ref(entity.center), radius: entity.radius }));
+      gcsIdOf.set(
+        entity.id,
+        push({ type: 'circle', c_id: ref(entity.center), radius: entity.radius }),
+      );
       return;
     case 'arc': {
       const center = expectEntity(index, entity.center, 'point');
@@ -161,10 +164,15 @@ function normalAt(entity: Entity, at: Vec2, index: EntityIndex): Vec2 {
  * become dependent). Like FreeCAD, constrain the angle between the curve
  * normals at the joint instead, snapped to 0 or π from the current geometry.
  */
-function endpointTangency(index: EntityIndex, a: Id, b: Id): { point: Id; angle: number } | undefined {
+function endpointTangency(
+  index: EntityIndex,
+  a: Id,
+  b: Id,
+): { point: Id; angle: number } | undefined {
   const ea = index.get(a);
   const eb = index.get(b);
-  if (ea === undefined || eb === undefined || (ea.kind === 'line' && eb.kind === 'line')) return undefined;
+  if (ea === undefined || eb === undefined || (ea.kind === 'line' && eb.kind === 'line'))
+    return undefined;
   const shared = endpoints(ea).find((id) => endpoints(eb).includes(id));
   if (shared === undefined) return undefined;
   const at = expectEntity(index, shared, 'point');
@@ -249,7 +257,15 @@ function lowerConstraint(
       const [a, b] = [ref(c.a), ref(c.b)];
       const joint = endpointTangency(index, c.a, c.b);
       if (joint !== undefined) {
-        return [{ type: 'angle_via_point', crv1_id: a, crv2_id: b, p_id: ref(joint.point), angle: joint.angle }];
+        return [
+          {
+            type: 'angle_via_point',
+            crv1_id: a,
+            crv2_id: b,
+            p_id: ref(joint.point),
+            angle: joint.angle,
+          },
+        ];
       }
       switch (pair) {
         case 'line-circle':
@@ -290,7 +306,9 @@ function lowerConstraint(
       points(c.point);
       const line = expectEntity(index, c.line, 'line');
       // The line's endpoints are symmetric about the point.
-      return [{ type: 'p2p_symmetric_ppp', p1_id: ref(line.p1), p2_id: ref(line.p2), p_id: ref(c.point) }];
+      return [
+        { type: 'p2p_symmetric_ppp', p1_id: ref(line.p1), p2_id: ref(line.p2), p_id: ref(c.point) },
+      ];
     }
 
     // `a` and `b` keep their orientation: p1 is mirrored to p2, not the other
@@ -338,6 +356,13 @@ function lowerConstraint(
       lines(c.a, c.b);
       // planegcs measures angles in math orientation; with Y pointing down,
       // counterclockwise on screen is a negative angle.
-      return [{ type: 'l2l_angle_ll', l1_id: ref(c.a), l2_id: ref(c.b), angle: -degToRad(value(c.value)) }];
+      return [
+        {
+          type: 'l2l_angle_ll',
+          l1_id: ref(c.a),
+          l2_id: ref(c.b),
+          angle: -degToRad(value(c.value)),
+        },
+      ];
   }
 }

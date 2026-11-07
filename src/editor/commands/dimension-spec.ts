@@ -28,7 +28,10 @@ export function isCurve(kind: OperandKind): boolean {
 }
 
 /** The dimensions a pick produces: the constraints that carry a measured value. */
-export type DimensionConstraint = Extract<ConstraintInput, { kind: 'distance' | 'radius' | 'angle' }>;
+export type DimensionConstraint = Extract<
+  ConstraintInput,
+  { kind: 'distance' | 'radius' | 'angle' }
+>;
 
 /** A distance measured between two points: what a line's length is. */
 type PointDistance = Extract<ConstraintInput, { kind: 'distance' }>;
@@ -43,7 +46,10 @@ type LineAngle = Extract<ConstraintInput, { kind: 'angle' }>;
  * they measure nothing, which leaves the pick pending: a line with no length has
  * no direction to lay a dimension along, and a curve never takes a second pick.
  */
-export function measure(sketch: Sketch, picks: readonly Operand[]): DimensionConstraint | undefined {
+export function measure(
+  sketch: Sketch,
+  picks: readonly Operand[],
+): DimensionConstraint | undefined {
   const index = indexEntities(sketch);
   const [first, second] = picks;
   if (first === undefined) return undefined;
@@ -55,9 +61,13 @@ export function measure(sketch: Sketch, picks: readonly Operand[]): DimensionCon
   if (second === undefined) return undefined;
   switch (second.kind) {
     case 'point':
-      return first.kind === 'point' ? spread(index, first.id, second.id) : offset(index, second.id, first.id);
+      return first.kind === 'point'
+        ? spread(index, first.id, second.id)
+        : offset(index, second.id, first.id);
     case 'line':
-      return first.kind === 'line' ? angle(index, first.id, second.id) : offset(index, first.id, second.id);
+      return first.kind === 'line'
+        ? angle(index, first.id, second.id)
+        : offset(index, first.id, second.id);
     default:
       return undefined;
   }
@@ -84,7 +94,11 @@ function radius(index: EntityIndex, curve: Id): DimensionConstraint | undefined 
   const e = index.get(curve);
   if (e?.kind === 'circle') return { kind: 'radius', curve, value: e.radius };
   if (e?.kind !== 'arc') return undefined;
-  const [center, start, end] = [pointAt(index, e.center), pointAt(index, e.start), pointAt(index, e.end)];
+  const [center, start, end] = [
+    pointAt(index, e.center),
+    pointAt(index, e.start),
+    pointAt(index, e.end),
+  ];
   if (center === undefined || start === undefined || end === undefined) return undefined;
   return { kind: 'radius', curve, value: arcParams(center, start, end).radius };
 }

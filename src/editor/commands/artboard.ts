@@ -26,7 +26,14 @@ const FIT_MARGIN = 20;
 type Drag =
   | { kind: 'none' }
   | { kind: 'creating'; anchor: Vec2; current: Vec2 }
-  | { kind: 'resizing'; handle: Handle; base: Artboard; current: Vec2; keepAspect: boolean; fromCenter: boolean }
+  | {
+      kind: 'resizing';
+      handle: Handle;
+      base: Artboard;
+      current: Vec2;
+      keepAspect: boolean;
+      fromCenter: boolean;
+    }
   | { kind: 'moving'; base: Artboard; grab: Vec2; current: Vec2 };
 
 type Editing = Exclude<Drag, { kind: 'none' }>;
@@ -67,7 +74,14 @@ export class ArtboardCommand implements Command {
     }
     const handle = this.handleAt(a, input.world);
     if (handle !== undefined) {
-      this.drag = { kind: 'resizing', handle, base: a, current: input.world, keepAspect: input.shift, fromCenter: input.alt };
+      this.drag = {
+        kind: 'resizing',
+        handle,
+        base: a,
+        current: input.world,
+        keepAspect: input.shift,
+        fromCenter: input.alt,
+      };
       return;
     }
     if (inside(a, input.world)) {
@@ -178,7 +192,12 @@ export class ArtboardCommand implements Command {
         return snapArtboard(raw);
       }
       case 'resizing':
-        return snapArtboard(resizeArtboard(d.base, d.handle, d.current, { keepAspect: d.keepAspect, fromCenter: d.fromCenter }));
+        return snapArtboard(
+          resizeArtboard(d.base, d.handle, d.current, {
+            keepAspect: d.keepAspect,
+            fromCenter: d.fromCenter,
+          }),
+        );
       case 'moving':
         return snapArtboard({
           x: d.base.x + (d.current.x - d.grab.x),
@@ -209,7 +228,8 @@ export class ArtboardCommand implements Command {
     const a = this.editor.sketch.artboard;
     if (a !== undefined) return { x: a.x + a.width / 2, y: a.y + a.height / 2 };
     const bounds = sketchBounds(this.editor.sketch);
-    if (bounds !== undefined) return { x: (bounds.minX + bounds.maxX) / 2, y: (bounds.minY + bounds.maxY) / 2 };
+    if (bounds !== undefined)
+      return { x: (bounds.minX + bounds.maxX) / 2, y: (bounds.minY + bounds.maxY) / 2 };
     return { x: 0, y: 0 };
   }
 

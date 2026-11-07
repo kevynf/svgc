@@ -103,7 +103,9 @@ export class LineCommand extends DrawCommand {
   protected anchor(): Anchor | undefined {
     if (this.start === undefined) return undefined;
     const id = this.startId ?? snappedPoint(this.start.result);
-    return id === undefined ? { position: this.start.position } : { position: this.start.position, id };
+    return id === undefined
+      ? { position: this.start.position }
+      : { position: this.start.position, id };
   }
 
   /**
@@ -122,7 +124,10 @@ export class LineCommand extends DrawCommand {
     if (!onStart) return;
 
     const curveId = this.startCurveId;
-    const tangent = startPointId !== undefined && curveId !== undefined ? exitDirection(this.editor, curveId, startPointId) : undefined;
+    const tangent =
+      startPointId !== undefined && curveId !== undefined
+        ? exitDirection(this.editor, curveId, startPointId)
+        : undefined;
     if (tangent === undefined) return;
     this.arcDrag = { from: start.position, tangent };
     this.editor.beginDrag();
@@ -134,7 +139,10 @@ export class LineCommand extends DrawCommand {
       super.pointerMove(input);
       return;
     }
-    this.picker.update(input, { anchor: { position: arc.from, id: this.startId }, exclude: this.arcExclude() });
+    this.picker.update(input, {
+      anchor: { position: arc.from, id: this.startId },
+      exclude: this.arcExclude(),
+    });
     this.editor.viewChanged();
   }
 
@@ -145,7 +153,9 @@ export class LineCommand extends DrawCommand {
       super.pointerUp(input);
       return;
     }
-    const pick = toPick(this.picker.update(input, { anchor: { position: arc.from }, exclude: this.arcExclude() }));
+    const pick = toPick(
+      this.picker.update(input, { anchor: { position: arc.from }, exclude: this.arcExclude() }),
+    );
     const shape = tangentArc(arc.from, arc.tangent, pick.position);
     this.editor.cancelDrag();
     if (shape === undefined || shape.radius < this.picker.tolerance) {
@@ -273,14 +283,21 @@ export class CircleCommand extends DrawCommand {
     const c = resolve(draft, center);
     const circle = draft.circle(c, radius);
     const rim = snappedPoint(pick.result);
-    if (rim !== undefined && rim !== c) draft.constrain({ kind: 'pointOnCurve', point: rim, curve: circle });
+    if (rim !== undefined && rim !== c)
+      draft.constrain({ kind: 'pointOnCurve', point: rim, curve: circle });
     if (this.editor.commit(draft.sketch)) this.center = undefined;
   }
 
   protected preview(): OverlayShape[] {
     const pick = this.picker.pick;
     if (this.center === undefined || pick === undefined) return [];
-    return [{ kind: 'previewCircle', center: this.center.position, radius: distance(this.center.position, pick.position) }];
+    return [
+      {
+        kind: 'previewCircle',
+        center: this.center.position,
+        radius: distance(this.center.position, pick.position),
+      },
+    ];
   }
 
   protected restart(): boolean {
@@ -319,7 +336,12 @@ export class RectangleCommand extends DrawCommand {
     const p2 = draft.point({ x: c.x, y: a.y });
     const p3 = resolve(draft, pick);
     const p4 = draft.point({ x: a.x, y: c.y });
-    const edges = [draft.line(p1, p2), draft.line(p2, p3), draft.line(p3, p4), draft.line(p4, p1)] as const;
+    const edges = [
+      draft.line(p1, p2),
+      draft.line(p2, p3),
+      draft.line(p3, p4),
+      draft.line(p4, p1),
+    ] as const;
     draft.constrain({ kind: 'horizontal', a: edges[0] });
     draft.constrain({ kind: 'vertical', a: edges[1] });
     draft.constrain({ kind: 'horizontal', a: edges[2] });
@@ -355,9 +377,16 @@ function arcPreview(arc: ArcShape): OverlayShape[] {
   const n = Math.max(8, Math.ceil(((arc.endAngle - arc.startAngle) / (Math.PI * 2)) * 64));
   const at = (i: number): Vec2 => {
     const t = arc.startAngle + ((arc.endAngle - arc.startAngle) * i) / n;
-    return { x: arc.center.x + arc.radius * Math.cos(t), y: arc.center.y + arc.radius * Math.sin(t) };
+    return {
+      x: arc.center.x + arc.radius * Math.cos(t),
+      y: arc.center.y + arc.radius * Math.sin(t),
+    };
   };
-  return Array.from({ length: n }, (_, i): OverlayShape => ({ kind: 'previewLine', from: at(i), to: at(i + 1) }));
+  return Array.from({ length: n }, (_, i): OverlayShape => ({
+    kind: 'previewLine',
+    from: at(i),
+    to: at(i + 1),
+  }));
 }
 
 /**
@@ -405,7 +434,9 @@ function exitDirection(editor: Editor, curveId: Id, at: Id): Vec2 | undefined {
     if (c === undefined || p === undefined) return undefined;
     const a = angleOf(c, p);
     // Clockwise travel continues past `end`; leaving at `start` reverses it.
-    return curve.end === at ? { x: -Math.sin(a), y: Math.cos(a) } : { x: Math.sin(a), y: -Math.cos(a) };
+    return curve.end === at
+      ? { x: -Math.sin(a), y: Math.cos(a) }
+      : { x: Math.sin(a), y: -Math.cos(a) };
   }
   return undefined;
 }
@@ -433,7 +464,9 @@ export function threePointArc(
   start: Vec2,
   through: Vec2,
   end: Vec2,
-): { center: Vec2; swapped: boolean; radius: number; startAngle: number; endAngle: number } | undefined {
+):
+  | { center: Vec2; swapped: boolean; radius: number; startAngle: number; endAngle: number }
+  | undefined {
   const center = circumcenter(start, through, end);
   if (center === undefined) return undefined;
   const params = arcParams(center, start, end);
@@ -489,9 +522,11 @@ export class ArcCommand extends DrawCommand {
   protected preview(): OverlayShape[] {
     const pick = this.picker.pick;
     if (this.start === undefined || pick === undefined) return [];
-    if (this.end === undefined) return [{ kind: 'previewLine', from: this.start.position, to: pick.position }];
+    if (this.end === undefined)
+      return [{ kind: 'previewLine', from: this.start.position, to: pick.position }];
     const arc = threePointArc(this.start.position, pick.position, this.end.position);
-    if (arc === undefined) return [{ kind: 'previewLine', from: this.start.position, to: this.end.position }];
+    if (arc === undefined)
+      return [{ kind: 'previewLine', from: this.start.position, to: this.end.position }];
     return arcPreview(arc);
   }
 

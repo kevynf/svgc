@@ -22,7 +22,10 @@ describe.skipIf(!BENCH)('analyzeStatus performance', () => {
 
   it('measures generated sketches', async () => {
     solver = await createSolver();
-    const timings = benchmark((sketch) => analyzeStatus(solver, sketch), (line) => console.log(line));
+    const timings = benchmark(
+      (sketch) => analyzeStatus(solver, sketch),
+      (line) => console.log(line),
+    );
     console.log(`\n${format(timings)}\n`);
     expect(timings.length).toBeGreaterThan(0);
   }, 600_000);

@@ -135,7 +135,10 @@ describe('Solver', () => {
     expect(result.outcome).toBe('solved');
     expect(result.dof).toBe(5);
     const sk = result.sketch;
-    expect(distance(point(sk, c), point(sk, s))).toBeCloseTo(distance(point(sk, c), point(sk, e)), PRECISION);
+    expect(distance(point(sk, c), point(sk, s))).toBeCloseTo(
+      distance(point(sk, c), point(sk, e)),
+      PRECISION,
+    );
   });
 
   it('solves radius, tangent and point-on-curve constraints', () => {
@@ -219,7 +222,14 @@ describe('Solver', () => {
 
   it('solves equal, parallel, perpendicular, midpoint and point-on-line', () => {
     const b = new SketchBuilder();
-    const p = [b.point(0, 0), b.point(50, 2), b.point(0, 30), b.point(40, 33), b.point(5, 70), b.point(3, 0)];
+    const p = [
+      b.point(0, 0),
+      b.point(50, 2),
+      b.point(0, 30),
+      b.point(40, 33),
+      b.point(5, 70),
+      b.point(3, 0),
+    ];
     const [p0, p1, p2, p3, p4, p5] = p as [Id, Id, Id, Id, Id, Id];
     const l1 = b.line(p0, p1);
     const l2 = b.line(p2, p3);
@@ -236,7 +246,14 @@ describe('Solver', () => {
     const result = solver.solve(b.build());
     expect(result.outcome).toBe('solved');
     const sk = result.sketch;
-    const [q0, q1, q2, q3, q4, q5] = p.map((id) => point(sk, id)) as [Point, Point, Point, Point, Point, Point];
+    const [q0, q1, q2, q3, q4, q5] = p.map((id) => point(sk, id)) as [
+      Point,
+      Point,
+      Point,
+      Point,
+      Point,
+      Point,
+    ];
     expect(q1.y).toBeCloseTo(q0.y, PRECISION);
     expect(q3.y).toBeCloseTo(q2.y, PRECISION);
     expect(distance(q2, q3)).toBeCloseTo(distance(q0, q1), PRECISION);

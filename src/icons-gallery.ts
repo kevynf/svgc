@@ -5,10 +5,24 @@ import type { IconName } from './ui/icons';
 import './style.css';
 
 const SIZES = [14, 16, 20, 24];
-const TABLER: IconName[] = ['line', 'circle', 'arc', 'rectangle', 'dimension', 'fix', 'equal', 'horizontal', 'vertical', 'mirror', 'trim', 'fillet'];
+const TABLER: IconName[] = [
+  'line',
+  'circle',
+  'arc',
+  'rectangle',
+  'dimension',
+  'fix',
+  'equal',
+  'horizontal',
+  'vertical',
+  'mirror',
+  'trim',
+  'fillet',
+];
 
 const root = document.querySelector<HTMLElement>('#gallery')!;
-root.style.cssText = 'display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));align-content:start;gap:12px;padding:16px;background:var(--bg-canvas);min-height:100%';
+root.style.cssText =
+  'display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));align-content:start;gap:12px;padding:16px;background:var(--bg-canvas);min-height:100%';
 
 function cell(caption: string, make: (size: number) => SVGSVGElement, tone: string): HTMLElement {
   const el = document.createElement('figure');
