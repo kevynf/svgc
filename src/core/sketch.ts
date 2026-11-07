@@ -16,6 +16,12 @@ export interface Sketch {
   readonly entities: readonly Entity[];
   readonly constraints: readonly Constraint[];
   readonly params: Readonly<Record<string, number>>;
+  /**
+   * Source expression of each parameter, as the user typed it. Absent for a
+   * plain value, whose source is its number. Presentation of intent only: the
+   * solver reads `params`.
+   */
+  readonly expressions?: Readonly<Record<string, string>>;
   /** Absent until the user defines one; export then falls back to the geometry bounds. */
   readonly artboard?: Artboard;
 }
