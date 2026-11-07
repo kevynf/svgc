@@ -6,7 +6,6 @@ export const en: Catalog<Messages> = {
   app: {
     title: 'svgc',
     sketchName: 'Sketch1',
-    loading: 'Loading solver…',
     canvasLabel: 'Sketch graphics window',
     language: 'Language',
   },
@@ -25,7 +24,6 @@ export const en: Catalog<Messages> = {
     collapse: 'Collapse the ribbon',
   },
   commands: {
-    select: 'Select',
     artboard: 'Artboard',
     line: 'Line',
     circle: 'Circle',
@@ -65,7 +63,6 @@ export const en: Catalog<Messages> = {
     select: 'Select geometry, or drag a point',
     windowSelect: 'Window selection: selects objects fully inside the box',
     crossingSelect: 'Crossing selection: selects objects touching the box',
-    pan: 'Pan',
     drag: 'Drag point',
     lineStart: 'Select start of line',
     lineNext: 'Select end of line, Esc to end the current line',
@@ -166,8 +163,6 @@ export const en: Catalog<Messages> = {
     label: '{kind} ({targets})',
     /** Tooltip and accessible name of a constraint symbol drawn on the canvas. */
     symbol: 'Constraint symbol: {kind}',
-    /** F8/F9: whether constraint symbols are drawn on the canvas. */
-    display: 'Show Constraints',
   },
   menu: {
     label: 'Marking menu',
@@ -242,7 +237,6 @@ export const en: Catalog<Messages> = {
     invalid: 'Invalid expression',
   },
   artboard: {
-    label: 'Artboard',
     fit: 'Fit to geometry',
     remove: 'Remove artboard',
     promptCreate: 'Drag to draw an artboard, or press Enter to fit geometry',

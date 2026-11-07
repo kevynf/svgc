@@ -9,7 +9,6 @@ export const zhCN = {
   app: {
     title: 'svgc',
     sketchName: '草图1',
-    loading: '正在加载求解器…',
     canvasLabel: '草图图形窗口',
     language: '语言',
   },
@@ -28,7 +27,6 @@ export const zhCN = {
     collapse: '折叠功能区',
   },
   commands: {
-    select: '选择',
     artboard: '画板',
     line: '直线',
     circle: '圆',
@@ -68,7 +66,6 @@ export const zhCN = {
     select: '选择几何图元，或拖动点',
     windowSelect: '窗口选择：选中完全位于框内的对象',
     crossingSelect: '交叉选择：选中与框相交的对象',
-    pan: '平移',
     drag: '拖动点',
     lineStart: '选择直线的起点',
     lineNext: '选择直线的终点，按 Esc 结束当前直线',
@@ -169,8 +166,6 @@ export const zhCN = {
     label: '{kind}（{targets}）',
     /** Tooltip and accessible name of a constraint symbol drawn on the canvas. */
     symbol: '约束符号：{kind}',
-    /** F8/F9: whether constraint symbols are drawn on the canvas. */
-    display: '显示约束',
   },
   menu: {
     label: '标记菜单',
@@ -245,7 +240,6 @@ export const zhCN = {
     invalid: '表达式无效',
   },
   artboard: {
-    label: '画板',
     fit: '适合几何图元',
     remove: '删除画板',
     promptCreate: '拖动绘制画板，或按 Enter 适合几何图元',
