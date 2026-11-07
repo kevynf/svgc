@@ -1,6 +1,7 @@
 import { defineConfig } from 'vitest/config';
 
 export default defineConfig({
+  base: './',
   // planegcs locates its .wasm via import.meta.url; pre-bundling would break that.
   optimizeDeps: {
     exclude: ['@salusoft89/planegcs'],
