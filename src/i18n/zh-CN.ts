@@ -248,6 +248,20 @@ export const zhCN = {
       icon24: '图标 24×24',
     },
   },
+  file: {
+    new: '新建',
+    open: '打开…',
+    save: '保存',
+    exportSvg: '导出 SVG…',
+    openFailed: '无法打开该文件（{reason}）',
+    saveFailed: '保存失败',
+    reason: {
+      invalidJson: '不是有效的 JSON',
+      unknownFormat: '不是 svgc 草图文件',
+      unsupportedVersion: '文件版本不受支持',
+      invalidSketch: '草图内容无效',
+    },
+  },
 } as const satisfies MessageTree;
 
 export type Messages = typeof zhCN;

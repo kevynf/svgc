@@ -5,9 +5,15 @@ import type { EditRequest, MenuItem, PointerInput } from '../editor/command';
 import type { Editor } from '../editor/editor';
 import { AliasMatcher } from '../editor/aliases';
 import { LOCALES } from '../i18n/i18n';
-import type { Locale, Translator } from '../i18n/i18n';
+import type { Key, Locale, Translator } from '../i18n/i18n';
+import { parseSketch, serializeSketch } from '../io/sketch-file';
+import type { SketchFileError } from '../io/sketch-file';
+import { createFileSaver } from '../io/save';
+import { sketchToSvg } from '../io/svg';
+import { emptySketch } from '../core/sketch';
 import { dimensionText } from '../render/dimensions';
 import { SketchView } from '../render/view';
+import { AppMenu } from './app-menu';
 import { Browser } from './browser';
 import { icon } from './icons';
 import { MarkingMenu } from './marking-menu';
@@ -50,6 +56,12 @@ export const COMMAND_ALIASES: readonly (readonly [alias: string, command: string
 
 const WHEEL_ZOOM = 1.0015;
 
+/** The names and mime types Save and Export SVG write the document as. */
+const SKETCH_FILE = 'Sketch1.svgc.json';
+const SVG_FILE = 'Sketch1.svg';
+const SKETCH_MIME = 'application/json';
+const SVG_MIME = 'image/svg+xml';
+
 export interface AppOptions {
   readonly editor: Editor;
   readonly t: Translator;
@@ -84,6 +96,11 @@ export class App {
   private editDirty = false;
   private readonly settingsDialog: ConstraintSettingsDialog;
   private readonly parametersDialog: ParametersDialog;
+  private readonly appMenu: AppMenu;
+  /** Remembers the location a save picked, so the next one overwrites it. */
+  private readonly saver = createFileSaver();
+  /** The hidden file picker Open uses; created once and reused. */
+  private fileInput: HTMLInputElement | undefined;
 
   constructor({ editor, t, onLocaleChange }: AppOptions) {
     this.editor = editor;
@@ -91,6 +108,15 @@ export class App {
     this.element.className = 'app';
     this.settingsDialog = new ConstraintSettingsDialog(t);
     this.parametersDialog = new ParametersDialog(editor, t);
+    this.appMenu = new AppMenu(
+      {
+        onNew: () => this.newSketch(),
+        onOpen: () => this.openSketch(),
+        onSave: () => this.runFileAction(() => this.saveSketch(), 'file.saveFailed'),
+        onExportSvg: () => this.runFileAction(() => this.exportSvg(), 'file.saveFailed'),
+      },
+      t,
+    );
 
     this.ribbon = new Ribbon(t, this.panels());
     this.browser = new Browser(editor, t);
@@ -130,7 +156,7 @@ export class App {
     }
     select.addEventListener('change', () => onLocaleChange(select.value as Locale));
     label.append(icon('language', 14), select);
-    head.append(title, this.ribbonTabs(), label);
+    head.append(this.appMenu.element, title, this.ribbonTabs(), label);
 
     this.element.append(head, this.ribbon.element, workspace, this.status.element);
 
@@ -162,6 +188,8 @@ export class App {
     this.settingsUnsubscribe();
     this.settingsDialog.close();
     this.parametersDialog.close();
+    this.appMenu.close();
+    this.fileInput?.remove();
     this.aliases.reset();
     this.closeEdit();
     if (this.frame !== undefined) cancelAnimationFrame(this.frame);
@@ -279,6 +307,66 @@ export class App {
         buttons: [{ id: 'zoomAll', icon: 'zoomAll', label: 'commands.zoomAll', shortcut: 'Home', size: 'small', available: true, run: () => e.zoomAll() }],
       },
     ];
+  }
+
+  // ── File operations ───────────────────────────────────────────────────
+
+  /** New: an empty document, with no history left to undo into. */
+  private newSketch(): void {
+    this.editor.reset(emptySketch());
+  }
+
+  /** Open: shows the file picker; adopting what was picked happens on change. */
+  private openSketch(): void {
+    // The input is created once and reused: it is hidden, and its value is
+    // cleared after every read, so the same file can be picked again.
+    this.fileInput ??= this.createFileInput();
+    this.fileInput.click();
+  }
+
+  private createFileInput(): HTMLInputElement {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = '.svgc.json,application/json';
+    input.hidden = true;
+    input.addEventListener('change', () => {
+      // A file that cannot be read at all is reported like one that cannot be
+      // parsed: either way the document stays as it was.
+      this.readSketchFile(input).catch(() => this.openFailed('invalidJson'));
+    });
+    document.body.append(input);
+    return input;
+  }
+
+  /** Adopts the picked file, or reports why it could not be read. */
+  private async readSketchFile(input: HTMLInputElement): Promise<void> {
+    const file = input.files?.[0];
+    // Cleared right away, so picking the same file again still fires `change`.
+    input.value = '';
+    if (file === undefined) return;
+    const parsed = parseSketch(await file.text());
+    if (parsed.ok) this.editor.reset(parsed.sketch);
+    else this.openFailed(parsed.error);
+  }
+
+  /** Reports a file that could not be adopted, naming the reason. */
+  private openFailed(reason: SketchFileError): void {
+    this.editor.setMessage({ key: 'file.openFailed', params: { reason: this.t.t(`file.reason.${reason}`) } });
+  }
+
+  /** Save: the sketch as a .svgc.json file, overwriting the location picked last time. */
+  private async saveSketch(): Promise<void> {
+    await this.saver.save(SKETCH_FILE, SKETCH_MIME, serializeSketch(this.editor.sketch));
+  }
+
+  /** Export SVG: the sketch as an image. */
+  private async exportSvg(): Promise<void> {
+    await this.saver.save(SVG_FILE, SVG_MIME, sketchToSvg(this.editor.sketch));
+  }
+
+  /** Runs a file operation fire-and-forget, reporting a failure in the status bar. */
+  private runFileAction(run: () => Promise<void>, failure: Key): void {
+    run().catch(() => this.editor.setMessage({ key: failure }));
   }
 
   // 鈹€鈹€ Rendering 鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€
@@ -614,7 +702,7 @@ export class App {
   }
 
   private onKey(event: KeyboardEvent): void {
-    if (event.defaultPrevented || this.menu.isOpen) return;
+    if (event.defaultPrevented || this.menu.isOpen || this.appMenu.isOpen) return;
     const target = event.target;
     if (target instanceof HTMLInputElement || target instanceof HTMLSelectElement || target instanceof HTMLTextAreaElement) {
       return;

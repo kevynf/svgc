@@ -107,6 +107,22 @@ export class Editor {
     return this.solver.solve(next);
   }
 
+  /**
+   * Starts a new document: replaces the sketch and clears the history (opening
+   * a file, or New). The sketch is re-solved exactly like the constructor does,
+   * so a document that does not solve keeps its geometry and reports why, and
+   * nothing of the previous one is left selected or remembered.
+   */
+  reset(sketch: Sketch): void {
+    this.result = this.solver.solve(sketch);
+    this.history.reset(this.result.outcome === 'failed' ? sketch : this.result.sketch);
+    this.selected = new Set();
+    this.hovered = undefined;
+    this.statusCache = undefined;
+    this.notice = undefined;
+    this.changed();
+  }
+
   /** Solves `next` and records it as an undo step. Rejected (unchanged) when solving fails. */
   commit(next: Sketch): boolean {
     if (next === this.sketch) return true;

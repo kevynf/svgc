@@ -245,4 +245,18 @@ export const en: Catalog<Messages> = {
       icon24: 'Icon 24×24',
     },
   },
+  file: {
+    new: 'New',
+    open: 'Open…',
+    save: 'Save',
+    exportSvg: 'Export SVG…',
+    openFailed: 'Could not open the file ({reason})',
+    saveFailed: 'Saving failed',
+    reason: {
+      invalidJson: 'not valid JSON',
+      unknownFormat: 'not an svgc sketch file',
+      unsupportedVersion: 'unsupported file version',
+      invalidSketch: 'invalid sketch contents',
+    },
+  },
 };

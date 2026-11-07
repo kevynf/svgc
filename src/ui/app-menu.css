@@ -1,0 +1,74 @@
+/* Application menu (Inventor's title-bar application button): the button at the
+   far left of the title strip and the dropdown card it opens. Imported by
+   app-menu.ts; every rule is scoped under .app-menu-* so it cannot leak into
+   the rest of the shell. */
+
+:root {
+  --app-menu-width: 176px;
+  --app-menu-shadow: 0 8px 24px rgb(0 0 0 / 0.5);
+  --app-menu-radius: 4px;
+}
+
+.app-menu-button {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-1);
+  font: inherit;
+  font-size: var(--fs-ui);
+  color: var(--text-muted);
+  background: transparent;
+  border: 0;
+  padding: 0 var(--sp-2);
+  cursor: pointer;
+}
+
+.app-menu-button:hover,
+.app-menu-button[aria-expanded='true'] {
+  color: var(--text);
+  background: var(--bg-hover);
+}
+
+.app-menu-button .icon {
+  flex: none;
+  width: 12px;
+  height: 12px;
+}
+
+/* The card hangs off the title strip in viewport coordinates, sharing the
+   ribbon's raised chrome and shadow so it reads as part of the shell. */
+.app-menu-panel {
+  position: fixed;
+  z-index: 100;
+  display: flex;
+  flex-direction: column;
+  min-width: var(--app-menu-width);
+  padding: var(--sp-1) 0;
+  color: var(--text);
+  background: var(--bg-chrome-raised);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--app-menu-radius);
+  box-shadow: var(--app-menu-shadow);
+}
+
+.app-menu-item {
+  font: inherit;
+  font-size: var(--fs-ui);
+  text-align: left;
+  color: var(--text);
+  background: transparent;
+  border: 0;
+  padding: 5px var(--sp-3);
+  cursor: pointer;
+}
+
+.app-menu-item:hover,
+.app-menu-item:focus-visible {
+  background: var(--bg-pressed);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .app-menu-button,
+  .app-menu-item {
+    transition: background-color 80ms linear, color 80ms linear;
+  }
+}

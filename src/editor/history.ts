@@ -43,6 +43,18 @@ export class History<T> {
     this.present = next;
   }
 
+  /**
+   * Starts a new document: `sketch` becomes the current state and both stacks
+   * are emptied, so nothing from the previous document can be reached — the
+   * first edit of the new one is the earliest undo step.
+   */
+  reset(sketch: T): void {
+    this.end();
+    this.past.length = 0;
+    this.future.length = 0;
+    this.present = sketch;
+  }
+
   /** Ends the transaction and restores the state it started from. */
   abort(): void {
     if (this.base === undefined) return;
