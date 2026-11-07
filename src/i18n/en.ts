@@ -97,6 +97,13 @@ export const en: Catalog<Messages> = {
     offsetValue: 'Type the offset distance, Enter to apply, Esc to cancel',
     mirror: 'Select the curves to mirror, press Enter or right-click to confirm',
     mirrorLine: 'Select the mirror line',
+    trim: 'Select a curve to trim',
+    extend: 'Select a curve to extend',
+    trimNone: 'No intersection to trim to at that endpoint',
+    extendNone: 'No intersection to extend to at that endpoint',
+    fillet: 'Select the two lines to fillet',
+    filletPlace: 'Move to set the fillet radius, click to place',
+    filletValue: 'Type the fillet radius, Enter to apply, Esc to cancel',
     incompatible: 'This constraint cannot be applied between these objects',
     redundant: 'This constraint is redundant and was not added',
     conflict: {

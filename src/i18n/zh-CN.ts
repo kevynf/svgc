@@ -100,6 +100,13 @@ export const zhCN = {
     offsetValue: '输入偏移距离，Enter 应用，Esc 取消',
     mirror: '选择要镜像的曲线，按 Enter 或右键确定',
     mirrorLine: '选择镜像直线',
+    trim: '选择要修剪的曲线',
+    extend: '选择要延伸的曲线',
+    trimNone: '该端点处没有可修剪的交点',
+    extendNone: '该端点处没有可延伸的交点',
+    fillet: '选择圆角的两条直线',
+    filletPlace: '移动光标确定圆角半径，单击放置',
+    filletValue: '输入圆角半径，Enter 应用，Esc 取消',
     incompatible: '无法在该对象之间应用此约束',
     redundant: '该约束是冗余的，未添加',
     conflict: {

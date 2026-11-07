@@ -7,6 +7,8 @@ import { DimensionCommand } from './editor/commands/dimension';
 import { MirrorCommand } from './editor/commands/mirror';
 import { OffsetCommand } from './editor/commands/offset';
 import { SelectCommand } from './editor/commands/select';
+import { ExtendCommand, TrimCommand } from './editor/commands/trim';
+import { FilletCommand } from './editor/commands/fillet';
 import { Editor } from './editor/editor';
 import type { CommandFactory } from './editor/editor';
 import { DEFAULT_LOCALE, isLocale, Translator } from './i18n/i18n';
@@ -35,6 +37,9 @@ const commands = new Map<string, CommandFactory>([
   ['dimension', (editor) => new DimensionCommand(editor)],
   ['offset', (editor) => new OffsetCommand(editor)],
   ['mirror', (editor) => new MirrorCommand(editor)],
+  ['trim', (editor) => new TrimCommand(editor)],
+  ['extend', (editor) => new ExtendCommand(editor)],
+  ['fillet', (editor) => new FilletCommand(editor)],
   ['artboard', (editor) => new ArtboardCommand(editor)],
   ...CONSTRAINT_COMMANDS,
 ]);
