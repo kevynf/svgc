@@ -69,6 +69,40 @@ describe('translate', () => {
     expect(primitives.at(-1)).toMatchObject({ type: 'p2p_distance', distance: 16 });
   });
 
+  it('lowers symmetry about a line to the point-line primitive', () => {
+    const b = new SketchBuilder();
+    const p1 = b.point(0, 0);
+    const p2 = b.point(100, 0);
+    const left = b.point(20, 0);
+    const right = b.point(80, 0);
+    const axis = b.line(p1, p2);
+    const sym = b.constrain({ kind: 'symmetric', a: left, b: right, line: axis });
+
+    const { primitives, gcsIdOf, constraintOf } = translate(b.build());
+    const lowered = primitives.at(-1);
+    // One primitive for the whole constraint: no coincident pair is added first.
+    expect(lowered).toEqual({
+      id: String(primitives.length),
+      type: 'p2p_symmetric_ppl',
+      p1_id: gcsIdOf.get(left),
+      p2_id: gcsIdOf.get(right),
+      l_id: gcsIdOf.get(axis),
+    });
+    expect(constraintOf.get(lowered!.id)).toBe(sym);
+  });
+
+  it('rejects a symmetric constraint with a line where a point belongs', () => {
+    const b = new SketchBuilder();
+    const p1 = b.point(0, 0);
+    const p2 = b.point(100, 0);
+    const a = b.point(20, 0);
+    const axis = b.line(p1, p2);
+    // A line mirrored to a point, then a point standing in for the mirror line.
+    b.constrain({ kind: 'symmetric', a, b: axis, line: axis });
+    b.constrain({ kind: 'symmetric', a, b: p2, line: a });
+    expect(() => translate(b.build())).toThrow(SketchError);
+  });
+
   it('marks drag targets as temporary', () => {
     const b = new SketchBuilder();
     const p = b.point(0, 0);

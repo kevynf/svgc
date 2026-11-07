@@ -26,6 +26,8 @@ export function constraintRefs(c: Constraint): Id[] {
     case 'pointOnLine':
     case 'midpoint':
       return [c.point, c.line];
+    case 'symmetric':
+      return [c.a, c.b, c.line];
     case 'pointOnCurve':
       return [c.point, c.curve];
     case 'radius':

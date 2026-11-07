@@ -180,6 +180,18 @@ describe('constraintPlacements', () => {
     expect(found[c3]).toEqual({ x: 90, y: 50 });
   });
 
+  it('puts symmetric on the midpoint of the mirrored pair', () => {
+    const b = new SketchBuilder();
+    const start = b.point(0, 0);
+    const end = b.point(100, 0);
+    const axis = b.line(start, end);
+    const left = b.point(20, 0);
+    const right = b.point(80, 0);
+    const sym = b.constrain({ kind: 'symmetric', a: left, b: right, line: axis });
+
+    expect(at(constraintPlacements(b.build(), 1), sym)).toEqual({ x: 50, y: 0 });
+  });
+
   it('puts fix up and right of the point', () => {
     const b = new SketchBuilder();
     const p = b.point(0, 0);

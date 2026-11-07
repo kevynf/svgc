@@ -32,6 +32,7 @@ const CONSTRAINT_ICON: Record<ConstraintKind, ConstraintGlyph> = {
   pointOnLine: 'pointOnLine',
   pointOnCurve: 'pointOnCurve',
   midpoint: 'midpoint',
+  symmetric: 'symmetric',
   distance: 'distance',
   radius: 'radius',
   angle: 'angle',

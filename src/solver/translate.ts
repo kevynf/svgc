@@ -293,6 +293,13 @@ function lowerConstraint(
       return [{ type: 'p2p_symmetric_ppp', p1_id: ref(line.p1), p2_id: ref(line.p2), p_id: ref(c.point) }];
     }
 
+    // `a` and `b` keep their orientation: p1 is mirrored to p2, not the other
+    // way round, so a mirrored copy stays attached to its original.
+    case 'symmetric':
+      points(c.a, c.b);
+      lines(c.line);
+      return [{ type: 'p2p_symmetric_ppl', p1_id: ref(c.a), p2_id: ref(c.b), l_id: ref(c.line) }];
+
     case 'distance': {
       const distance = value(c.value);
       if (!(distance >= 0)) invalid();

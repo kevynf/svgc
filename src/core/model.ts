@@ -62,6 +62,8 @@ export type Constraint =
   | { readonly kind: 'pointOnLine'; readonly id: Id; readonly point: Id; readonly line: Id }
   | { readonly kind: 'pointOnCurve'; readonly id: Id; readonly point: Id; readonly curve: Id }
   | { readonly kind: 'midpoint'; readonly id: Id; readonly point: Id; readonly line: Id }
+  /** Two points mirrored about a line. */
+  | { readonly kind: 'symmetric'; readonly id: Id; readonly a: Id; readonly b: Id; readonly line: Id }
   /**
    * The dimensions: the constraints that carry a measured value. Each may also
    * carry a `placement` — where the user put the dimension when they placed it,

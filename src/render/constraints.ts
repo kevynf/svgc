@@ -204,6 +204,14 @@ function constraintAnchor(c: Constraint, index: EntityIndex, scale: number): Anc
       const p = pointAt(index, c.point);
       return p === undefined ? undefined : { glyph: c.kind, at: pos(p) };
     }
+    case 'symmetric': {
+      // The pair's midpoint lies on the mirror line, so it is the one point of
+      // the constraint that sits on the geometry the user sees.
+      const a = pointAt(index, c.a);
+      const b = pointAt(index, c.b);
+      if (a === undefined || b === undefined) return undefined;
+      return { glyph: 'symmetric', at: midpoint(a, b) };
+    }
     case 'distance':
     case 'radius':
     case 'angle': {
