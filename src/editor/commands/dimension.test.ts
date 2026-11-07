@@ -653,6 +653,34 @@ describe('dimension', () => {
     expect(radiusOf(editor, circle)).toBeCloseTo(12, 9);
   });
 
+  it('refuses a value the solver cannot take', () => {
+    // A negative distance or a non-positive radius would make translate throw
+    // out of the commit, so the command refuses it like an unparseable one.
+    const b = new SketchBuilder();
+    const p1 = b.point(0, 0);
+    const p2 = b.point(100, 0);
+    b.line(p1, p2);
+    const center = b.point(50, 50);
+    const circle = b.circle(center, 30);
+
+    const distance = editorWith(b.build());
+    distance.startCommand('dimension');
+    clickEntity(distance, p1);
+    clickEntity(distance, p2);
+    place(distance, 50, 60);
+    expect(commitEdit(distance, '-5', true)).toBe(false);
+    expect(distance.sketch.constraints).toHaveLength(0);
+    expect(distance.activeCommand.edit).toBeDefined();
+
+    const radius = editorWith(b.build());
+    radius.startCommand('dimension');
+    clickCurve(radius, circle);
+    place(radius, 120, 50);
+    expect(commitEdit(radius, '0', true)).toBe(false);
+    expect(radius.sketch.constraints).toHaveLength(0);
+    expect(radius.activeCommand.edit).toBeDefined();
+  });
+
   it('places the dimension with Enter', () => {
     const b = new SketchBuilder();
     const center = b.point(50, 50);

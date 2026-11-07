@@ -273,7 +273,7 @@ export class DimensionCommand extends ConstraintCommand {
   commitEdit(text: string, edited: boolean): boolean {
     const phase = this.phase;
     if (phase.kind !== 'entering') return false;
-    const value = edited ? this.parse(text) : phase.constraint.value;
+    const value = edited ? this.parse(text, phase.constraint.kind) : phase.constraint.value;
     if (value === undefined) return false;
     const offset = resolveOffset(
       { ...specOf(phase.constraint), placement: phase.placement },
@@ -386,17 +386,28 @@ export class DimensionCommand extends ConstraintCommand {
    * the sketch's parameters. Undefined — with the message the status bar shows —
    * when the text is unusable.
    */
-  private parse(text: string): Value | undefined {
+  private parse(text: string, kind: DimensionConstraint['kind']): Value | undefined {
     const trimmed = text.trim();
     if (trimmed === '') return undefined;
     if (this.editor.sketch.params[trimmed] !== undefined) return trimmed;
+    let value: number;
     try {
-      return evaluateSource(trimmed, (name) => this.editor.sketch.params[name]);
+      value = evaluateSource(trimmed, (name) => this.editor.sketch.params[name]);
     } catch {
       this.status = { key: 'properties.invalid' };
       this.editor.viewChanged();
       return undefined;
     }
+    // A negative distance or a non-positive radius is not a value the solver can
+    // take (translate refuses it, which would throw out of the commit), so it is
+    // refused here with the same message an unparseable one gets.
+    const admissible = kind === 'radius' ? value > 0 : kind === 'distance' ? value >= 0 : true;
+    if (!Number.isFinite(value) || !admissible) {
+      this.status = { key: 'properties.invalid' };
+      this.editor.viewChanged();
+      return undefined;
+    }
+    return value;
   }
 
   /**

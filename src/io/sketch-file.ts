@@ -233,6 +233,13 @@ function readConstraint(raw: unknown): Constraint | undefined {
       if (point === undefined || line === undefined) return undefined;
       return { kind: 'midpoint', id, point, line };
     }
+    case 'symmetric': {
+      const a = readText(raw.a);
+      const b = readText(raw.b);
+      const line = readText(raw.line);
+      if (a === undefined || b === undefined || line === undefined) return undefined;
+      return { kind: 'symmetric', id, a, b, line };
+    }
     case 'distance': {
       const both = readPair(raw.a, raw.b);
       const value = readValue(raw.value);

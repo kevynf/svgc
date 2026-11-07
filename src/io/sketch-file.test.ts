@@ -48,6 +48,7 @@ function rich(): Sketch {
   b.constrain({ kind: 'pointOnCurve', point: origin, curve: bow });
   b.constrain({ kind: 'midpoint', point: hub, line: top });
   b.constrain({ kind: 'tangent', a: top, b: ring });
+  b.constrain({ kind: 'symmetric', a: landing, b: above, line: left });
 
   b.constrain({ kind: 'distance', a: origin, b: right, value: 'gap', placement: 18 });
   b.constrain({ kind: 'radius', curve: ring, value: 20, placement: 0.5 });
@@ -232,6 +233,7 @@ describe('refusals', () => {
       { kind: 'coincident', a: 'e1', b: 'e1' },
       { kind: 'fix', id: 'c1', point: 'e1', x: 0 },
       { kind: 'midpoint', id: 'c1', point: 'e1' },
+      { kind: 'symmetric', id: 'c1', a: 'e1', b: 'e2' },
       { kind: 'distance', id: 'c1', a: 'e1', b: 'e2' },
       { kind: 'radius', id: 'c1', curve: 'e1' },
     ];
