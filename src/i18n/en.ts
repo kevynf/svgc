@@ -87,6 +87,8 @@ export const en: Catalog<Messages> = {
     pickSecondPoint: 'Select the second point',
     pickSecondLine: 'Select the second line',
     pickSecondObject: 'Select the second object',
+    dimension: 'Select an object to dimension',
+    dimensionSecond: 'Select the second object',
     incompatible: 'This constraint cannot be applied between these objects',
     redundant: 'This constraint is redundant and was not added',
     conflict: {

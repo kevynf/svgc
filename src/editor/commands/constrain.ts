@@ -9,17 +9,17 @@ import { distanceTo, hitTest, pointLookup } from '../hit';
 import { HIT_PX } from './select';
 
 /** The entity kinds a constraint operand may be. */
-type OperandKind = Entity['kind'];
+export type OperandKind = Entity['kind'];
 
 /** What one operand of a constraint command accepts. */
-interface OperandSpec {
+export interface OperandSpec {
   readonly kinds: readonly OperandKind[];
   /** Prompt shown while this pick is pending. */
   readonly prompt: Key;
 }
 
 /** An operand the user has picked. */
-interface Operand {
+export interface Operand {
   readonly id: Id;
   readonly kind: OperandKind;
 }
@@ -42,11 +42,12 @@ const AXIS: readonly OperandSpec[] = [LINE_OR_POINT, SECOND_POINT];
  * be added without going back to the ribbon; Esc drops the pending operand and
  * only then ends the command.
  */
-abstract class ConstraintCommand implements Command {
+export abstract class ConstraintCommand implements Command {
   abstract readonly id: string;
   /** The operands, in pick order. */
   protected abstract readonly operands: readonly OperandSpec[];
-  private picks: readonly Operand[] = [];
+  /** The operands picked so far; subclasses read them to draw their previews. */
+  protected picks: readonly Operand[] = [];
   /** Overrides the operand prompt until the next click, e.g. after a rejection. */
   private status: Message | undefined;
 

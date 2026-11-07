@@ -90,6 +90,8 @@ export const zhCN = {
     pickSecondPoint: '选择第二个点',
     pickSecondLine: '选择第二条直线',
     pickSecondObject: '选择第二个对象',
+    dimension: '选择要标注的对象',
+    dimensionSecond: '选择第二个对象',
     incompatible: '无法在该对象之间应用此约束',
     redundant: '该约束是冗余的，未添加',
     conflict: {

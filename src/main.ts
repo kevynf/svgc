@@ -3,6 +3,7 @@ import { demoSketch } from './demo';
 import { ArtboardCommand } from './editor/commands/artboard';
 import { CONSTRAINT_COMMANDS } from './editor/commands/constrain';
 import { ArcCommand, CircleCommand, LineCommand, PointCommand, RectangleCommand } from './editor/commands/draw';
+import { DimensionCommand } from './editor/commands/dimension';
 import { SelectCommand } from './editor/commands/select';
 import { Editor } from './editor/editor';
 import type { CommandFactory } from './editor/editor';
@@ -29,6 +30,7 @@ const commands = new Map<string, CommandFactory>([
   ['arc', (editor) => new ArcCommand(editor)],
   ['rectangle', (editor) => new RectangleCommand(editor)],
   ['point', (editor) => new PointCommand(editor)],
+  ['dimension', (editor) => new DimensionCommand(editor)],
   ['artboard', (editor) => new ArtboardCommand(editor)],
   ...CONSTRAINT_COMMANDS,
 ]);
