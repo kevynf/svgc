@@ -1,6 +1,6 @@
-import { deleteItems, toggleConstruction } from '../core/edit';
+import { deleteItems, setConstraintValue, toggleConstruction } from '../core/edit';
 import type { Vec2 } from '../core/geometry';
-import type { Entity, Id } from '../core/model';
+import type { Entity, Id, Value } from '../core/model';
 import type { Artboard, Sketch } from '../core/sketch';
 import type { Solver, SolveResult } from '../solver/solver';
 import { analyzeStatus } from '../solver/status';
@@ -200,6 +200,15 @@ export class Editor {
       return rest as Entity;
     });
     this.commit({ ...this.sketch, entities });
+  }
+
+  /** Sets the value of a dimensional constraint (distance, radius, angle); the solver re-solves and may move geometry. */
+  setConstraintValue(id: Id, value: Value): void {
+    const current = this.sketch.constraints.find((c) => c.id === id);
+    if (current === undefined || !(current.kind === 'distance' || current.kind === 'radius' || current.kind === 'angle')) return;
+    // A parameter name the sketch does not define would make translate() throw a SketchError.
+    if (typeof value === 'string' && this.sketch.params[value] === undefined) return;
+    this.commit(setConstraintValue(this.sketch, id, value));
   }
 
   // ── Selection and hover ────────────────────────────────────────────────

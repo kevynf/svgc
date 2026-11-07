@@ -1,4 +1,4 @@
-import type { Constraint, Entity, Id } from './model';
+import type { Constraint, Entity, Id, Value } from './model';
 import type { Sketch } from './sketch';
 
 /** Point ids a curve is built from. */
@@ -87,4 +87,35 @@ export function toggleConstruction(sketch: Sketch, ids: Iterable<Id>): Sketch {
     return rest as Entity;
   });
   return { ...sketch, entities };
+}
+
+/** The dimension constraints: the only ones carrying a `value`. */
+type DimensionConstraint = Extract<Constraint, { value: Value }>;
+
+function isDimension(c: Constraint): c is DimensionConstraint {
+  return c.kind === 'distance' || c.kind === 'radius' || c.kind === 'angle';
+}
+
+/**
+ * Numeric value of a dimension constraint (distance, radius or angle), with
+ * named parameters resolved against `params`. Undefined for any other kind
+ * and for a name the sketch does not define.
+ */
+export function constraintValue(c: Constraint, params: Readonly<Record<string, number>>): number | undefined {
+  if (!isDimension(c)) return undefined;
+  return typeof c.value === 'number' ? c.value : params[c.value];
+}
+
+/**
+ * Sets the value of a dimension constraint (distance, radius, angle). Other
+ * kinds have no value and are returned untouched, as are unknown ids and
+ * values that are already set.
+ */
+export function setConstraintValue(sketch: Sketch, id: Id, value: Value): Sketch {
+  const current = sketch.constraints.find((c) => c.id === id);
+  if (current === undefined || !isDimension(current) || current.value === value) return sketch;
+  const constraints = sketch.constraints.map((c): Constraint =>
+    isDimension(c) && c.id === id ? { ...c, value } : c,
+  );
+  return { ...sketch, constraints };
 }
