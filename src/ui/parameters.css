@@ -1,0 +1,249 @@
+/* Parameter dialog (Inventor's 参数): a modal card over a dimmed backdrop,
+   one row per sketch parameter. Imported by parameters.ts; every rule is
+   scoped under .parameters / .parameters-backdrop so it cannot leak into the
+   shell. Inputs follow .properties-input from properties.css. */
+
+:root {
+  --parameters-width: 440px;
+  --parameters-backdrop: rgb(0 0 0 / 0.5);
+  --parameters-shadow: 0 16px 40px rgb(0 0 0 / 0.55);
+  --parameters-radius: 6px;
+}
+
+.parameters-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: grid;
+  place-items: center;
+  padding: var(--sp-4);
+  background: var(--parameters-backdrop);
+}
+
+.parameters {
+  display: flex;
+  flex-direction: column;
+  width: var(--parameters-width);
+  max-width: 100%;
+  max-height: 100%;
+  overflow: auto;
+  color: var(--text);
+  background: var(--bg-chrome-raised);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--parameters-radius);
+  box-shadow: var(--parameters-shadow);
+}
+
+/* The card is focused programmatically; the ring is for keyboard users only. */
+.parameters:focus {
+  outline: none;
+}
+
+.parameters:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+}
+
+.parameters-header {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  padding: var(--sp-3) var(--sp-3) var(--sp-2);
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.parameters-title {
+  flex: 1;
+  min-width: 0;
+  margin: 0;
+  font-size: var(--fs-ui);
+  font-weight: 600;
+}
+
+.parameters-close {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  font: inherit;
+  font-size: 13px;
+  line-height: 1;
+  color: var(--text-muted);
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 3px;
+  cursor: pointer;
+}
+
+.parameters-close:hover {
+  color: var(--text);
+  background: var(--bg-hover);
+  border-color: var(--border-subtle);
+}
+
+.parameters-help {
+  margin: 0;
+  padding: var(--sp-2) var(--sp-3);
+  font-size: var(--fs-caption);
+  line-height: 1.45;
+  color: var(--text-muted);
+}
+
+.parameters-rows {
+  list-style: none;
+  margin: 0;
+  padding: var(--sp-1) 0;
+}
+
+.parameters-rows[hidden],
+.parameters-empty[hidden],
+.parameters-error[hidden] {
+  display: none;
+}
+
+/* Name | expression | value | remove, with the error on its own line below. */
+.parameters-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--sp-2);
+  padding: 4px var(--sp-3);
+}
+
+.parameters-row:hover {
+  background: var(--bg-hover);
+}
+
+.parameters-name,
+.parameters-expression {
+  min-width: 0;
+  padding: 2px 4px;
+  font-family: var(--font-mono);
+  font-size: var(--fs-ui);
+  color: var(--text);
+  background: var(--bg-chrome-raised);
+  border: 1px solid var(--border-subtle);
+  border-radius: 3px;
+}
+
+/* The name column stays narrow; the expression takes the rest of the row. */
+.parameters-name {
+  flex: none;
+  width: 72px;
+}
+
+.parameters-expression {
+  flex: 1;
+}
+
+.parameters-name:hover,
+.parameters-expression:hover {
+  border-color: var(--text-disabled);
+}
+
+.parameters-name:focus-visible,
+.parameters-expression:focus-visible {
+  border-color: var(--focus);
+}
+
+.parameters-name[aria-invalid='true'],
+.parameters-expression[aria-invalid='true'] {
+  color: var(--error);
+  border-color: var(--error);
+}
+
+.parameters-value {
+  flex: none;
+  width: 72px;
+  padding: 2px 4px;
+  font-family: var(--font-mono);
+  font-size: var(--fs-ui);
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+  white-space: nowrap;
+  color: var(--text-muted);
+}
+
+.parameters-remove {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  color: var(--text-muted);
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 3px;
+  cursor: pointer;
+}
+
+.parameters-remove:hover:not(:disabled) {
+  color: var(--text);
+  background: var(--bg-hover);
+  border-color: var(--border-subtle);
+}
+
+.parameters-remove:disabled {
+  color: var(--text-disabled);
+  cursor: default;
+}
+
+.parameters-remove .icon {
+  width: 14px;
+  height: 14px;
+}
+
+.parameters-error {
+  flex-basis: 100%;
+  margin: 0;
+  font-size: var(--fs-caption);
+  color: var(--error);
+}
+
+.parameters-empty {
+  margin: 0;
+  padding: var(--sp-1) var(--sp-3);
+  font-size: var(--fs-caption);
+  color: var(--text-muted);
+}
+
+.parameters-actions {
+  display: flex;
+  gap: var(--sp-2);
+  padding: var(--sp-2) var(--sp-3) var(--sp-3);
+  border-top: 1px solid var(--border-subtle);
+}
+
+.parameters-action {
+  flex: 1;
+  font: inherit;
+  font-size: var(--fs-ui);
+  color: var(--text);
+  background: var(--bg-chrome);
+  border: 1px solid var(--border-subtle);
+  border-radius: 3px;
+  padding: 5px var(--sp-2);
+  cursor: pointer;
+}
+
+.parameters-action:hover {
+  background: var(--bg-hover);
+  border-color: var(--text-disabled);
+}
+
+.parameters-action:active {
+  background: var(--bg-pressed);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .parameters-close,
+  .parameters-action,
+  .parameters-remove,
+  .parameters-name,
+  .parameters-expression {
+    transition: background-color 80ms linear, border-color 80ms linear, color 80ms linear;
+  }
+}
