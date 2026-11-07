@@ -1,5 +1,5 @@
 import wasmUrl from '@salusoft89/planegcs/dist/planegcs_dist/planegcs.wasm?url';
-import { demoSketch } from './demo';
+import { emptySketch } from './core/sketch';
 import { ArtboardCommand } from './editor/commands/artboard';
 import { CONSTRAINT_COMMANDS } from './editor/commands/constrain';
 import { ArcCommand, CircleCommand, LineCommand, PointCommand, RectangleCommand } from './editor/commands/draw';
@@ -49,7 +49,7 @@ const commands = new Map<string, CommandFactory>([
 const solver = await createSolver(wasmUrl);
 window.addEventListener('pagehide', () => solver.dispose());
 
-const editor = new Editor(solver, demoSketch(), commands, 'select');
+const editor = new Editor(solver, emptySketch(), commands, 'select');
 let app: App | undefined;
 
 function start(locale: Locale): void {
