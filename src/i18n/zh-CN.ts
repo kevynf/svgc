@@ -93,6 +93,7 @@ export const zhCN = {
     dimension: '选择要标注的对象',
     dimensionSecond: '选择第二个对象',
     dimensionPlace: '移动光标放置尺寸，单击确定位置',
+    dimensionPlaceLine: '移动光标放置尺寸，单击确定位置；或单击第二条直线标注夹角',
     dimensionValue: '输入尺寸值，Enter 应用，Esc 取消',
     incompatible: '无法在该对象之间应用此约束',
     redundant: '该约束是冗余的，未添加',

@@ -1,6 +1,6 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { SketchBuilder } from '../../core/builder';
-import { arcParams, distance, lineAngleDeg, perpendicularDistance } from '../../core/geometry';
+import { arcParams, directionDeg, distance, lineAngleDeg, perpendicularDistance } from '../../core/geometry';
 import type { Vec2 } from '../../core/geometry';
 import type { Constraint, Id } from '../../core/model';
 import { emptySketch, indexEntities } from '../../core/sketch';
@@ -12,6 +12,7 @@ import type { Solver } from '../../solver/solver';
 import type { OverlayShape, PointerInput } from '../command';
 import { Editor } from '../editor';
 import type { CommandFactory } from '../editor';
+import type { Operand } from './constrain';
 import { DimensionCommand } from './dimension';
 import { SelectCommand } from './select';
 
@@ -30,8 +31,8 @@ const commands = new Map<string, CommandFactory>([
   ['dimension', (e) => new DimensionCommand(e)],
 ]);
 
-function editorWith(sketch: Sketch = emptySketch()): Editor {
-  const editor = new Editor(solver, sketch, commands, 'select');
+function editorWith(sketch: Sketch = emptySketch(), dimension: CommandFactory = (e) => new DimensionCommand(e)): Editor {
+  const editor = new Editor(solver, sketch, new Map([...commands, ['dimension', dimension]]), 'select');
   editor.viewport.resize(800, 600);
   return editor;
 }
@@ -85,6 +86,31 @@ function clickCurve(editor: Editor, id: Id): void {
   click(editor, p.x, p.y);
 }
 
+/**
+ * A dimension command handed its picks by the test. A zero-length line can
+ * never be clicked — the point at the same spot always wins the hit test — so
+ * such a pick is delivered the way a clicked one is.
+ */
+class Handed extends DimensionCommand {
+  /** Picks `operand`, exactly as a click on it would. */
+  hand(operand: Operand): void {
+    const picks = [...this.picks, operand];
+    const constraint = this.build(picks);
+    // An operand the command cannot dimension from leaves the pick pending.
+    if (constraint === undefined) {
+      this.picks = picks;
+      this.editor.viewChanged();
+      return;
+    }
+    this.complete(constraint);
+  }
+}
+
+/** Hands the active dimension command a pick, as a click on the entity would. */
+function hand(editor: Editor, operand: Operand): void {
+  (editor.activeCommand as Handed).hand(operand);
+}
+
 const kinds = (s: Sketch) => s.constraints.map((c) => c.kind);
 
 function last(editor: Editor): Constraint {
@@ -111,18 +137,11 @@ function expectUnmoved(editor: Editor, before: Map<Id, Vec2>): void {
   }
 }
 
-/** Both endpoints of a line, from their current positions. */
-function endsOf(editor: Editor, id: Id): [Vec2, Vec2] {
-  const e = editor.sketch.entities.find((x) => x.id === id);
-  if (e?.kind !== 'line') throw new Error(`"${id}" is not a line`);
-  return [pointOf(editor, e.p1), pointOf(editor, e.p2)];
-}
-
-/** The angle the command should measure between two lines. */
-function angleOf(editor: Editor, a: Id, b: Id): number {
-  const [a1, a2] = endsOf(editor, a);
-  const [b1, b2] = endsOf(editor, b);
-  return lineAngleDeg(a1, a2, b1, b2);
+/** The entities a command is highlighting, e.g. the operands it has picked. */
+function highlightIds(editor: Editor): readonly Id[] {
+  type Highlight = Extract<OverlayShape, { kind: 'highlight' }>;
+  const shape = (editor.activeCommand.overlay?.() ?? []).find((s): s is Highlight => s.kind === 'highlight');
+  return shape?.ids ?? [];
 }
 
 function radiusOf(editor: Editor, id: Id): number {
@@ -190,9 +209,6 @@ describe('dimension', () => {
 
   it('draws a rubber band from the first operand to the cursor', () => {
     const b = new SketchBuilder();
-    const a = b.point(0, 0);
-    const c = b.point(100, 0);
-    const line = b.line(a, c);
     const p = b.point(20, 30);
     const editor = editorWith(b.build());
     editor.startCommand('dimension');
@@ -202,14 +218,222 @@ describe('dimension', () => {
       { kind: 'highlight', ids: [p] },
       { kind: 'previewLine', from: pointOf(editor, p), to: { x: 70, y: 90 } },
     ]);
-    // A line previews from its middle, where the dimension is measured from.
-    editor.escape();
+  });
+
+  it('dimensions a line with its length, on the one pick it takes', () => {
+    const b = new SketchBuilder();
+    const a = b.point(0, 0);
+    const c = b.point(60, 30);
+    const line = b.line(a, c);
+    const editor = editorWith(b.build());
+    editor.startCommand('dimension');
+    const before = snapshot(editor);
     clickCurve(editor, line);
-    editor.activeCommand.pointerMove?.(at(70, 90));
-    expect(editor.activeCommand.overlay?.()).toEqual([
-      { kind: 'highlight', ids: [line] },
-      { kind: 'previewLine', from: onCurve(editor, line), to: { x: 70, y: 90 } },
-    ]);
+    const value = distance(pointOf(editor, a), pointOf(editor, c));
+    // A line is its own dimension, so no second operand is asked for; the hint
+    // says a second line would turn it into the angle between the two.
+    expect(editor.activeCommand.prompt()).toEqual({ key: 'prompts.dimensionPlaceLine' });
+    expect(editor.activeCommand.edit).toBeUndefined();
+    // It is measured end to end, so the dimension runs parallel to the line.
+    expect(highlightIds(editor)).toEqual([a, c]);
+    expect(dimensionShape(editor)?.radius).toBe(false);
+    expect(dimensionShape(editor)?.value).toBe(value);
+    // The length is only measured, as a radius is: nothing is committed yet.
+    expect(editor.sketch.constraints).toEqual([]);
+    expectUnmoved(editor, before);
+  });
+
+  it('follows the cursor with the line length, as it does with two points', () => {
+    const b = new SketchBuilder();
+    const a = b.point(0, 0);
+    const c = b.point(60, 30);
+    const line = b.line(a, c);
+    const editor = editorWith(b.build());
+    editor.startCommand('dimension');
+    clickCurve(editor, line);
+    const value = distance(pointOf(editor, a), pointOf(editor, c));
+    const placed = dimensionShape(editor)?.layout.textAt;
+    // The dimension hangs off the line while it follows the cursor, and the
+    // measurement rides along with it.
+    editor.activeCommand.pointerMove?.(at(-60, -60));
+    expect(dimensionShape(editor)?.layout.textAt).not.toEqual(placed);
+    expect(dimensionShape(editor)?.value).toBe(value);
+  });
+
+  it('applies the line length untouched, moving nothing', () => {
+    const b = new SketchBuilder();
+    const a = b.point(0, 0);
+    const c = b.point(30, 40);
+    const line = b.line(a, c);
+    const editor = editorWith(b.build());
+    editor.startCommand('dimension');
+    clickCurve(editor, line);
+    const value = distance(pointOf(editor, a), pointOf(editor, c));
+    place(editor, 10, 90);
+    const before = snapshot(editor);
+    expect(commitEdit(editor, '', false)).toBe(true);
+    // The dimension that lands is the distance between the line's two ends.
+    expect(last(editor)).toMatchObject({ kind: 'distance', a, b: c, value });
+    expectUnmoved(editor, before);
+    expect(editor.activeCommand.id).toBe('dimension');
+  });
+
+  it('drives the line length to the typed value', () => {
+    const b = new SketchBuilder();
+    const a = b.point(0, 0);
+    const c = b.point(100, 0);
+    const line = b.line(a, c);
+    const editor = editorWith(b.build());
+    editor.startCommand('dimension');
+    clickCurve(editor, line);
+    place(editor, 50, 60);
+    expect(commitEdit(editor, '60', true)).toBe(true);
+    expect(distance(pointOf(editor, a), pointOf(editor, c))).toBeCloseTo(60, 9);
+  });
+
+  it('turns a second line into the angle between the two', () => {
+    const b = new SketchBuilder();
+    const v = b.point(100, 300);
+    const end = b.point(160, 300);
+    const tip = b.point(100, 240);
+    const first = b.line(v, end);
+    const second = b.line(v, tip);
+    // Both ends of the first line are pinned, so the second line is the one the
+    // solver moves when the angle is driven to a typed value.
+    b.fix(v);
+    b.fix(end);
+    const editor = editorWith(b.build());
+    editor.startCommand('dimension');
+    const before = snapshot(editor);
+    const expected = lineAngleDeg(pointOf(editor, v), pointOf(editor, end), pointOf(editor, v), pointOf(editor, tip));
+    clickCurve(editor, first);
+    // The length is pending, and the hint says a second line would take over.
+    expect(editor.activeCommand.prompt()).toEqual({ key: 'prompts.dimensionPlaceLine' });
+    expect(dimensionShape(editor)?.value).toBe(distance(pointOf(editor, v), pointOf(editor, end)));
+    // A second line turns it into the angle between the two, and the arc starts
+    // following the cursor from where that line was clicked.
+    const on = onCurve(editor, second);
+    clickCurve(editor, second);
+    expect(editor.activeCommand.prompt()).toEqual({ key: 'prompts.dimensionPlace' });
+    const shape = dimensionShape(editor);
+    expect(shape?.layout.kind).toBe('angle');
+    expect(shape?.layout).toEqual(specLayout({ kind: 'angle', operands: [first, second], placement: on }, editor.sketch));
+    expect(shape?.value).toBe(expected);
+    expect(highlightIds(editor)).toEqual([first, second]);
+    editor.activeCommand.pointerMove?.(at(on.x + 40, on.y - 40));
+    expect(dimensionShape(editor)?.layout.textAt).not.toEqual(shape?.layout.textAt);
+    // Measuring an angle commits nothing, exactly as a length does not.
+    expect(kinds(editor.sketch)).toEqual(['fix', 'fix']);
+    expectUnmoved(editor, before);
+
+    place(editor, on.x + 40, on.y - 40);
+    expect(commitEdit(editor, '', false)).toBe(true);
+    expect(last(editor)).toMatchObject({ kind: 'angle', a: first, b: second, value: expected });
+    expectUnmoved(editor, before);
+    expect(editor.activeCommand.id).toBe('dimension');
+  });
+
+  it('drives a converted angle to the typed value', () => {
+    const b = new SketchBuilder();
+    const v = b.point(100, 300);
+    const end = b.point(160, 300);
+    const tip = b.point(100, 240);
+    const first = b.line(v, end);
+    const second = b.line(v, tip);
+    b.fix(v);
+    b.fix(end);
+    const editor = editorWith(b.build());
+    editor.startCommand('dimension');
+    clickCurve(editor, first);
+    clickCurve(editor, second);
+    place(editor, 140, 260);
+    expect(commitEdit(editor, '45', true)).toBe(true);
+    expect(last(editor)).toMatchObject({ kind: 'angle', a: first, b: second, value: 45 });
+    // The pinned line held its direction, so the other one carries the angle.
+    expect(directionDeg(pointOf(editor, v), pointOf(editor, tip))).toBeCloseTo(45, 6);
+  });
+
+  it('places the length when the click lands on the same line', () => {
+    const b = new SketchBuilder();
+    const v = b.point(100, 300);
+    const end = b.point(160, 300);
+    const first = b.line(v, end);
+    const editor = editorWith(b.build());
+    editor.startCommand('dimension');
+    clickCurve(editor, first);
+    // The same line is no second line, so the click places the length.
+    clickCurve(editor, first);
+    expect(editor.activeCommand.prompt()).toEqual({ key: 'prompts.dimensionValue' });
+    expect(commitEdit(editor, '', false)).toBe(true);
+    expect(last(editor)).toMatchObject({ kind: 'distance', a: v, b: end, value: 60 });
+  });
+
+  it('places the length when the click lands on a curve', () => {
+    const b = new SketchBuilder();
+    const v = b.point(0, 0);
+    const end = b.point(60, 0);
+    const first = b.line(v, end);
+    const w = b.point(0, 100);
+    const far = b.point(60, 100);
+    const other = b.line(w, far);
+    const circle = b.circle(b.point(300, 0), 30);
+    const arc = b.arc(b.point(300, 200), b.point(330, 200), b.point(300, 230));
+    const editor = editorWith(b.build());
+    editor.startCommand('dimension');
+    // A curve is no second line, so the click places the length: a circle…
+    clickCurve(editor, first);
+    clickCurve(editor, circle);
+    expect(commitEdit(editor, '', false)).toBe(true);
+    expect(last(editor)).toMatchObject({ kind: 'distance', a: v, b: end });
+    // …and an arc, on the next dimension.
+    clickCurve(editor, other);
+    clickCurve(editor, arc);
+    expect(commitEdit(editor, '', false)).toBe(true);
+    expect(last(editor)).toMatchObject({ kind: 'distance', a: w, b: far });
+  });
+
+  it('Esc backs out of a placement, converted or not', () => {
+    const b = new SketchBuilder();
+    const v = b.point(100, 300);
+    const end = b.point(160, 300);
+    const tip = b.point(100, 240);
+    const first = b.line(v, end);
+    const second = b.line(v, tip);
+    const editor = editorWith(b.build());
+    editor.startCommand('dimension');
+    // Esc while a line's length is being placed.
+    clickCurve(editor, first);
+    editor.escape();
+    expect(editor.activeCommand.id).toBe('dimension');
+    expect(editor.activeCommand.overlay?.()).toEqual([]);
+    expect(editor.activeCommand.prompt()).toEqual({ key: 'prompts.dimension' });
+    expect(editor.sketch.constraints).toEqual([]);
+    // And again after the second line turned it into the angle.
+    clickCurve(editor, first);
+    clickCurve(editor, second);
+    editor.escape();
+    expect(editor.activeCommand.id).toBe('dimension');
+    expect(editor.activeCommand.overlay?.()).toEqual([]);
+    expect(editor.activeCommand.prompt()).toEqual({ key: 'prompts.dimension' });
+    expect(editor.sketch.constraints).toEqual([]);
+    editor.escape();
+    expect(editor.activeCommand.id).toBe('select');
+  });
+
+  it('leaves a zero-length line pending', () => {
+    const b = new SketchBuilder();
+    const p = b.point(40, 40);
+    const line = b.line(p, p);
+    const editor = editorWith(b.build(), (e) => new Handed(e));
+    editor.startCommand('dimension');
+    hand(editor, { id: line, kind: 'line' });
+    // A line with no length has no direction to lay a dimension along, so the
+    // pick does not complete: it stays pending and the command waits for the
+    // second operand, as it does for any pick it cannot dimension.
+    expect(editor.sketch.constraints).toEqual([]);
+    expect(dimensionShape(editor)).toBeUndefined();
+    expect(editor.activeCommand.id).toBe('dimension');
+    expect(editor.activeCommand.prompt()).toEqual({ key: 'prompts.dimensionSecond' });
   });
 
   it('follows the cursor with the circle radius instead of committing it', () => {
@@ -478,52 +702,6 @@ describe('dimension', () => {
     expectUnmoved(editor, before);
   });
 
-  it('keeps the point first when the line was picked first', () => {
-    const b = new SketchBuilder();
-    const a = b.point(0, 0);
-    const c = b.point(100, 0);
-    const line = b.line(a, c);
-    const p = b.point(20, 30);
-    const editor = editorWith(b.build());
-    editor.startCommand('dimension');
-    const before = snapshot(editor);
-    clickCurve(editor, line);
-    clickEntity(editor, p);
-    acceptMeasurement(editor, 20, 90);
-    const value = perpendicularDistance(pointOf(editor, p), pointOf(editor, a), pointOf(editor, c));
-    // The solver reads a point-to-line distance as point first, line second.
-    expect(last(editor)).toMatchObject({ kind: 'distance', a: p, b: line, value });
-    expectUnmoved(editor, before);
-  });
-
-  it('dimensions two lines with the angle between them', () => {
-    const b = new SketchBuilder();
-    const l1 = b.line(b.point(0, 0), b.point(100, 0));
-    const l2 = b.line(b.point(0, 60), b.point(30, 30));
-    const editor = editorWith(b.build());
-    editor.startCommand('dimension');
-    const before = snapshot(editor);
-    clickCurve(editor, l1);
-    clickCurve(editor, l2);
-    acceptMeasurement(editor, 60, 50);
-    expect(last(editor)).toMatchObject({ kind: 'angle', a: l1, b: l2, value: angleOf(editor, l1, l2) });
-    expectUnmoved(editor, before);
-  });
-
-  it('measures the angle counterclockwise on screen, wrapping past zero', () => {
-    const b = new SketchBuilder();
-    const l1 = b.line(b.point(0, 0), b.point(100, 0));
-    const l2 = b.line(b.point(0, 60), b.point(0, 160));
-    const editor = editorWith(b.build());
-    editor.startCommand('dimension');
-    const before = snapshot(editor);
-    clickCurve(editor, l1);
-    clickCurve(editor, l2);
-    acceptMeasurement(editor, 100, 100);
-    expect(last(editor)).toMatchObject({ kind: 'angle', a: l1, b: l2, value: 270 });
-    expectUnmoved(editor, before);
-  });
-
   it('rejects a curve as the second operand', () => {
     const b = new SketchBuilder();
     const p = b.point(0, 0);
@@ -535,18 +713,6 @@ describe('dimension', () => {
     expect(editor.sketch.constraints).toEqual([]);
     // The rejection surfaces as the command's prompt, as it does for every
     // other constraint command.
-    expect(editor.activeCommand.prompt()).toEqual({ key: 'prompts.incompatible' });
-  });
-
-  it('rejects an arc after a line', () => {
-    const b = new SketchBuilder();
-    const line = b.line(b.point(0, 0), b.point(100, 0));
-    const arc = b.arc(b.point(0, 60), b.point(50, 60), b.point(0, 110));
-    const editor = editorWith(b.build());
-    editor.startCommand('dimension');
-    clickCurve(editor, line);
-    clickCurve(editor, arc);
-    expect(editor.sketch.constraints).toEqual([]);
     expect(editor.activeCommand.prompt()).toEqual({ key: 'prompts.incompatible' });
   });
 

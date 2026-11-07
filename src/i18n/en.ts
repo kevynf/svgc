@@ -90,6 +90,7 @@ export const en: Catalog<Messages> = {
     dimension: 'Select an object to dimension',
     dimensionSecond: 'Select the second object',
     dimensionPlace: 'Move to place the dimension, click to set its position',
+    dimensionPlaceLine: 'Move to place the dimension, click to set its position; or click a second line to dimension the angle',
     dimensionValue: 'Type the dimension value, Enter to apply, Esc to cancel',
     incompatible: 'This constraint cannot be applied between these objects',
     redundant: 'This constraint is redundant and was not added',
