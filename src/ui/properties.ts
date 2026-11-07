@@ -352,7 +352,7 @@ export class PropertiesPanel {
       input.focus();
       return;
     }
-    this.apply(field.target, parsed.value);
+    this.apply(field.target, parsed.value, input.value);
     this.clearError(input, key);
     const solved = findField(this.buildModel(), key);
     input.value = this.t.number(solved?.value ?? parsed.value, 2);
@@ -365,10 +365,18 @@ export class PropertiesPanel {
     this.clearError(input, key);
   }
 
-  private apply(target: EditTarget, value: number): void {
+  private apply(target: EditTarget, value: number, source: string): void {
     const editor = this.editor;
     if (target.kind === 'radius') {
       editor.setCircleRadius(target.curve, value);
+      return;
+    }
+    if (target.kind === 'constraintValue') {
+      // Typing a parameter's name binds the dimension to it; anything else stores the number.
+      // The editor validates the name, so a bogus one never reaches the solver.
+      const name = source.trim();
+      const params = editor.sketch.params;
+      editor.setConstraintValue(target.constraint, name in params ? name : value);
       return;
     }
     const point = editor.sketch.entities.find((e) => e.id === target.point);

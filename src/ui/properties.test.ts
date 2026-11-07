@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { SketchBuilder } from '../core/builder';
 import { indexEntities } from '../core/sketch';
-import type { Entity } from '../core/model';
+import type { Constraint, Entity } from '../core/model';
 import type { Sketch } from '../core/sketch';
 import { Translator } from '../i18n/i18n';
 import { Names } from './names';
@@ -47,6 +47,13 @@ const line = only('line') as Extract<Entity, { kind: 'line' }>;
 const circle = only('circle') as Extract<Entity, { kind: 'circle' }>;
 const arc = only('arc') as Extract<Entity, { kind: 'arc' }>;
 const origin = only('point') as Extract<Entity, { kind: 'point' }>;
+const constraint = (kind: Constraint['kind']): Constraint => {
+  const found = sketch.constraints.find((c) => c.kind === kind);
+  if (found === undefined) throw new Error(`No ${kind} constraint in the test sketch`);
+  return found;
+};
+const horizontal = constraint('horizontal');
+const radius = constraint('radius');
 
 function context(selection: readonly string[], statuses: Readonly<Record<string, 'fully' | 'under'>> = {}): ModelContext {
   return {
@@ -242,5 +249,65 @@ describe('findField', () => {
   it('exposes the field the caller asked for', () => {
     expect(field(line, 'angle')).toMatchObject({ editable: false, value: 45 });
     expect(field(circle, 'radius')).toMatchObject({ editable: true, target: { kind: 'radius', curve: circle.id } });
+  });
+
+  it('finds the value field of a selected dimension constraint', () => {
+    const model = buildModel(context([radius.id]));
+    expect(findField(model, `${radius.id}.value`)).toEqual({
+      key: `${radius.id}.value`,
+      label: 'Radius',
+      value: 50,
+      editable: true,
+      target: { kind: 'constraintValue', constraint: radius.id },
+    });
+  });
+});
+
+describe('constraint selection', () => {
+  it('edits a dimension constraint, resolving the parameter it is bound to', () => {
+    const model = buildModel(context([radius.id]));
+    // The title is the same string the browser shows for the constraint.
+    expect(model.title).toBe('Radius (Circle1)');
+    expect(model.status).toBeUndefined();
+    expect(model.sections).toHaveLength(1);
+    const [section] = model.sections;
+    expect(section).toMatchObject({ kind: 'fields', title: 'Radius' });
+    expect(section?.kind === 'fields' && section.fields).toEqual([
+      {
+        key: `${radius.id}.value`,
+        label: 'Radius',
+        // `value: 'w'` and params `w` = 50.
+        value: 50,
+        editable: true,
+        target: { kind: 'constraintValue', constraint: radius.id },
+      },
+    ]);
+  });
+
+  it('shows nothing to edit for a constraint without a value', () => {
+    const model = buildModel(context([horizontal.id]));
+    expect(model.title).toBe('Horizontal (Line1)');
+    expect(model.status).toBeUndefined();
+    expect(model.sections).toEqual([]);
+    expect(findField(model, `${horizontal.id}.value`)).toBeUndefined();
+  });
+
+  it('lists two constraints as read-only rows, with no text for a valueless one', () => {
+    const model = buildModel(context([horizontal.id, radius.id]));
+    expect(model.title).toBe('2 objects selected');
+    const [section] = model.sections;
+    expect(section).toMatchObject({ kind: 'rows', title: 'Constraints' });
+    // Rows carry no target, so unlike a field they can never be edited.
+    expect(section?.kind === 'rows' && section.rows.map((r) => [r.key, r.label, r.text])).toEqual([
+      [`${horizontal.id}.value`, 'Horizontal (Line1)', ''],
+      [`${radius.id}.value`, 'Radius (Circle1)', '50.00'],
+    ]);
+  });
+
+  it('keeps entity behaviour when an entity is selected', () => {
+    const model = buildModel(context([circle.id]));
+    const items = model.sections.find((s) => s.kind === 'items');
+    expect(items?.kind === 'items' && items.items.map((i) => i.name)).toEqual(['Radius (Circle1)']);
+    expect(findField(model, `${circle.id}.radius`)).toMatchObject({ editable: true, value: 30 });
   });
 });

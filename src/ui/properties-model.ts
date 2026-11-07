@@ -1,6 +1,6 @@
-import { constraintRefs } from '../core/edit';
+import { constraintRefs, constraintValue } from '../core/edit';
 import { evaluateSource } from '../core/expr';
-import { arcParams } from '../core/geometry';
+import { arcParams, normalizeDeg, screenAngle } from '../core/geometry';
 import type { Vec2 } from '../core/geometry';
 import type { Entity, EntityKind, Id, Point } from '../core/model';
 import type { Constraint } from '../core/model';
@@ -25,7 +25,8 @@ const KIND_LABEL: Record<EntityKind, Key> = {
 /** What an editable field changes when the user commits a value. */
 export type EditTarget =
   | { readonly kind: 'point'; readonly point: Id; readonly axis: 'x' | 'y' }
-  | { readonly kind: 'radius'; readonly curve: Id };
+  | { readonly kind: 'radius'; readonly curve: Id }
+  | { readonly kind: 'constraintValue'; readonly constraint: Id };
 
 /** One value row: editable when it carries a target. */
 export interface Field {
@@ -87,19 +88,12 @@ export type ParsedNumber = { readonly ok: true; readonly value: number } | { rea
 
 // ── Angles ───────────────────────────────────────────────────────────────
 
-/**
- * Direction of a vector in degrees, counterclockwise on screen. The SVG Y
- * axis points down, so a line toward the upper right reads +45°.
- */
-export function screenAngle(dx: number, dy: number): number {
-  const deg = (Math.atan2(-dy, dx) * 180) / Math.PI;
-  return deg === 0 ? 0 : deg;
-}
+/** The panel's readouts share the core angle convention; re-exported for its tests. */
+export { screenAngle };
 
 /** Polar angle in degrees, normalized to [0, 360). */
 export function screenDeg(radians: number): number {
-  const deg = (-radians * 180) / Math.PI;
-  return ((deg % 360) + 360) % 360;
+  return normalizeDeg((-radians * 180) / Math.PI);
 }
 
 // ── Fields ───────────────────────────────────────────────────────────────
@@ -378,11 +372,62 @@ function multipleEntities(selected: readonly Entity[], ctx: ModelContext): Prope
   return { title: t.t('properties.selected', { count: selected.length }), status: undefined, sections };
 }
 
+/** One selected constraint: a dimension gets an editable value, the rest just a name. */
+function singleConstraint(c: Constraint, ctx: ModelContext): PropertiesModel {
+  const { sketch, names, t } = ctx;
+  const label = t.t(`constraints.${c.kind}`);
+  const value = constraintValue(c, sketch.params);
+  const sections: Section[] =
+    value === undefined
+      ? // Non-dimension constraints (coincident, horizontal, …) have nothing to edit.
+        []
+      : [
+          {
+            kind: 'fields',
+            title: label,
+            fields: [
+              {
+                key: `${c.id}.value`,
+                label,
+                value,
+                editable: true,
+                target: { kind: 'constraintValue', constraint: c.id },
+              },
+            ],
+          },
+        ];
+  // Constraint status is tracked per entity, not per constraint, so there is no badge.
+  return { title: names.constraint(c), status: undefined, sections };
+}
+
+function multipleConstraints(constraints: readonly Constraint[], ctx: ModelContext): PropertiesModel {
+  const { sketch, names, t } = ctx;
+  const rows: Row[] = constraints.map((c) => {
+    const value = constraintValue(c, sketch.params);
+    return {
+      key: `${c.id}.value`,
+      label: names.constraint(c),
+      // Empty rather than a dash: a non-dimension constraint simply has no value.
+      text: value === undefined ? '' : t.number(value, 2),
+    };
+  });
+  return {
+    title: t.t('properties.selected', { count: constraints.length }),
+    status: undefined,
+    sections: [{ kind: 'rows', title: t.t('browser.constraints'), rows }],
+  };
+}
+
 /** Everything the properties panel shows for the current selection. */
 export function buildModel(ctx: ModelContext): PropertiesModel {
   const { sketch, selection } = ctx;
   const selected = sketch.entities.filter((e) => selection.has(e.id));
+  const constraints = sketch.constraints.filter((c) => selection.has(c.id));
+  // A mixed entity+constraint selection keeps the entity behaviour: entities win,
+  // and constraints only get their own panel when they are the whole selection.
   if (selected.length === 1) return singleEntity(selected[0]!, ctx);
   if (selected.length > 1) return multipleEntities(selected, ctx);
+  if (constraints.length === 1) return singleConstraint(constraints[0]!, ctx);
+  if (constraints.length > 1) return multipleConstraints(constraints, ctx);
   return sketchSummary(ctx);
 }
