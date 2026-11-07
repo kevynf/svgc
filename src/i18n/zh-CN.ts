@@ -92,6 +92,8 @@ export const zhCN = {
     pickSecondObject: '选择第二个对象',
     dimension: '选择要标注的对象',
     dimensionSecond: '选择第二个对象',
+    dimensionPlace: '移动光标放置尺寸，单击确定位置',
+    dimensionValue: '输入尺寸值，Enter 应用，Esc 取消',
     incompatible: '无法在该对象之间应用此约束',
     redundant: '该约束是冗余的，未添加',
     conflict: {
