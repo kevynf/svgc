@@ -1,11 +1,24 @@
 import { constraintRefs } from '../core/edit';
-import { angleOf, arcParams, distance } from '../core/geometry';
+import {
+  add,
+  angleOf,
+  arcParams,
+  closestOnSegment,
+  distance,
+  lineIntersection,
+  midpoint,
+  scaled,
+  segmentNormal,
+  sub,
+  unit,
+} from '../core/geometry';
 import type { Vec2 } from '../core/geometry';
 import type { Arc, Circle, Constraint, Entity, Id, Line, Point } from '../core/model';
 import { indexEntities } from '../core/sketch';
 import type { EntityIndex, Sketch } from '../core/sketch';
 import { constraintIcon } from '../ui/constraint-icons';
 import type { ConstraintGlyph } from '../ui/constraint-icons';
+import { DIMENSION_KINDS, dimensionLayout } from './dimensions';
 import './constraints.css';
 
 /**
@@ -84,8 +97,14 @@ export interface ConstraintSymbolState {
 }
 
 /**
- * Where every drawable constraint's symbol goes, in world coordinates.
- * `distance`, `radius` and `angle` get no symbol yet (Phase 4 dimensions).
+ * Where every drawable constraint's symbol goes, in world coordinates. The
+ * three dimension kinds (`distance`, `radius`, `angle`) anchor at the value
+ * text `dimensions.ts` lays out for them, since that is what the user reads;
+ * the dimension graphics around it — dimension line, witness lines, arrowheads,
+ * arc — are drawn by the renderer from that module, not from this one.
+ * `separate` never moves those three, so their anchor is always exactly the
+ * text on screen and a click on it picks the dimension; the symbols that give
+ * way are the ordinary glyph chips around them.
  */
 export function constraintPlacements(
   sketch: Sketch,
@@ -155,7 +174,7 @@ function constraintAnchor(c: Constraint, index: EntityIndex, scale: number): Anc
       const seg = segment(c.a, c.b, index);
       if (seg === undefined) return undefined;
       // Offset perpendicular, on the outward side of a clockwise outline.
-      const n = outward(seg);
+      const n = segmentNormal(seg.a, seg.b);
       const mid = midpoint(seg.a, seg.b);
       return { glyph: c.kind, at: shift(mid, scale, n.x * OFFSET_PX, n.y * OFFSET_PX) };
     }
@@ -187,12 +206,34 @@ function constraintAnchor(c: Constraint, index: EntityIndex, scale: number): Anc
     }
     case 'distance':
     case 'radius':
-    case 'angle':
-      return undefined;
+    case 'angle': {
+      // The dimension graphics are the renderer's job (see `dimensions.ts`), so
+      // there is no chip here: the value text is the symbol, and this anchor —
+      // which `separate` never moves — is what a click on that text picks up.
+      const layout = dimensionLayout(c, index, scale);
+      return layout === undefined ? undefined : { glyph: c.kind, at: layout.textAt };
+    }
   }
 }
 
-/** Nudges symbols that land on top of each other, in screen px, keeping sketch order. */
+/**
+ * Glyphs the renderer draws as CAD dimensions — dimension line, witness lines,
+ * arrowheads and the value text — so no chip is built for them here: the value
+ * text is the symbol. They stay in `constraintPlacements`, because `hitConstraint`
+ * still has to pick them up for hover, selection and editing, and `separate`
+ * pins them so that pick point stays on the text the user reads. The list
+ * itself is `dimensions.ts`'s, since that module decides which kinds carry a
+ * value; only the glyph type is local.
+ */
+const DIMENSION_GLYPHS: readonly ConstraintGlyph[] = DIMENSION_KINDS;
+
+/**
+ * Nudges symbols that land on top of each other, in screen px, keeping sketch
+ * order. A dimension is exempt: its pick point is the value text `view.ts`
+ * draws at `dimensionLayout(...).textAt`, so nudging it would drag
+ * `hitConstraint` off the text the user sees and clicks. It still registers
+ * its position, so the ordinary chips around it are the ones that give way.
+ */
 function separate(anchors: readonly ConstraintPlacement[], scale: number): readonly ConstraintPlacement[] {
   const k = 1 / Math.max(scale, MIN_SCALE);
   const gap = MIN_GAP_PX * k;
@@ -200,7 +241,7 @@ function separate(anchors: readonly ConstraintPlacement[], scale: number): reado
   const out: ConstraintPlacement[] = [];
   for (const anchor of anchors) {
     let at = anchor.at;
-    if (taken.some((t) => distance(t, at) < gap)) {
+    if (!DIMENSION_GLYPHS.includes(anchor.glyph) && taken.some((t) => distance(t, at) < gap)) {
       const nudge = NUDGES_PX.find((n) =>
         taken.every((t) => distance(t, { x: at.x + n.x * k, y: at.y + n.y * k }) >= gap),
       );
@@ -228,45 +269,6 @@ function pos(p: Point): Vec2 {
 function shift(p: Vec2, scale: number, dx: number, dy: number): Vec2 {
   const k = 1 / Math.max(scale, MIN_SCALE);
   return { x: p.x + dx * k, y: p.y + dy * k };
-}
-
-function add(a: Vec2, b: Vec2): Vec2 {
-  return { x: a.x + b.x, y: a.y + b.y };
-}
-
-function sub(a: Vec2, b: Vec2): Vec2 {
-  return { x: a.x - b.x, y: a.y - b.y };
-}
-
-function scaleVec(v: Vec2, k: number): Vec2 {
-  return { x: v.x * k, y: v.y * k };
-}
-
-function unit(v: Vec2): Vec2 | undefined {
-  const len = Math.hypot(v.x, v.y);
-  return len === 0 ? undefined : { x: v.x / len, y: v.y / len };
-}
-
-function midpoint(a: Vec2, b: Vec2): Vec2 {
-  return { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 };
-}
-
-/** Closest point to `p` on the segment a–b. */
-function closestOnSegment(p: Vec2, a: Vec2, b: Vec2): Vec2 {
-  const d = sub(b, a);
-  const len2 = d.x * d.x + d.y * d.y;
-  const t = len2 === 0 ? 0 : Math.max(0, Math.min(1, ((p.x - a.x) * d.x + (p.y - a.y) * d.y) / len2));
-  return { x: a.x + t * d.x, y: a.y + t * d.y };
-}
-
-/**
- * Unit normal to a segment, on the outward side of a clockwise outline: above
- * a left-to-right line, right of a top-to-bottom one.
- */
-function outward({ a, b }: Segment): Vec2 {
-  const d = sub(b, a);
-  const len = Math.hypot(d.x, d.y);
-  return len === 0 ? { x: 0, y: -1 } : { x: d.y / len, y: -d.x / len };
 }
 
 /** The segment a constraint acts on: two points, or a line's own endpoints. */
@@ -331,7 +333,7 @@ function onCurve(e: Circle | Arc, index: EntityIndex): Vec2 | undefined {
 function equalOnLine(e: Line, index: EntityIndex, scale: number): Anchor | undefined {
   const seg = segment(e.id, undefined, index);
   if (seg === undefined) return undefined;
-  const n = outward(seg);
+  const n = segmentNormal(seg.a, seg.b);
   const mid = midpoint(seg.a, seg.b);
   return { glyph: 'equal', at: shift(mid, scale, -n.x * OFFSET_PX, -n.y * OFFSET_PX) };
 }
@@ -416,16 +418,9 @@ function lineTouch(x: Line, y: Line, index: EntityIndex): Vec2 | undefined {
   const sx = segment(x.id, undefined, index);
   const sy = segment(y.id, undefined, index);
   if (sx === undefined || sy === undefined) return undefined;
-  return intersection(sx.a, sx.b, sy.a, sy.b) ?? midpoint(midpoint(sx.a, sx.b), midpoint(sy.a, sy.b));
-}
-
-function intersection(p1: Vec2, p2: Vec2, p3: Vec2, p4: Vec2): Vec2 | undefined {
-  const d1 = sub(p2, p1);
-  const d2 = sub(p4, p3);
-  const den = d1.x * d2.y - d1.y * d2.x;
-  if (den === 0) return undefined;
-  const t = ((p3.x - p1.x) * d2.y - (p3.y - p1.y) * d2.x) / den;
-  return { x: p1.x + t * d1.x, y: p1.y + t * d1.y };
+  return (
+    lineIntersection(sx.a, sx.b, sy.a, sy.b) ?? midpoint(midpoint(sx.a, sx.b), midpoint(sy.a, sy.b))
+  );
 }
 
 /** The foot of the perpendicular from the curve's center to the line. */
@@ -437,7 +432,7 @@ function lineCurveTouch(line: Entity, curve: Entity, index: EntityIndex): Vec2 |
   const foot = closestOnSegment(ci.center, seg.a, seg.b);
   const dir = unit(sub(foot, ci.center));
   if (dir === undefined) return undefined;
-  const at = add(ci.center, scaleVec(dir, ci.radius));
+  const at = add(ci.center, scaled(dir, ci.radius));
   if (onCircleish(ci, at)) return at;
   // The touch point falls off the arc: use the endpoint nearest the line.
   if (curve.kind !== 'arc') return at;
@@ -454,7 +449,7 @@ function circleTouch(x: Circleish, y: Circleish): Vec2 {
   const d = distance(x.center, y.center);
   const external = Math.abs(d - x.radius - y.radius) <= Math.abs(d - Math.abs(x.radius - y.radius));
   const flip = !external && x.radius < y.radius;
-  return add(x.center, scaleVec(toward, flip ? -x.radius : x.radius));
+  return add(x.center, scaled(toward, flip ? -x.radius : x.radius));
 }
 
 // ── Rendering ───────────────────────────────────────────────────────────────
@@ -480,7 +475,9 @@ export function constraintElements(
   scale: number,
   state: ConstraintSymbolState = {},
 ): SVGElement[] {
-  return placements.map((placement) => constraintSymbol(placement, s, scale, state));
+  return placements
+    .filter((placement) => !DIMENSION_GLYPHS.includes(placement.glyph))
+    .map((placement) => constraintSymbol(placement, s, scale, state));
 }
 
 function constraintSymbol(

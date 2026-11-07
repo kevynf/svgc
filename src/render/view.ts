@@ -1,13 +1,16 @@
 import { arcParams } from '../core/geometry';
 import type { Vec2 } from '../core/geometry';
-import type { Entity, Id, Point } from '../core/model';
-import type { Sketch } from '../core/sketch';
+import type { Constraint, Entity, Id, Point } from '../core/model';
+import { indexEntities } from '../core/sketch';
+import type { EntityIndex, Sketch } from '../core/sketch';
 import type { OverlayShape } from '../editor/command';
 import type { InferredConstraint } from '../editor/inference';
 import { artboardElements, artboardHandles } from './artboard';
 import { constraintElements, constraintPlacements, hitConstraint } from './constraints';
 import { constraintIcon } from '../ui/constraint-icons';
 import type { ConstraintGlyph } from '../ui/constraint-icons';
+import { dimensionLayout, isDimensionKind } from './dimensions';
+import type { DimensionArrow, DimensionArc } from './dimensions';
 import { pointLookup } from '../editor/hit';
 import type { PointLookup } from '../editor/hit';
 import type { Viewport } from '../editor/viewport';
@@ -45,6 +48,8 @@ export interface ViewState {
   readonly cursor: Vec2 | undefined;
   /** F8/F9: draw the constraint symbols. */
   readonly showConstraints: boolean;
+  /** Value text of a dimension constraint, e.g. "R40" or "120.5"; undefined draws no text. */
+  readonly dimensionLabel?: (constraint: Constraint) => string | undefined;
 }
 
 /** Point radius on screen, by role. */
@@ -76,11 +81,19 @@ export class SketchView {
     this.artboard.replaceChildren(...artboardElements(sketch.artboard, vp));
     this.renderConstraints(state, s);
 
+    // The overlay layer draws last, on top of the geometry, so a command's
+    // operand highlight is merged into the geometry classes rather than drawn
+    // over it (see `overlayElements`, which ignores 'highlight' shapes).
+    const highlight = new Set<Id>([
+      ...state.highlight,
+      ...state.overlay.flatMap((shape) => (shape.kind === 'highlight' ? shape.ids : [])),
+    ]);
+
     const classes = (e: Entity, base: string) => {
       const list = [base];
       if (e.kind !== 'point' && e.construction === true) list.push('construction');
       if (state.constrained.has(e.id)) list.push('constrained');
-      if (state.highlight.has(e.id)) list.push('hover');
+      if (highlight.has(e.id)) list.push('hover');
       if (state.selection.has(e.id)) list.push('selected');
       return list.join(' ');
     };
@@ -120,14 +133,29 @@ export class SketchView {
       return;
     }
     const { sketch, viewport: vp } = state;
+    // The entity index is shared by every dimension below, so it is built once
+    // per render and reused; the per-constraint work is then just a lookup.
+    const index = indexEntities(sketch);
     const placements = constraintPlacements(sketch, vp.scale);
     const hovered = state.cursor === undefined ? undefined : hitConstraint(placements, state.cursor, 12 / vp.scale);
-    this.constraints.replaceChildren(
-      ...constraintElements(placements, s, vp.scale, {
-        hovered,
-        selected: new Set([...state.selection].filter((id) => sketch.constraints.some((c) => c.id === id))),
-      }),
-    );
+    const selected = new Set([...state.selection].filter((id) => sketch.constraints.some((c) => c.id === id)));
+    const constraints = new Map(sketch.constraints.map((c) => [c.id, c] as const));
+    const dimensions = placements.flatMap((placement) => {
+      const c = constraints.get(placement.constraint);
+      // Only the three dimension kinds carry a measured value; every other
+      // constraint keeps the glyph chip `constraintElements` builds below.
+      if (c === undefined || !isDimensionKind(c.kind)) return [];
+      const el = dimensionElement(c, index, s, vp.scale, {
+        hovered: hovered === placement.constraint,
+        selected: selected.has(placement.constraint),
+        label: state.dimensionLabel?.(c),
+      });
+      return el === undefined ? [] : [el];
+    });
+    const symbols = constraintElements(placements, s, vp.scale, { hovered, selected });
+    // Opaque glyph chips read as badges on top, so the dimension graphics go
+    // underneath them; the two are spatially separated, so order is cosmetic.
+    this.constraints.replaceChildren(...dimensions, ...symbols);
   }
 
   private renderGrid(vp: Viewport): void {
@@ -169,6 +197,8 @@ const GLYPH_PX = 16;
 function overlayElements(shape: OverlayShape, sketch: Sketch, s: (p: Vec2) => Vec2, scale: number, vp: Viewport): SVGElement[] {
   switch (shape.kind) {
     case 'highlight':
+      // Drawn by folding these ids into the geometry classes in `render`: the
+      // overlay layer paints last, on top of the geometry it would highlight.
       return [];
     case 'selectionBox': {
       const { box } = shape;
@@ -271,4 +301,101 @@ function curveElement(
       });
     }
   }
+}
+
+/** Arrowhead length and half-width on screen, in px — a readable tick that holds up when zoomed out. */
+const ARROW_LENGTH_PX = 7;
+const ARROW_HALF_WIDTH_PX = 3;
+
+/**
+ * One dimension's graphics: the measured value a `distance`, `radius` or
+ * `angle` constraint carries, drawn the way a CAD system does — a dimension
+ * line, witness lines, arrowheads, an arc for an angle, and the value text.
+ * `dimensions.ts` lays all of it out in world coordinates; it is mapped
+ * through `s` here so the strokes keep a constant on-screen weight at any
+ * zoom, like the rest of the canvas. Returns undefined for degenerate
+ * geometry, which the caller then skips.
+ */
+function dimensionElement(
+  c: Constraint,
+  index: EntityIndex,
+  s: (p: Vec2) => Vec2,
+  scale: number,
+  state: { readonly hovered: boolean; readonly selected: boolean; readonly label: string | undefined },
+): SVGElement | undefined {
+  const layout = dimensionLayout(c, index, scale);
+  if (layout === undefined) return undefined;
+  const g = svgElement('g', { class: 'dimension', 'data-constraint': c.id });
+  if (state.hovered) g.classList.add('hover');
+  if (state.selected) g.classList.add('selected');
+
+  // A distance draws its dimension line first and its witness lines after it; a
+  // radius's leader is the whole dimension; an angle has no lines, just the arc.
+  const leader = c.kind === 'radius' ? 'dimension-leader' : undefined;
+  for (let i = 0; i < layout.lines.length; i++) {
+    const seg = layout.lines[i];
+    if (seg === undefined) continue;
+    const a = s(seg[0]);
+    const b = s(seg[1]);
+    g.append(
+      svgElement('line', {
+        class: leader ?? (i === 0 ? 'dimension-line' : 'dimension-witness'),
+        x1: a.x,
+        y1: a.y,
+        x2: b.x,
+        y2: b.y,
+      }),
+    );
+  }
+  if (layout.arc !== undefined) g.append(dimensionArc(layout.arc, s));
+  for (const arrow of layout.arrows) g.append(dimensionArrow(arrow, s));
+  if (state.label !== undefined) {
+    const at = s(layout.textAt);
+    const text = svgElement('text', {
+      class: 'dimension-text',
+      x: at.x,
+      y: at.y,
+      'text-anchor': 'middle',
+      'dominant-baseline': 'middle',
+    });
+    text.textContent = state.label;
+    g.append(text);
+  }
+  return g;
+}
+
+/**
+ * An angle dimension's arc, built with `arcPath` so the clockwise-on-screen
+ * sweep flags come out right: the two endpoints are the arc's own start and
+ * end angles, and everything is then mapped into screen space.
+ */
+function dimensionArc(arc: DimensionArc, s: (p: Vec2) => Vec2): SVGElement {
+  const at = (angle: number) => ({
+    x: arc.center.x + arc.radius * Math.cos(angle),
+    y: arc.center.y + arc.radius * Math.sin(angle),
+  });
+  return svgElement('path', {
+    class: 'dimension-arc',
+    d: arcPath(s(arc.center), s(at(arc.startAngle)), s(at(arc.endAngle))),
+  });
+}
+
+/**
+ * A filled arrowhead in screen space: a triangle with its tip at the mapped
+ * point, one arrow-length deep, pointing along the layout's screen angle.
+ * Drawn as a path rather than an SVG marker so it keeps the same on-screen
+ * size at any zoom, like the dimension line it caps.
+ */
+function dimensionArrow(arrow: DimensionArrow, s: (p: Vec2) => Vec2): SVGElement {
+  const tip = s(arrow.at);
+  const dx = Math.cos(arrow.angle);
+  const dy = Math.sin(arrow.angle);
+  const bx = tip.x - ARROW_LENGTH_PX * dx;
+  const by = tip.y - ARROW_LENGTH_PX * dy;
+  const nx = ARROW_HALF_WIDTH_PX * dy;
+  const ny = ARROW_HALF_WIDTH_PX * dx;
+  return svgElement('path', {
+    class: 'dimension-arrow',
+    d: `M ${tip.x} ${tip.y} L ${bx - nx} ${by + ny} L ${bx + nx} ${by - ny} Z`,
+  });
 }

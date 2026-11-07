@@ -1,4 +1,4 @@
-import { constraintRefs } from '../core/edit';
+import { constraintRefs, constraintValue } from '../core/edit';
 import type { Vec2 } from '../core/geometry';
 import type { Id } from '../core/model';
 import type { MenuItem, PointerInput } from '../editor/command';
@@ -299,6 +299,13 @@ export class App {
       overlay: e.activeCommand.overlay?.() ?? [],
       cursor: e.cursorWorld,
       showConstraints: settings.value.showConstraints,
+      dimensionLabel: (c) => {
+        const value = constraintValue(c, e.sketch.params);
+        if (value === undefined) return undefined;
+        // A radius reads "R40" the way Inventor draws it; the rest are bare numbers.
+        const text = this.t.number(value, 1);
+        return c.kind === 'radius' ? `R${text}` : text;
+      },
     });
     this.canvas.dataset['command'] = e.activeCommand.id;
     this.canvas.classList.toggle('panning', this.pan !== undefined);
