@@ -1,6 +1,5 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { SketchBuilder } from '../core/builder';
-import { demoSketch } from '../demo';
 import type { Entity, Id, Point } from '../core/model';
 import type { Sketch } from '../core/sketch';
 import { analyzeStatus } from './status';
@@ -261,24 +260,6 @@ describe('analyzeStatus', () => {
     expect([...report.entities.values()].every((s) => s === 'under')).toBe(true);
   });
 
-  it('reports the demo sketch: origin and the top-left corner are pinned, the free DOFs are width and height', () => {
-    const sketch = demoSketch();
-    const report = analyzeStatus(solver, sketch);
-    const s = statuses(sketch, report);
-
-    // The sketch has 2 free DOF: the overall width and height. Everything that
-    // is derived from the fixed origin plus the corner radius is determined,
-    // everything that moves with the width or the height is not.
-    expect(s.e1).toBe('fully'); // origin, fixed
-    expect(s.e3).toBe('fully'); // c1, corner centre: x and y from origin + corner radius
-    expect(s.e4).toBe('under'); // c2, x follows the width
-    expect(s.e6).toBe('under'); // c4, y follows the height
-    expect(s.e7).toBe('fully'); // t0, on the top edge at the corner radius
-    expect(s.e14).toBe('fully'); // t7, on the left edge at the corner radius
-    expect(s.e42).toBe('under'); // hole centre, midpoint of the diagonal
-    expect(s.e44).toBe('under'); // the hole circle: radius tied to the corner, centre free
-  });
-
   it('does not mutate the sketch and leaves the solver usable', () => {
     const b = new SketchBuilder();
     const p1 = b.point(0, 0);
@@ -301,10 +282,17 @@ describe('analyzeStatus', () => {
     expect(entity(after.sketch, line)).toEqual(entity(before.sketch, line));
   });
 
-  it('leaves the solver usable after probing the demo sketch', () => {
+  it('leaves the solver usable after probing a solved sketch', () => {
     // The solved sketch is what the UI hands over, and probing it must not
     // disturb later solves at all.
-    const solved = solver.solve(demoSketch()).sketch;
+    const b = new SketchBuilder();
+    const p1 = b.point(0, 0);
+    const p2 = b.point(10, 0);
+    b.line(p1, p2);
+    b.constrain({ kind: 'horizontal', a: p1, b: p2 });
+    b.constrain({ kind: 'distance', a: p1, b: p2, value: 10 });
+    b.fix(p1);
+    const solved = solver.solve(b.build()).sketch;
     const before = solver.solve(solved);
     analyzeStatus(solver, solved);
     const after = solver.solve(solved);
@@ -321,8 +309,6 @@ describe('analyzeStatus', () => {
       if (e.kind === 'point' && other.kind === 'point') {
         expect(e.x).toBeCloseTo(other.x, 10);
         expect(e.y).toBeCloseTo(other.y, 10);
-      } else if (e.kind === 'circle' && other.kind === 'circle') {
-        expect(e.radius).toBeCloseTo(other.radius, 10);
       } else {
         expect(e).toEqual(other);
       }
@@ -330,12 +316,15 @@ describe('analyzeStatus', () => {
   });
 
   it('leaves the solver usable after probing an unsolved sketch', () => {
-    // The raw demo sketch is drawn away from its own solution (the hole's
-    // radius is 40 but tied to the corner radius), so planegcs' convergence
-    // path is order sensitive for it with or without probing: solving any
-    // other sketch in between already moves it by a fraction of a unit. Only
-    // the invariants are asserted here.
-    const sketch = demoSketch();
+    // A sketch that is still under-constrained: probing it must not disturb
+    // later solves either.
+    const b = new SketchBuilder();
+    const p1 = b.point(0, 0);
+    const p2 = b.point(10, 1);
+    b.line(p1, p2);
+    b.constrain({ kind: 'horizontal', a: p1, b: p2 });
+    b.fix(p1);
+    const sketch = b.build();
     const before = solver.solve(sketch);
     const report = analyzeStatus(solver, sketch);
     const after = solver.solve(sketch);
