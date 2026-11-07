@@ -69,7 +69,9 @@ export type Constraint =
    * carry a `placement` — where the user put the dimension when they placed it,
    * in the units the per-kind comments give. It is presentation only: the
    * solver ignores it, and absent means the default anchor (see
-   * `render/dimensions.ts`).
+   * `render/dimensions.ts`). A `driven` one is a measurement that is drawn but
+   * never enforced: the solver ignores it, so the geometry stays exactly as free
+   * as it was.
    */
   /**
    * Point-to-point, or point-to-line when either side is a line. `placement` is
@@ -79,13 +81,13 @@ export type Constraint =
    * distance (world px) along the line, from the perpendicular foot, that the
    * dimension line is shifted.
    */
-  | { readonly kind: 'distance'; readonly id: Id; readonly a: Id; readonly b: Id; readonly value: Value; readonly placement?: number }
+  | { readonly kind: 'distance'; readonly id: Id; readonly a: Id; readonly b: Id; readonly value: Value; readonly placement?: number; readonly driven?: boolean }
   /** `placement` is the leader's direction in radians — atan2, Y pointing down — clamped onto the arc's sweep for an arc. */
-  | { readonly kind: 'radius'; readonly id: Id; readonly curve: Id; readonly value: Value; readonly placement?: number }
+  | { readonly kind: 'radius'; readonly id: Id; readonly curve: Id; readonly value: Value; readonly placement?: number; readonly driven?: boolean }
   /**
    * Degrees, measured counterclockwise on screen from line `a` to line `b`.
    * `placement` is the dimension arc's radius, in world px.
    */
-  | { readonly kind: 'angle'; readonly id: Id; readonly a: Id; readonly b: Id; readonly value: Value; readonly placement?: number };
+  | { readonly kind: 'angle'; readonly id: Id; readonly a: Id; readonly b: Id; readonly value: Value; readonly placement?: number; readonly driven?: boolean };
 
 export type ConstraintKind = Constraint['kind'];

@@ -114,6 +114,47 @@ describe('translate', () => {
     ]);
   });
 
+  it('lowers a driven dimension to nothing, so it constrains nothing', () => {
+    const b = new SketchBuilder();
+    const a = b.point(0, 0);
+    const c = b.point(60, 30);
+    const line = b.line(a, c);
+    const w = b.point(60, 90);
+    const other = b.line(c, w);
+    const center = b.point(200, 0);
+    const circle = b.circle(center, 30);
+    b.constrain({ kind: 'distance', a, b: c, value: 67, driven: true });
+    b.constrain({ kind: 'radius', curve: circle, value: 30, driven: true });
+    b.constrain({ kind: 'angle', a: line, b: other, value: 45, driven: true });
+
+    const { primitives, constraintOf } = translate(b.build());
+    // Points and curves only: no constraint primitive was pushed, so a driven
+    // dimension is never even mapped back to a sketch constraint.
+    expect(primitives.map((p) => p.type)).toEqual(['point', 'point', 'point', 'point', 'line', 'line', 'circle']);
+    expect(constraintOf.size).toBe(0);
+  });
+
+  it('lowers the same dimensions to one primitive each when they are not driven', () => {
+    const b = new SketchBuilder();
+    const a = b.point(0, 0);
+    const c = b.point(60, 30);
+    const line = b.line(a, c);
+    const w = b.point(60, 90);
+    const other = b.line(c, w);
+    const center = b.point(200, 0);
+    const circle = b.circle(center, 30);
+    b.constrain({ kind: 'distance', a, b: c, value: 67 });
+    b.constrain({ kind: 'radius', curve: circle, value: 30 });
+    b.constrain({ kind: 'angle', a: line, b: other, value: 45 });
+
+    const { primitives, constraintOf } = translate(b.build());
+    expect(primitives.slice(-3).map((p) => p.type)).toEqual(['p2p_distance', 'circle_radius', 'l2l_angle_ll']);
+    // planegcs measures angles in math orientation, so counterclockwise on
+    // screen — positive here — is negative there.
+    expect(primitives.at(-1)).toMatchObject({ type: 'l2l_angle_ll', angle: -Math.PI / 4 });
+    expect(constraintOf.size).toBe(3);
+  });
+
   it('rejects invalid operands', () => {
     const b = new SketchBuilder();
     const p1 = b.point(0, 0);

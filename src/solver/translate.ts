@@ -301,6 +301,10 @@ function lowerConstraint(
       return [{ type: 'p2p_symmetric_ppl', p1_id: ref(c.a), p2_id: ref(c.b), l_id: ref(c.line) }];
 
     case 'distance': {
+      // A driven dimension is drawn but never enforced: it is lowered to no
+      // primitive at all, so it takes away no degree of freedom and can never
+      // be the member of a conflicting or redundant group.
+      if (c.driven === true) return [];
       const distance = value(c.value);
       if (!(distance >= 0)) invalid();
       const pair = `${kindOf(c.a)}-${kindOf(c.b)}`;
@@ -318,6 +322,8 @@ function lowerConstraint(
     }
 
     case 'radius': {
+      // A driven radius is drawn but never enforced, so it lowers to nothing.
+      if (c.driven === true) return [];
       const radius = value(c.value);
       if (!(radius > 0)) invalid();
       const curve = expectEntity(index, c.curve, 'circle', 'arc');
@@ -327,6 +333,8 @@ function lowerConstraint(
     }
 
     case 'angle':
+      // A driven angle is drawn but never enforced, so it lowers to nothing.
+      if (c.driven === true) return [];
       lines(c.a, c.b);
       // planegcs measures angles in math orientation; with Y pointing down,
       // counterclockwise on screen is a negative angle.

@@ -1,36 +1,18 @@
 import type { ConstraintInput } from '../../core/builder';
 import { constraintValue } from '../../core/edit';
 import { evaluateSource } from '../../core/expr';
-import { arcParams, distance, lineAngleDeg, midpoint, perpendicularDistance } from '../../core/geometry';
+import { midpoint } from '../../core/geometry';
 import type { Vec2 } from '../../core/geometry';
 import type { Constraint, Id, Value } from '../../core/model';
 import { indexEntities } from '../../core/sketch';
 import { layoutDimension, resolveOffset } from '../../render/dimensions';
-import type { DimensionSpec } from '../../render/dimensions';
 import type { EditRequest, Message, OverlayShape, PointerInput } from '../command';
 import { hitTest } from '../hit';
 import { ConstraintCommand } from './constrain';
-import type { Operand, OperandKind, OperandSpec } from './constrain';
+import type { Operand, OperandKind } from './constrain';
+import { endsOf, isCurve, measure, OBJECT, SECOND_OBJECT, specOf } from './dimension-spec';
+import type { DimensionConstraint } from './dimension-spec';
 import { HIT_PX } from './select';
-
-/** Every kind is pickable: the constraint follows from what the user picked. */
-const ANY: readonly OperandKind[] = ['point', 'line', 'circle', 'arc'];
-const OBJECT: OperandSpec = { kinds: ANY, prompt: 'prompts.dimension' };
-const SECOND_OBJECT: OperandSpec = { kinds: ANY, prompt: 'prompts.dimensionSecond' };
-
-/** A curve is dimensioned by a single pick, so it can never take a second one. */
-function isCurve(kind: OperandKind): boolean {
-  return kind === 'circle' || kind === 'arc';
-}
-
-/** The dimensions `build()` produces: the constraints that carry a measured value. */
-type DimensionConstraint = Extract<ConstraintInput, { kind: 'distance' | 'radius' | 'angle' }>;
-
-/** A distance measured between two points: what a line's length is. */
-type PointDistance = Extract<ConstraintInput, { kind: 'distance' }>;
-
-/** An angle measured between two lines. */
-type LineAngle = Extract<ConstraintInput, { kind: 'angle' }>;
 
 /** The dimension follows the cursor until the user puts it somewhere. */
 interface Placing {
@@ -87,91 +69,12 @@ export class DimensionCommand extends ConstraintCommand {
   }
 
   protected override build(picks: readonly Operand[]): ConstraintInput | undefined {
+    const measured = measure(this.editor.sketch, picks);
+    const [first, second] = picks;
     // Only the single-line case remembers its line; every other build starts
     // from a clean slate, so a stale one can never convert a later dimension.
-    this.lengthOf = undefined;
-    const [first, second] = picks;
-    if (first === undefined) return undefined;
-    // A curve carries its own dimension, so it completes on the first pick.
-    if (isCurve(first.kind)) return this.radius(first.id);
-    // So does a line on its own: the length of one is the distance between
-    // its ends, so a single pick is the whole dimension.
-    if (first.kind === 'line' && second === undefined) return this.length(first.id);
-    if (second === undefined) return undefined;
-    switch (second.kind) {
-      case 'point':
-        return first.kind === 'point' ? this.spread(first.id, second.id) : this.offset(second.id, first.id);
-      case 'line':
-        return first.kind === 'line' ? this.angle(first.id, second.id) : this.offset(first.id, second.id);
-      default:
-        return undefined;
-    }
-  }
-
-  /** Radius of a circle, or of an arc measured through its three points. */
-  private radius(curve: Id): ConstraintInput | undefined {
-    const e = this.editor.sketch.entities.find((x) => x.id === curve);
-    if (e?.kind === 'circle') return { kind: 'radius', curve, value: e.radius };
-    if (e?.kind !== 'arc') return undefined;
-    const [center, start, end] = [this.point(e.center), this.point(e.start), this.point(e.end)];
-    if (center === undefined || start === undefined || end === undefined) return undefined;
-    return { kind: 'radius', curve, value: arcParams(center, start, end).radius };
-  }
-
-  /**
-   * Length of a line: the distance between its two ends, measured end to end.
-   * It is a point-to-point distance, so the dimension is laid out parallel to
-   * the line with witness lines reaching to its ends.
-   */
-  private length(line: Id): ConstraintInput | undefined {
-    const e = this.editor.sketch.entities.find((x) => x.id === line);
-    if (e?.kind !== 'line') return undefined;
-    const measured = this.spread(e.p1, e.p2);
-    // A zero-length line has no direction to lay a dimension along, so the
-    // pick is left pending rather than stranding the command in placing.
-    if (measured === undefined || measured.value === 0) return undefined;
-    // Remembered, so a second line clicked while it is being placed can turn
-    // this into the angle between the two.
-    this.lengthOf = line;
+    this.lengthOf = second === undefined && first?.kind === 'line' && measured !== undefined ? first.id : undefined;
     return measured;
-  }
-
-  /** Distance between two points. */
-  private spread(a: Id, b: Id): PointDistance | undefined {
-    const [pa, pb] = [this.point(a), this.point(b)];
-    if (pa === undefined || pb === undefined) return undefined;
-    return { kind: 'distance', a, b, value: distance(pa, pb) };
-  }
-
-  /** Distance from a point to a line, the point first as the solver expects. */
-  private offset(point: Id, line: Id): ConstraintInput | undefined {
-    const p = this.point(point);
-    const ends = this.ends(line);
-    if (p === undefined || ends === undefined) return undefined;
-    return { kind: 'distance', a: point, b: line, value: perpendicularDistance(p, ends.a, ends.b) };
-  }
-
-  /** Degrees counterclockwise on screen, from line `a` to line `b`. */
-  private angle(a: Id, b: Id): LineAngle | undefined {
-    const [ea, eb] = [this.ends(a), this.ends(b)];
-    if (ea === undefined || eb === undefined) return undefined;
-    return { kind: 'angle', a, b, value: lineAngleDeg(ea.a, ea.b, eb.a, eb.b) };
-  }
-
-  /**
-   * Where an entity sits now. The editor holds the solved sketch, so these
-   * positions already account for every constraint applied so far.
-   */
-  private point(id: Id): Vec2 | undefined {
-    const e = this.editor.sketch.entities.find((x) => x.id === id);
-    return e?.kind === 'point' ? e : undefined;
-  }
-
-  private ends(id: Id): { a: Vec2; b: Vec2 } | undefined {
-    const e = this.editor.sketch.entities.find((x) => x.id === id);
-    if (e?.kind !== 'line') return undefined;
-    const [a, b] = [this.point(e.p1), this.point(e.p2)];
-    return a === undefined || b === undefined ? undefined : { a, b };
   }
 
   /**
@@ -193,7 +96,7 @@ export class DimensionCommand extends ConstraintCommand {
   private position(id: Id): Vec2 | undefined {
     const e = this.editor.sketch.entities.find((x) => x.id === id);
     if (e?.kind === 'point') return { x: e.x, y: e.y };
-    const ends = this.ends(id);
+    const ends = endsOf(this.editor.sketch, id);
     return ends === undefined ? undefined : midpoint(ends.a, ends.b);
   }
 
@@ -357,7 +260,10 @@ export class DimensionCommand extends ConstraintCommand {
     const first = phase.fromLine;
     const second = this.lineAt(at);
     if (first === undefined || second === undefined || second === first) return false;
-    const constraint = this.angle(first, second);
+    const constraint = measure(this.editor.sketch, [
+      { id: first, kind: 'line' },
+      { id: second, kind: 'line' },
+    ]);
     if (constraint === undefined) return false;
     this.phase = { kind: 'placing', constraint, cursor: at };
     this.editor.viewChanged();
@@ -427,16 +333,5 @@ export class DimensionCommand extends ConstraintCommand {
     this.cursor = undefined;
     this.lengthOf = undefined;
     this.editor.viewChanged();
-  }
-}
-
-/** What a dimensional constraint measures: its operands, in the order its kind lists them. */
-function specOf(c: DimensionConstraint): DimensionSpec {
-  switch (c.kind) {
-    case 'distance':
-    case 'angle':
-      return { kind: c.kind, operands: [c.a, c.b] };
-    case 'radius':
-      return { kind: 'radius', operands: [c.curve] };
   }
 }
