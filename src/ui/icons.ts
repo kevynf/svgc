@@ -17,6 +17,7 @@ import language from '@tabler/icons/outline/language.svg?raw';
 import line from '@tabler/icons/outline/line.svg?raw';
 import lineDashed from '@tabler/icons/outline/line-dashed.svg?raw';
 import lock from '@tabler/icons/outline/lock.svg?raw';
+import mathFunction from '@tabler/icons/outline/math-function.svg?raw';
 import parentheses from '@tabler/icons/outline/parentheses.svg?raw';
 import point from '@tabler/icons/outline/point.svg?raw';
 import pointer from '@tabler/icons/outline/pointer.svg?raw';
@@ -47,6 +48,7 @@ const sources = {
   horizontal: arrowsHorizontal,
   language,
   line,
+  mathFunction,
   mirror: flipHorizontal,
   offset: boxMargin,
   ok: check,

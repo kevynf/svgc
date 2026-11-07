@@ -1,6 +1,8 @@
 import { deleteItems, setConstraintValue, toggleConstruction } from '../core/edit';
 import type { Vec2 } from '../core/geometry';
 import type { Entity, Id, Value } from '../core/model';
+import { withParam, withParamExpression, withRenamedParam, withoutParam } from '../core/params';
+import type { ParamResult } from '../core/params';
 import type { Artboard, Sketch } from '../core/sketch';
 import type { Solver, SolveResult } from '../solver/solver';
 import { analyzeStatus } from '../solver/status';
@@ -11,6 +13,9 @@ import { sketchBounds } from './hit';
 import { Viewport } from './viewport';
 
 export type CommandFactory = (editor: Editor) => Command;
+
+/** A parameter edit's outcome: the core's reason, or a re-solve the sketch did not survive. */
+export type ParamEdit = ParamResult | { readonly ok: false; readonly error: 'solveFailed' };
 
 /**
  * Owns all editor state: the sketch (with undo history), the latest solve
@@ -209,6 +214,37 @@ export class Editor {
     // A parameter name the sketch does not define would make translate() throw a SketchError.
     if (typeof value === 'string' && this.sketch.params[value] === undefined) return;
     this.commit(setConstraintValue(this.sketch, id, value));
+  }
+
+  /** Adds a parameter. One undo step. */
+  addParam(name: string, expression: string): ParamEdit {
+    return this.applyParam(withParam(this.sketch, name, expression));
+  }
+
+  /** Replaces a parameter's expression. One undo step. */
+  setParam(name: string, expression: string): ParamEdit {
+    return this.applyParam(withParamExpression(this.sketch, name, expression));
+  }
+
+  /** Renames a parameter, rewriting the references to it. One undo step. */
+  renameParam(from: string, to: string): ParamEdit {
+    return this.applyParam(withRenamedParam(this.sketch, from, to));
+  }
+
+  /** Deletes a parameter; refused while something still references it. */
+  deleteParam(name: string): ParamEdit {
+    return this.applyParam(withoutParam(this.sketch, name));
+  }
+
+  /**
+   * Commits an accepted parameter edit as a single undo step. A rejected one is
+   * returned unchanged and nothing is committed: the dialog shows the reason
+   * inline, so no notice is raised here.
+   */
+  private applyParam(result: ParamResult): ParamEdit {
+    if (!result.ok) return result;
+    // A failed re-solve leaves the sketch untouched and commit() reports it.
+    return this.commit(result.sketch) ? result : { ok: false, error: 'solveFailed' };
   }
 
   // ── Selection and hover ────────────────────────────────────────────────

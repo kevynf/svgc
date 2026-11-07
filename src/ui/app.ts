@@ -11,6 +11,7 @@ import { SketchView } from '../render/view';
 import { Browser } from './browser';
 import { icon } from './icons';
 import { MarkingMenu } from './marking-menu';
+import { ParametersDialog } from './parameters';
 import { PropertiesPanel } from './properties';
 import { settings } from '../editor/settings';
 import { constraintPlacements, hitConstraint } from '../render/constraints';
@@ -82,12 +83,14 @@ export class App {
   /** Whether the user has typed in the value box, i.e. edited the measurement. */
   private editDirty = false;
   private readonly settingsDialog: ConstraintSettingsDialog;
+  private readonly parametersDialog: ParametersDialog;
 
   constructor({ editor, t, onLocaleChange }: AppOptions) {
     this.editor = editor;
     this.t = t;
     this.element.className = 'app';
     this.settingsDialog = new ConstraintSettingsDialog(t);
+    this.parametersDialog = new ParametersDialog(editor, t);
 
     this.ribbon = new Ribbon(t, this.panels());
     this.browser = new Browser(editor, t);
@@ -158,6 +161,7 @@ export class App {
     this.unsubscribe();
     this.settingsUnsubscribe();
     this.settingsDialog.close();
+    this.parametersDialog.close();
     this.aliases.reset();
     this.closeEdit();
     if (this.frame !== undefined) cancelAnimationFrame(this.frame);
@@ -592,6 +596,12 @@ export class App {
         icon: 'fix',
         enabled: true,
         run: () => this.settingsDialog.open(document.activeElement instanceof HTMLElement ? document.activeElement : undefined),
+      },
+      {
+        label: { key: 'parameters.label' },
+        icon: 'mathFunction',
+        enabled: true,
+        run: () => this.parametersDialog.open(document.activeElement instanceof HTMLElement ? document.activeElement : undefined),
       },
     );
     return items;
