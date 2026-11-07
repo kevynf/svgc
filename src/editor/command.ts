@@ -2,6 +2,7 @@ import type { Vec2 } from '../core/geometry';
 import type { Id } from '../core/model';
 import type { Artboard } from '../core/sketch';
 import type { Key, Params } from '../i18n/i18n';
+import type { DimensionLayout } from '../render/dimensions';
 import type { IconName } from '../ui/icons';
 import type { Alignment, InferredConstraint } from './inference';
 import type { Box } from './viewport';
@@ -36,13 +37,29 @@ export type OverlayShape =
   /** Marker on the point or curve position the cursor snapped to. */
   | { readonly kind: 'snap'; readonly at: Vec2 }
   /** The eight resize grips of an artboard, drawn while it is being edited. */
-  | { readonly kind: 'artboardHandles'; readonly artboard: Artboard };
+  | { readonly kind: 'artboardHandles'; readonly artboard: Artboard }
+  /**
+   * A dimension being placed: its laid-out graphics. `value` present = also
+   * draw the measured value as text (it follows the cursor); absent = the
+   * inline edit box shows the value instead. `radius` prefixes the text with R.
+   */
+  | { readonly kind: 'dimension'; readonly layout: DimensionLayout; readonly value?: number; readonly radius?: boolean };
 
 export interface MenuItem {
   readonly label: Message;
   readonly icon?: IconName;
   readonly enabled: boolean;
   readonly run: () => void;
+}
+
+/** An inline value entry the UI shows while a command is placing something (a dimension). */
+export interface EditRequest {
+  /** World position where the box should appear (the value text's anchor). */
+  readonly at: Vec2;
+  /** The measured value the box is pre-filled with. */
+  readonly value: number;
+  /** Accessible name / prompt for the box. */
+  readonly label: Message;
 }
 
 /**
@@ -67,5 +84,15 @@ export interface Command {
   overlay?(): readonly OverlayShape[];
   /** Command-specific marking menu entries. */
   menu?(): readonly MenuItem[];
+  /** Set while the command wants an inline value entry; the UI shows the box. */
+  readonly edit?: EditRequest;
+  /**
+   * Applies what the user typed. `edited` says the user actually typed
+   * (false = accept the measurement untouched). Returns false when the text is
+   * unusable or the solver rejected it, and the box stays open.
+   */
+  commitEdit?(text: string, edited: boolean): boolean;
+  /** Drops the entry without committing. */
+  cancelEdit?(): void;
   dispose?(): void;
 }

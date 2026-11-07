@@ -2,6 +2,7 @@ import type { ConstraintInput } from '../../core/builder';
 import { Draft } from '../../core/draft';
 import type { Vec2 } from '../../core/geometry';
 import type { Entity, Id } from '../../core/model';
+import type { Sketch } from '../../core/sketch';
 import type { Key } from '../../i18n/i18n';
 import type { Command, Message, OverlayShape, PointerInput } from '../command';
 import type { CommandFactory, Editor } from '../editor';
@@ -49,7 +50,7 @@ export abstract class ConstraintCommand implements Command {
   /** The operands picked so far; subclasses read them to draw their previews. */
   protected picks: readonly Operand[] = [];
   /** Overrides the operand prompt until the next click, e.g. after a rejection. */
-  private status: Message | undefined;
+  protected status: Message | undefined;
 
   constructor(protected readonly editor: Editor) {}
 
@@ -83,7 +84,7 @@ export abstract class ConstraintCommand implements Command {
       this.editor.viewChanged();
       return;
     }
-    this.apply(constraint);
+    this.complete(constraint);
   }
 
   cancel(): boolean {
@@ -105,6 +106,15 @@ export abstract class ConstraintCommand implements Command {
   /** Builds the constraint once the operands allow it; undefined while a pick is still missing. */
   protected abstract build(picks: readonly Operand[]): ConstraintInput | undefined;
 
+  /**
+   * Called once the operands allow the constraint. The default applies it; a
+   * command that places and values the constraint first (the dimension
+   * command) overrides this.
+   */
+  protected complete(constraint: ConstraintInput): void {
+    this.apply(constraint);
+  }
+
   /** Whether the second operand may follow the first. */
   protected compatible(_a: OperandKind, _b: OperandKind): boolean {
     return true;
@@ -118,22 +128,33 @@ export abstract class ConstraintCommand implements Command {
    * to undo: the sketch is simply left as it is.
    */
   private apply(constraint: ConstraintInput): void {
+    const next = this.admit(constraint);
+    if (next === undefined) return;
+    this.status = undefined;
+    this.picks = [];
+    this.editor.commit(next);
+    this.editor.viewChanged();
+  }
+
+  /**
+   * The sketch with `constraint` added, or undefined when the solver rejects it
+   * (a conflict or a redundancy) — recording the message the status bar shows,
+   * exactly as `apply` does today.
+   */
+  protected admit(constraint: ConstraintInput): Sketch | undefined {
     const draft = new Draft(this.editor.sketch);
     draft.constrain(constraint);
     const before = this.editor.evaluate(this.editor.sketch);
     const result = this.editor.evaluate(draft.sketch);
     if (introduced(result.conflicting, before.conflicting)) {
       this.reject({ key: `prompts.conflict.${constraint.kind}` });
-      return;
+      return undefined;
     }
     if (introduced(result.redundant, before.redundant)) {
       this.reject({ key: 'prompts.redundant' });
-      return;
+      return undefined;
     }
-    this.status = undefined;
-    this.picks = [];
-    this.editor.commit(draft.sketch);
-    this.editor.viewChanged();
+    return draft.sketch;
   }
 
   private reject(message: Message): void {
